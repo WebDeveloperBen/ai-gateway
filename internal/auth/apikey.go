@@ -1,3 +1,5 @@
+// Package auth implements authentication and tenant identification
+// for incoming requests, attaching tenant and app context to the request.
 package auth
 
 import (
@@ -14,12 +16,12 @@ type APIKeyAuthenticator struct {
 	Hasher keys.Hasher // Argon2IDHasher
 }
 
-// Constructor with explicit dependencies.
+// NewAPIKeyAuthenticator Constructor with explicit dependencies.
 func NewAPIKeyAuthenticator(store keys.Reader, hasher keys.Hasher) *APIKeyAuthenticator {
 	return &APIKeyAuthenticator{Keys: store, Hasher: hasher}
 }
 
-// Convenience constructor with tuned defaults (t=1, m=64MiB, p=1, keyLen=32).
+// NewDefaultAPIKeyAuthenticator is a convenience constructor with tuned defaults (t=1, m=64MiB, p=1, keyLen=32).
 func NewDefaultAPIKeyAuthenticator(store keys.Reader) *APIKeyAuthenticator {
 	hasher := keys.NewArgon2IDHasher(1, 64*1024, 1, 32)
 	return &APIKeyAuthenticator{Keys: store, Hasher: hasher}

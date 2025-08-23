@@ -1,3 +1,5 @@
+// Package config defines the gateway's configuration loading and parsing
+// logic, including environment, file, and default values.
 package config
 
 import (

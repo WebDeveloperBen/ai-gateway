@@ -1,3 +1,4 @@
+// Package health exposes healthz endpoints to test the proxy and admin health
 package health
 
 import (

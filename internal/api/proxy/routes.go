@@ -1,3 +1,5 @@
+// Package proxy provides the HTTP endpoints that proxy client requests
+// through the gateway to upstream LLM providers.
 package proxy
 
 import (
