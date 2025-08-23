@@ -9,7 +9,6 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
-	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	proxyapi "github.com/insurgence-ai/llm-gateway/internal/api/proxy"
@@ -18,14 +17,18 @@ import (
 	"github.com/insurgence-ai/llm-gateway/internal/gateway"
 	keyspg "github.com/insurgence-ai/llm-gateway/internal/keys/postgres"
 	"github.com/insurgence-ai/llm-gateway/internal/provider/azureopenai"
+	"github.com/insurgence-ai/llm-gateway/internal/server"
 )
 
 func main() {
-	r := chi.NewRouter()
-	cfg := huma.DefaultConfig("LLM Gateway", "v1.0.0")
-	cfg.DocsPath = ""
-	cfg.CreateHooks = nil
-	api := humachi.New(r, cfg)
+	// Load environment configuration
+	cfg := config.Envs
+
+	// Create a Chi router with all middleware (logging, rate limiting, CORS, etc.)
+	router, humaCfg := server.New(cfg)
+
+	// Wrap the router with Huma to support OpenAPI + typed handlers
+	api := humachi.New(router, humaCfg)
 
 	pool, err := pgxpool.New(context.Background(), mustEnv("DATABASE_URL"))
 	if err != nil {
@@ -73,8 +76,7 @@ func main() {
 	proxyapi.RegisterRoutes(grp, core)
 
 	addr := config.Envs.AppPort
-	log.Printf("listening on %s", addr)
-	log.Fatal(http.ListenAndServe(addr, r))
+	server.Start(addr, router)
 }
 
 // demo deps

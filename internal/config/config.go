@@ -19,6 +19,8 @@ type Config struct {
 	DBConnectionString string
 	JWTExpiration      time.Duration
 	IsProd             bool
+	ApplicationName    string
+	Version            string
 }
 
 // Loads all environment variables from the .env file
@@ -34,6 +36,8 @@ func loadConfig() Config {
 		IsProd:             getEnvAsBoolean("IS_PROD", true),
 		DBConnectionString: getEnv("POSTGRES_DNS", ""),
 		AuthSecret:         getEnv("AUTH_SECRET", "superSecretNeedsToBeChanged"),
+		ApplicationName:    getEnv("APPLICATION_NAME", "LLM Gateway"),
+		Version:            getEnv("VERSION", "v1.0.0"),
 	}
 }
 

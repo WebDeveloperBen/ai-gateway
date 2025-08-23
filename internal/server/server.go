@@ -13,7 +13,6 @@ import (
 	chi_middleware "github.com/go-chi/chi/v5/middleware"
 )
 
-// TODO: move this into the main function api usage currently not in use
 // New initializes the router with all standard middleware.
 func New(cfg config.Config) (*chi.Mux, huma.Config) {
 	lib.NewLogger(cfg.IsProd)
@@ -40,7 +39,7 @@ func New(cfg config.Config) (*chi.Mux, huma.Config) {
 	}))
 
 	// Setup Huma with that one router
-	humaCfg := huma.DefaultConfig("My API", "v1.0.0")
+	humaCfg := huma.DefaultConfig(cfg.ApplicationName, cfg.Version)
 	humaCfg.DocsPath = ""     // hide the default docs to create our own scalar docs
 	humaCfg.CreateHooks = nil // remove the $schema from being returned in api responses
 
@@ -48,7 +47,13 @@ func New(cfg config.Config) (*chi.Mux, huma.Config) {
 }
 
 func Start(port string, router *chi.Mux) {
+	// guard agaisnt input strings including or not including colons
+	if len(port) > 0 && port[0] == ':' {
+		port = port[1:]
+	}
+
 	addr := ":" + port
+
 	lib.Logger.Info().Msgf("Starting server on %s", addr)
 
 	if err := http.ListenAndServe(addr, router); err != nil {
