@@ -1,0 +1,65 @@
+version: "3"
+
+dotenv: [".env.local"]
+
+tasks:
+  default:
+    cmds:
+      - task run
+
+  build:
+    desc: Build the Go application binary
+    cmds:
+      - go build -o ./bin/api ./cmd/api
+
+  run:
+    desc: Run the application using Docker Compose and Air for hot reloading
+    cmds:
+      - docker-compose up -d
+      - air
+
+  stop:
+    desc: Stop the Docker Compose environment
+    cmds:
+      - docker-compose down
+
+  tests:
+    desc: Run all Go tests
+    cmds:
+      - go test -v ./...
+
+  db:push:
+    desc: Push the migrations to the database using Drizzle
+    cmds:
+      - cd ./db/drizzle && pnpm run push
+
+  db:introspect:
+    desc: Introspect the database schema using Drizzle
+    cmds:
+      - cd ./db/drizzle && pnpm run introspect
+
+  db:studio:
+    desc: Open the Drizzle Studio
+    cmds:
+      - cd ./db/drizzle && pnpm run studio
+
+  db:gen_migrate:
+    desc: Generate migrations
+    cmds:
+      - cd ./db/drizzle && pnpm run generate
+
+  db:gen_query:
+    desc: Generate SQLC code from queries
+    cmds:
+      - rm -rf ./internal/repository/postgres && sqlc generate
+
+  generate:
+    desc: Generate both migrations and SQLC code
+    cmds:
+      - task db:gen_migrate
+      - task db:gen_query
+
+  clean:migrations:
+    desc: Generate SQLC code from queries
+    cmds:
+      - rm -rf ./db/drizzle/src/migrations
