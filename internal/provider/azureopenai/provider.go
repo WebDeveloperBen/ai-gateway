@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
-	"path"
 	"strings"
 
+	"github.com/insurgence-ai/llm-gateway/internal/config"
 	"github.com/insurgence-ai/llm-gateway/internal/provider"
 )
 
@@ -19,12 +18,11 @@ type Entry struct {
 }
 
 type Adapter struct {
-	Global   map[string]Entry            // model (lowercase) -> entry
-	ByTenant map[string]map[string]Entry // tenant -> model -> entry
-	Default  *Entry
-
-	APIKeyEnv string                     // e.g., "AOAI_API_KEY"
-	APIKeyFor func(tenant string) string // optional injector for tests
+	Global    map[string]Entry            // model -> entry
+	ByTenant  map[string]map[string]Entry // tenant -> model -> entry
+	Default   *Entry                      // optional
+	APIKeyEnv string                      // e.g., "AOAI_API_KEY"
+	APIKeyFor func(tenant string) string  // injector for tests/overrides
 }
 
 func New() *Adapter {
@@ -38,52 +36,68 @@ func New() *Adapter {
 func (a *Adapter) Prefix() string { return "/azure/openai" }
 
 func (a *Adapter) Rewrite(req *http.Request, suffix string, info provider.ReqInfo) error {
-	model := strings.ToLower(strings.TrimSpace(info.Model))
+	// 1) Resolve routing entry
+	modelKey, ok := provider.ModelOrDefault(
+		info.Model,
+		func(m string) bool { _, ok := a.peek(info.Tenant, m); return ok },
+		a.singleGlobalKey,
+		a.Default != nil,
+		"__default__",
+	)
 
-	ent, ok := a.resolve(info.Tenant, model)
-	if !ok {
-		// NEW: if exactly one global entry exists, use it as an implicit default
-		if e, ok1 := a.singleGlobal(); ok1 {
-			ent, ok = e, true
-		}
-	}
-	if !ok {
+	var ent Entry
+	switch {
+	case ok && modelKey == "__default__":
+		ent = *a.Default
+	case ok:
+		ent, _ = a.peek(info.Tenant, modelKey)
+	default:
 		return fmt.Errorf("unknown model %q and no default route", info.Model)
 	}
+
+	// sanity
 	if ent.BaseURL == "" || ent.Deployment == "" || ent.APIVer == "" {
 		return fmt.Errorf("aoai route incomplete")
 	}
 
-	base, err := normalizeBase(ent.BaseURL)
+	// 2) Base normalization (AOAI well-known suffix)
+	base, err := provider.EnsureAbsoluteBase(ent.BaseURL, "openai.azure.com")
 	if err != nil {
 		return err
 	}
 
-	// Build AOAI URL: /openai/deployments/{deployment} + /v1/... tail (without /v1)
-	u, _ := url.Parse(base)
-	u.Path = path.Join(u.Path, "/openai/deployments", url.PathEscape(ent.Deployment), strings.TrimPrefix(suffix, "/v1"))
-	q := req.URL.Query() // preserve client query if present
+	// 3) Build upstream URL: /openai/deployments/{deployment} + trimmed OpenAI path
+	trimmed := strings.TrimPrefix(suffix, "/v1")
+	q := provider.CopyQuery(req)
+	if q == nil {
+		q = url.Values{}
+	}
 	q.Set("api-version", ent.APIVer)
-	u.RawQuery = q.Encode()
 
-	req.URL.Scheme, req.URL.Host, req.URL.Path, req.URL.RawQuery = u.Scheme, u.Host, u.Path, u.RawQuery
+	u, err := provider.JoinURL(base, []string{"/openai/deployments", ent.Deployment, trimmed}, q)
+	if err != nil {
+		return err
+	}
+	provider.SetUpstreamURL(req, u)
 
-	// Auth: api-key (Managed Identity can be added later by a RoundTripper)
-	req.Header.Del("Authorization")
+	// 4) Auth: strip caller, then set AOAI key if present
+	provider.StripCallerAuth(req.Header)
 	key := ""
 	if a.APIKeyFor != nil {
 		key = a.APIKeyFor(info.Tenant)
 	}
 	if key == "" {
-		key = os.Getenv(a.APIKeyEnv)
+		key = config.Envs.AzureOpenAiAPIKey
 	}
-	if key != "" {
-		req.Header.Set("api-key", key)
-	}
+	provider.SetAPIKey(req.Header, "api-key", key)
+
 	return nil
 }
 
-func (a *Adapter) resolve(tenant, model string) (Entry, bool) {
+// ---- internals ----
+
+func (a *Adapter) peek(tenant, model string) (Entry, bool) {
+	model = strings.ToLower(strings.TrimSpace(model))
 	if tenant != "" {
 		if tmap, ok := a.ByTenant[tenant]; ok {
 			if e, ok := tmap[model]; ok {
@@ -94,32 +108,15 @@ func (a *Adapter) resolve(tenant, model string) (Entry, bool) {
 	if e, ok := a.Global[model]; ok {
 		return e, true
 	}
-	if a.Default != nil {
-		return *a.Default, true
-	}
 	return Entry{}, false
 }
 
-func normalizeBase(base string) (string, error) {
-	b := strings.TrimRight(strings.TrimSpace(base), "/")
-	if b == "" {
-		return "", fmt.Errorf("empty BaseURL")
-	}
-	if strings.Contains(b, "://") {
-		return b, nil
-	}
-	if strings.Contains(b, ".") {
-		return "https://" + b, nil
-	}
-	return "https://" + b + ".openai.azure.com", nil
-}
-
-func (a *Adapter) singleGlobal() (Entry, bool) {
+func (a *Adapter) singleGlobalKey() (string, bool) {
 	if len(a.Global) != 1 {
-		return Entry{}, false
+		return "", false
 	}
-	for _, e := range a.Global {
-		return e, true
+	for k := range a.Global {
+		return k, true
 	}
-	return Entry{}, false
+	return "", false
 }

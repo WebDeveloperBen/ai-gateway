@@ -13,6 +13,8 @@ import (
 
 var Envs = loadConfig()
 
+func Reload() { Envs = loadConfig() }
+
 type Config struct {
 	AppPort            string
 	AuthSecret         string
@@ -21,12 +23,13 @@ type Config struct {
 	IsProd             bool
 	ApplicationName    string
 	Version            string
+	AzureOpenAiAPIKey  string
 }
 
 // Loads all environment variables from the .env file
 func loadConfig() Config {
 	if _, err := os.Stat(".env"); err == nil {
-		if err := godotenv.Load(); err != nil {
+		if err := godotenv.Load(".env"); err != nil {
 			log.Fatalf("Error loading .env file: %v", err)
 		}
 	}
@@ -38,6 +41,7 @@ func loadConfig() Config {
 		AuthSecret:         getEnv("AUTH_SECRET", "superSecretNeedsToBeChanged"),
 		ApplicationName:    getEnv("APPLICATION_NAME", "LLM Gateway"),
 		Version:            getEnv("VERSION", "v1.0.0"),
+		AzureOpenAiAPIKey:  getEnv("AZURE_OPENAI_API_KEY", ""),
 	}
 }
 
@@ -66,7 +70,7 @@ func getEnvAsDuration(key string, fallback time.Duration) time.Duration {
 			return time.Duration(intValue) * time.Second
 		}
 	}
-	return time.Duration(fallback) * time.Second
+	return fallback
 }
 
 // Gets an environment variable as a boolean from a string, provides the fallback value if not set

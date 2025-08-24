@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/insurgence-ai/llm-gateway/internal/config"
 	"github.com/insurgence-ai/llm-gateway/internal/gateway"
 	"github.com/insurgence-ai/llm-gateway/internal/provider/azureopenai"
 	"github.com/insurgence-ai/llm-gateway/internal/testkit"
@@ -103,24 +104,25 @@ func TestUnitProxy_AzureOpenAI(t *testing.T) {
 }
 
 func TestE2EProxy_AzureOpenAI(t *testing.T) {
-	// Skip unless you pass a real key explicitly (or set env in CI and use aoai.APIKeyFor)
-	realBase := "https://dev-insurgence-openai.openai.azure.com"
-	realDeploy := "dev-openai-gpt4-1"
+	// 2) Refresh captured config AFTER loading env
+	config.Reload()
+	cfg := config.Envs
 
+	if cfg.AzureOpenAiAPIKey == "" {
+		t.Skip("AZURE_OPENAI_API_KEY missing; skipping E2E (set it in your root .env)")
+	}
+	t.Logf("Loaded AZURE_OPENAI_API_KEY: **** (len=%d)", len(cfg.AzureOpenAiAPIKey))
+
+	// 3) Wire real AOAI using env-sourced key
 	aoai := azureopenai.New()
-	aoai.Global["gpt4-1"] = azureopenai.Entry{
-		BaseURL:    realBase,
-		Deployment: realDeploy,
+	aoai.Global["gpt-4o"] = azureopenai.Entry{
+		BaseURL:    "https://dev-insurgence-openai.openai.azure.com",
+		Deployment: "dev-openai-gpt4-1",
 		APIVer:     "2024-07-01-preview",
 	}
-	// Use env in live test:
-	aoai.APIKeyFor = func(_ string) string {
-		// TODO: add the env here
-		return ""
-	}
+	aoai.APIKeyFor = func(_ string) string { return cfg.AzureOpenAiAPIKey }
 
 	core := gateway.NewCoreWithAdapters(http.DefaultTransport, aoai)
-
 	api := testkit.SetupPublicTestAPI(t, func(grp *huma.Group) {
 		RegisterProvider(grp, "/azure/openai", core)
 	})
@@ -130,11 +132,8 @@ func TestE2EProxy_AzureOpenAI(t *testing.T) {
 		"messages": []map[string]string{{"role": "user", "content": "Say hello test!"}},
 	}
 	b, _ := json.Marshal(body)
-
 	resp := api.Post("/api/azure/openai/v1/chat/completions", "Content-Type: application/json", bytes.NewReader(b))
-	if resp.Code != http.StatusOK {
-		t.Fatalf("Expected 200, got %d: %s", resp.Code, resp.Body.String())
-	}
+	require.Equal(t, http.StatusOK, resp.Code, resp.Body.String())
 }
 
 // --- test helpers ---
