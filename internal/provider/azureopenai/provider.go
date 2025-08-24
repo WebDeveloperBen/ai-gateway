@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
-	"github.com/insurgence-ai/llm-gateway/internal/config"
 	"github.com/insurgence-ai/llm-gateway/internal/provider"
 )
 
@@ -15,28 +15,28 @@ type Entry struct {
 	BaseURL    string // resource host or absolute URL
 	Deployment string // AOAI deployment name
 	APIVer     string // e.g., "2024-07-01-preview"
+	SecretRef  string
 }
 
 type Adapter struct {
-	Global    map[string]Entry            // model -> entry
-	ByTenant  map[string]map[string]Entry // tenant -> model -> entry
-	Default   *Entry                      // optional
-	APIKeyEnv string                      // e.g., "AOAI_API_KEY"
-	APIKeyFor func(tenant string) string  // injector for tests/overrides
+	Global   map[string]Entry            // model -> entry
+	ByTenant map[string]map[string]Entry // tenant -> model -> entry
+	Default  *Entry                      // optional
+	Keys     provider.KeySource
 }
 
 func New() *Adapter {
 	return &Adapter{
-		Global:    map[string]Entry{},
-		ByTenant:  map[string]map[string]Entry{},
-		APIKeyEnv: "AOAI_API_KEY",
+		Global:   map[string]Entry{},
+		ByTenant: map[string]map[string]Entry{},
+		Keys:     provider.KeySource{EnvVar: "AOAI_API_KEY"},
 	}
 }
 
 func (a *Adapter) Prefix() string { return "/azure/openai" }
 
 func (a *Adapter) Rewrite(req *http.Request, suffix string, info provider.ReqInfo) error {
-	// 1) Resolve routing entry
+	// Resolve routing entry
 	modelKey, ok := provider.ModelOrDefault(
 		info.Model,
 		func(m string) bool { _, ok := a.peek(info.Tenant, m); return ok },
@@ -60,35 +60,42 @@ func (a *Adapter) Rewrite(req *http.Request, suffix string, info provider.ReqInf
 		return fmt.Errorf("aoai route incomplete")
 	}
 
-	// 2) Base normalization (AOAI well-known suffix)
+	// Base normalization (AOAI well-known suffix)
 	base, err := provider.EnsureAbsoluteBase(ent.BaseURL, "openai.azure.com")
 	if err != nil {
 		return err
 	}
 
-	// 3) Build upstream URL: /openai/deployments/{deployment} + trimmed OpenAI path
+	// Build upstream URL: /openai/deployments/{deployment} + trimmed OpenAI path
 	trimmed := strings.TrimPrefix(suffix, "/v1")
+
 	q := provider.CopyQuery(req)
 	if q == nil {
 		q = url.Values{}
 	}
+
 	q.Set("api-version", ent.APIVer)
 
 	u, err := provider.JoinURL(base, []string{"/openai/deployments", ent.Deployment, trimmed}, q)
 	if err != nil {
 		return err
 	}
+
 	provider.SetUpstreamURL(req, u)
 
-	// 4) Auth: strip caller, then set AOAI key if present
+	// strip caller, then set AOAI key if present
 	provider.StripCallerAuth(req.Header)
-	key := ""
-	if a.APIKeyFor != nil {
-		key = a.APIKeyFor(info.Tenant)
+
+	key := a.Keys.Resolve(info.Tenant, "AOAI_API_KEY")
+	// TODO: preference managed identity lookup over keys
+	// TODO: replace this with a kv lookup instead in future
+	// prefer per-resource secret if it's present
+	if ent.SecretRef != "" {
+		if v := os.Getenv(ent.SecretRef); v != "" {
+			key = v
+		}
 	}
-	if key == "" {
-		key = config.Envs.AzureOpenAiAPIKey
-	}
+
 	provider.SetAPIKey(req.Header, "api-key", key)
 
 	return nil

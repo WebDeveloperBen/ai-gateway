@@ -1,9 +1,13 @@
 package provider
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -111,4 +115,61 @@ func ModelOrDefault(model string, hasExact func(string) bool, single func() (str
 		return fallbackKey, true
 	}
 	return "", false
+}
+
+// KeySource resolves secrets for upstream auth either from a per-tenant function
+// or from an environment variable.
+type KeySource struct {
+	EnvVar    string                     // e.g. "OPENAI_API_KEY" / "AOAI_API_KEY"
+	ForTenant func(tenant string) string // optional; if returns non-empty, wins
+}
+
+// Resolve returns a key. If ForTenant returns "", falls back to EnvVar or defaultEnv.
+func (k KeySource) Resolve(tenant, defaultEnv string) string {
+	if k.ForTenant != nil {
+		if v := strings.TrimSpace(k.ForTenant(tenant)); v != "" {
+			return v
+		}
+	}
+	env := k.EnvVar
+	if strings.TrimSpace(env) == "" {
+		env = defaultEnv
+	}
+	return os.Getenv(env)
+}
+
+// RewriteJSONField parses the JSON request body and sets field -> value.
+// If the body isn't JSON, it is restored unchanged. Content-Length is fixed.
+func RewriteJSONField(req *http.Request, field string, value any) error {
+	if req.Body == nil {
+		return nil
+	}
+	raw, err := io.ReadAll(req.Body)
+	if err != nil {
+		return err
+	}
+	_ = req.Body.Close()
+
+	var obj map[string]any
+	if err := json.Unmarshal(raw, &obj); err != nil {
+		// Not JSON; restore body and bail.
+		req.Body = io.NopCloser(bytes.NewReader(raw))
+		return nil
+	}
+	obj[field] = value
+
+	updated, err := json.Marshal(obj)
+	if err != nil {
+		req.Body = io.NopCloser(bytes.NewReader(raw))
+		return nil
+	}
+
+	req.Body = io.NopCloser(bytes.NewReader(updated))
+	ForceContentLength(req, len(updated))
+	return nil
+}
+
+// RewriteJSONModel is a convenience for the common case.
+func RewriteJSONModel(req *http.Request, newModel string) error {
+	return RewriteJSONField(req, "model", newModel)
 }
