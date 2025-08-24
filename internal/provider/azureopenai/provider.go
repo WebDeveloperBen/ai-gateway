@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/insurgence-ai/llm-gateway/internal/model/models"
 	"github.com/insurgence-ai/llm-gateway/internal/provider"
 )
 
@@ -99,6 +100,38 @@ func (a *Adapter) Rewrite(req *http.Request, suffix string, info provider.ReqInf
 	provider.SetAPIKey(req.Header, "api-key", key)
 
 	return nil
+}
+
+// BuildProvider builds and returns a provider.Adapter configured with all models/deployments.
+// Used to dynamically instantiate tenant/model/provider adapters from registry/model config at runtime.
+// Accepts all deployments, must filter & populate its own adapter-specific mapping.
+func BuildProvider(deployments []models.ModelDeployment) *Adapter {
+	has := false
+	adapter := New()
+	for _, md := range deployments {
+		if md.Provider != "azure" {
+			continue
+		}
+		ent := Entry{
+			BaseURL:    md.Meta["BaseURL"],
+			Deployment: md.Deployment,
+			APIVer:     md.Meta["APIVer"],
+			SecretRef:  md.Meta["SecretRef"],
+		}
+		if md.Tenant != "" {
+			if adapter.ByTenant[md.Tenant] == nil {
+				adapter.ByTenant[md.Tenant] = map[string]Entry{}
+			}
+			adapter.ByTenant[md.Tenant][md.Model] = ent
+		} else {
+			adapter.Global[md.Model] = ent
+		}
+		has = true
+	}
+	if !has {
+		return nil
+	}
+	return adapter
 }
 
 // ---- internals ----

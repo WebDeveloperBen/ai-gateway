@@ -24,6 +24,9 @@ type Config struct {
 	ApplicationName    string
 	Version            string
 	AzureOpenAiAPIKey  string
+	KVBackend          string
+	RedisAddr          string
+	RedisPW            string
 }
 
 // Loads all environment variables from the .env file
@@ -42,6 +45,9 @@ func loadConfig() Config {
 		ApplicationName:    getEnv("APPLICATION_NAME", "LLM Gateway"),
 		Version:            getEnv("VERSION", "v1.0.0"),
 		AzureOpenAiAPIKey:  getEnv("AZURE_OPENAI_API_KEY", ""),
+		KVBackend:          getEnv("KV_BACKEND", "memory"),
+		RedisAddr:          getEnv("REDIS_ADDR", ""),
+		RedisPW:            getEnv("REDIS_PASSWORD", ""),
 	}
 }
 

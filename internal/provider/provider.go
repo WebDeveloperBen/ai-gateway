@@ -2,7 +2,9 @@
 // upstream LLM providers, including routing, retries, and usage reporting.
 package provider
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // ReqInfo is what adapters need to decide routing/rewrite.
 // Keep this in provider pkg to avoid gateway<->provider cycles.
@@ -17,11 +19,12 @@ type ReqInfo struct {
 
 // Adapter is implemented by each provider package (azureopenai, openai, anthropic, ...).
 type Adapter interface {
-	// Prefix is the façade base mounted in your API, e.g. "/azure/openai" or "/openai".
-	// Requests must start with this prefix (or this prefix + "/").
+	// Prefix returns the public API prefix (e.g. "/azure/openai" or "/openai").
+	// Requests handled by this adapter must start with this prefix or this prefix + "/".
 	Prefix() string
 
-	// Rewrite mutates req in-place to point at the upstream provider.
-	// suffix is the "/v1/..." part of the path.
+	// Rewrite mutates req in-place to target the upstream provider.
+	// suffix is the "/v1/..." portion of the path.
+	// info contains normalized, auth-aware request context.
 	Rewrite(req *http.Request, suffix string, info ReqInfo) error
 }

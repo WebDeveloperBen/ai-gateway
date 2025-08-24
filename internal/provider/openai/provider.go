@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/insurgence-ai/llm-gateway/internal/model/models"
 	"github.com/insurgence-ai/llm-gateway/internal/provider"
 )
 
@@ -26,6 +27,25 @@ func New() *Adapter {
 
 // Prefix determines where you mount this provider under your API (for docs/tests).
 func (a *Adapter) Prefix() string { return "/openai" }
+
+// BuildProvider builds and returns a provider.Adapter configured with all models/deployments.
+// Used to dynamically instantiate tenant/model/provider adapters from registry/model config at runtime.
+// Accepts all deployments, must filter & populate its own adapter-specific mapping.
+func BuildProvider(deployments []models.ModelDeployment) *Adapter {
+	has := false
+	adapter := New()
+	for _, md := range deployments {
+		if md.Provider != "openai" {
+			continue
+		}
+		adapter.ModelAlias[md.Model] = md.Meta["Alias"]
+		has = true
+	}
+	if !has {
+		return nil
+	}
+	return adapter
+}
 
 // Rewrite turns an OpenAI-compatible downstream request into an OpenAI upstream request.
 // Unlike Azure, we keep the /v1/... suffix and forward it. Optionally, we rewrite the

@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
@@ -16,19 +15,42 @@ import (
 	"github.com/insurgence-ai/llm-gateway/internal/config"
 	"github.com/insurgence-ai/llm-gateway/internal/gateway"
 	keyspg "github.com/insurgence-ai/llm-gateway/internal/keys/postgres"
-	"github.com/insurgence-ai/llm-gateway/internal/provider/azureopenai"
+	"github.com/insurgence-ai/llm-gateway/internal/kv"
+	"github.com/insurgence-ai/llm-gateway/internal/model/models"
 	"github.com/insurgence-ai/llm-gateway/internal/server"
 )
 
 func main() {
-	// Load environment configuration
+	ctx := context.Background()
 	cfg := config.Envs
 
-	// Create a Chi router with all middleware (logging, rate limiting, CORS, etc.)
-	router, humaCfg := server.New(cfg)
+	// KV store
+	kvCfg := kv.Config{
+		Backend:   kv.Backend(cfg.KVBackend),
+		RedisAddr: cfg.RedisAddr,
+		RedisPW:   cfg.RedisPW,
+		RedisDB:   0, // change as needed
+	}
+	kvStore, err := kv.New(kvCfg)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// Wrap the router with Huma to support OpenAPI + typed handlers
-	api := humachi.New(router, humaCfg)
+	reg := gateway.NewRegistry(ctx, kvStore)
+	all, err := reg.All("modelreg:*")
+	if err != nil {
+		log.Fatal("registry read failed: ", err)
+	}
+	if len(all) == 0 {
+		modelDeployments := loadAllModelDeploymentsFromDatabase()
+		for _, md := range modelDeployments {
+			if err := reg.Add(md, 0); err != nil {
+				log.Printf("failed to add model to registry: %+v", err)
+			}
+		}
+		all = modelDeployments
+	}
+	log.Printf("Loaded %d active models from registry", len(all))
 
 	pool, err := pgxpool.New(context.Background(), mustEnv("DATABASE_URL"))
 	if err != nil {
@@ -36,49 +58,30 @@ func main() {
 	}
 	defer pool.Close()
 
-	// Shared keys store + hasher + authenticator
-	keyStore := keyspg.New(pool) // implements keys.Store (Reader+Writer)
-
+	keyStore := keyspg.New(pool)
 	authn := auth.NewDefaultAPIKeyAuthenticator(keyStore)
 
-	// Transport chain
-	rl := allowAllLimiter{}
-	met := noopMetrics{}
+	router, humaCfg := server.New(cfg)
+	api := humachi.New(router, humaCfg)
+
 	transport := gateway.Chain(
 		http.DefaultTransport,
 		gateway.WithAuth(authn),
-		gateway.WithRateLimit(rl),
-		gateway.WithMetrics(met),
+		// TODO: real limiter and metrics
 	)
-	aoai := azureopenai.New()
-	aoai.Global["gpt-4o"] = azureopenai.Entry{
-		BaseURL:    "https://<your-aoai-resource>.openai.azure.com",
-		Deployment: "<your-deployment-name>",
-		APIVer:     "2024-07-01-preview",
-	}
-	core := gateway.NewCoreWithAdapters(transport, aoai)
+	core := gateway.NewCoreWithRegistry(transport, reg)
 	grp := huma.NewGroup(api, "/api")
 	proxyapi.RegisterProvider(grp, "/azure/openai/", core)
 
 	addr := config.Envs.AppPort
-
 	server.Start(addr, router)
 }
 
-// demo deps
-type allowAllLimiter struct{}
-
-func (allowAllLimiter) Allow(*http.Request) (time.Duration, bool) { return 0, true }
-
-type noopMetrics struct{}
-
-func (noopMetrics) Record(*http.Request, *http.Response, time.Duration) {}
-
-func envOr(k, def string) string {
-	if v := os.Getenv(k); v != "" {
-		return v
+// loadAllModelDeploymentsFromDatabase is a stub for demonstration. Replace with real DB logic.
+func loadAllModelDeploymentsFromDatabase() []models.ModelDeployment {
+	return []models.ModelDeployment{
+		{Model: "gpt-4o", Deployment: "dev-openai-gpt4-1", Provider: "azure", Tenant: "default", Meta: map[string]string{"APIVer": "2024-07-01-preview", "BaseURL": "https://<your-aoai-resource>.openai.azure.com"}},
 	}
-	return def
 }
 
 func mustEnv(k string) string {

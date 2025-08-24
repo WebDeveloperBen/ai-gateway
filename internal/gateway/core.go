@@ -15,6 +15,8 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/insurgence-ai/llm-gateway/internal/provider"
+	"github.com/insurgence-ai/llm-gateway/internal/provider/azureopenai"
+	"github.com/insurgence-ai/llm-gateway/internal/provider/openai"
 )
 
 type Core struct {
@@ -203,6 +205,27 @@ func writeProxyError(rw http.ResponseWriter, r *http.Request, err error) {
 		detail += " | adapters: [" + have + "]"
 	}
 	_, _ = fmt.Fprintf(rw, `{"title":"Bad Gateway","status":502,"detail":%q}`, detail)
+}
+
+// NewCoreWithRegistry builds Core from a model registry (via cache+db)
+// and dynamically wires up provider adapters (azure, openai, etc).
+// Any future providers can be added easily in this registration step.
+func NewCoreWithRegistry(rt http.RoundTripper, reg *Registry) *Core {
+	deployments, err := reg.All("modelreg:*")
+	if err != nil {
+		panic(fmt.Sprintf("failed to load registry: %v", err))
+	}
+
+	azureAdapter := azureopenai.BuildProvider(deployments)
+	openaiAdapter := openai.BuildProvider(deployments)
+	adapters := []provider.Adapter{}
+	if azureAdapter != nil {
+		adapters = append(adapters, azureAdapter)
+	}
+	if openaiAdapter != nil {
+		adapters = append(adapters, openaiAdapter)
+	}
+	return NewCoreWithAdapters(rt, adapters...)
 }
 
 // ---- helpers ----
