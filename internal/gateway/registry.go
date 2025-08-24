@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/insurgence-ai/llm-gateway/internal/kv"
@@ -68,4 +69,24 @@ func (r *Registry) All(pattern string) ([]models.ModelDeployment, error) {
 
 func (r *Registry) key(model, tenant string) string {
 	return fmt.Sprintf("modelreg:%s:%s", tenant, model)
+}
+
+// EnsureRegistryPopulated loads all model deployments from the registry, and if empty, calls the provided loader to seed the registry with initial deployments.
+// Returns the final set of all model deployments available in the registry.
+func EnsureRegistryPopulated(reg *Registry, loadFn func() []models.ModelDeployment) []models.ModelDeployment {
+	all, err := reg.All("modelreg:*")
+	if err != nil {
+		log.Fatal("registry read failed: ", err)
+	}
+	if len(all) == 0 {
+		modelDeployments := loadFn()
+		for _, md := range modelDeployments {
+			if err := reg.Add(md, 0); err != nil {
+				log.Printf("failed to add model to registry: %+v", err)
+			}
+		}
+		all = modelDeployments
+	}
+	log.Printf("Loaded %d active models from registry", len(all))
+	return all
 }

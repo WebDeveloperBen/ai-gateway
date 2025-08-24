@@ -53,6 +53,7 @@ func (a *Adapter) Rewrite(req *http.Request, suffix string, info provider.ReqInf
 	case ok:
 		ent, _ = a.peek(info.Tenant, modelKey)
 	default:
+		fmt.Printf("[AzureOpenAI] model lookup failed. Requested: %q; known: %v; byTenant: %v; tenant: %q\n", info.Model, a.Global, a.ByTenant, info.Tenant)
 		return fmt.Errorf("unknown model %q and no default route", info.Model)
 	}
 

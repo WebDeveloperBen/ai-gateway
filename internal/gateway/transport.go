@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -28,13 +27,11 @@ type Authenticator interface {
 func WithAuth(a Authenticator) func(http.RoundTripper) http.RoundTripper {
 	return func(next http.RoundTripper) http.RoundTripper {
 		return RTFunc(func(r *http.Request) (*http.Response, error) {
-			tenant, app, err := a.Authenticate(r)
+			_, _, err := a.Authenticate(r)
 			if err != nil {
 				return deny(401, "unauthorized"), nil
 			}
-			ctx := context.WithValue(r.Context(), ctxTenantKey{}, tenant)
-			ctx = context.WithValue(ctx, ctxAppKey{}, app)
-			return next.RoundTrip(r.WithContext(ctx))
+			return next.RoundTrip(r)
 		})
 	}
 }

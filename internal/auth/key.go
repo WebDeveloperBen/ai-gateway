@@ -5,7 +5,6 @@ package auth
 import (
 	"errors"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/insurgence-ai/llm-gateway/internal/keys"
@@ -28,8 +27,8 @@ func NewDefaultAPIKeyAuthenticator(store keys.Reader) *APIKeyAuthenticator {
 }
 
 func (a *APIKeyAuthenticator) Authenticate(r *http.Request) (tenant, app string, err error) {
-	tok := headerToken(r)
-	keyID, secret := split(tok)
+	tok := getHeaderToken(r)
+	keyID, secret := splitToken(tok)
 	if keyID == "" || secret == "" {
 		_ = padWork(a.Hasher)
 		return "", "", errors.New("unauthorized")
@@ -60,30 +59,4 @@ func (a *APIKeyAuthenticator) Authenticate(r *http.Request) (tenant, app string,
 
 	_ = a.Keys.TouchLastUsed(r.Context(), keyID)
 	return rec.Tenant, rec.App, nil
-}
-
-func headerToken(r *http.Request) string {
-	if v := r.Header.Get("Authorization"); v != "" {
-		if after, ok := strings.CutPrefix(v, "Bearer "); ok {
-			return strings.TrimSpace(after)
-		}
-	}
-	if v := r.Header.Get("X-API-Key"); v != "" {
-		return strings.TrimSpace(v)
-	}
-	return ""
-}
-
-func split(tok string) (string, string) {
-	left, right, ok := strings.Cut(tok, ".")
-	if !ok || left == "" || right == "" {
-		return "", ""
-	}
-	return left, right
-}
-
-// padWork burns comparable CPU on early rejects to avoid an existence oracle.
-func padWork(h keys.Hasher) error {
-	_, _ = h.Hash([]byte("timing-pad"))
-	return nil
 }

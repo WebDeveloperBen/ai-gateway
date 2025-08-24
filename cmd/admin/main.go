@@ -48,7 +48,6 @@ func main() {
 	admin.NewServer(keysSvc).RegisterRoutes(grp)
 
 	addr := envOr("ADMIN_ADDR", ":8081")
-	log.Printf("admin listening on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, r))
 }
 

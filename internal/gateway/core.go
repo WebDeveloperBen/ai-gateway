@@ -20,19 +20,21 @@ import (
 )
 
 type Core struct {
-	MaxBody   int
-	Transport http.RoundTripper
-	Adapters  []provider.Adapter
+	MaxBody       int
+	Transport     http.RoundTripper
+	Adapters      []provider.Adapter
+	Authenticator Authenticator
 }
 
-func NewCoreWithAdapters(rt http.RoundTripper, adapters ...provider.Adapter) *Core {
+func NewCoreWithAdapters(rt http.RoundTripper, auth Authenticator, adapters ...provider.Adapter) *Core {
 	if rt == nil {
 		rt = http.DefaultTransport
 	}
 	return &Core{
-		MaxBody:   1 << 20,
-		Transport: rt,
-		Adapters:  adapters,
+		MaxBody:       1 << 20,
+		Transport:     rt,
+		Adapters:      adapters,
+		Authenticator: auth,
 	}
 }
 
@@ -40,9 +42,19 @@ func (c *Core) StreamingHandler() func(ctx context.Context, _ *struct{}) (*huma.
 	return func(ctx context.Context, _ *struct{}) (*huma.StreamResponse, error) {
 		return &huma.StreamResponse{
 			Body: func(hctx huma.Context) {
-				// Build a placeholder request; Director will fully rewrite it.
+				r := &http.Request{Header: http.Header{}}
+
+				hctx.EachHeader(func(n, v string) { r.Header.Add(n, v) })
+
+				tenant, app, _ := c.Authenticator.Authenticate(r)
+
+				ctxWithTenant := context.WithValue(
+					context.WithValue(hctx.Context(), ctxTenantKey{}, tenant),
+					ctxAppKey{}, app,
+				)
+
 				req, err := http.NewRequestWithContext(
-					hctx.Context(),
+					ctxWithTenant,
 					hctx.Method(),
 					"http://placeholder", // avoids relying on hctx.URL().String()
 					nil,
@@ -61,7 +73,7 @@ func (c *Core) StreamingHandler() func(ctx context.Context, _ *struct{}) (*huma.
 
 				rp := &httputil.ReverseProxy{
 					Transport:    c.Transport,
-					Director:     c.makeDirector(hctx),
+					Director:     c.makeDirector(ctxWithTenant, hctx),
 					ErrorHandler: writeProxyError,
 				}
 				rp.ServeHTTP(w, req)
@@ -70,7 +82,7 @@ func (c *Core) StreamingHandler() func(ctx context.Context, _ *struct{}) (*huma.
 	}
 }
 
-func (c *Core) makeDirector(hctx huma.Context) func(*http.Request) {
+func (c *Core) makeDirector(ctx context.Context, hctx huma.Context) func(*http.Request) {
 	return func(req *http.Request) {
 		// Use the real incoming path from Huma (not the placeholder).
 		inURL := hctx.URL()
@@ -145,8 +157,8 @@ func (c *Core) makeDirector(hctx huma.Context) func(*http.Request) {
 			Path:   suffix,
 			Query:  req.URL.RawQuery,
 			Model:  extractModel(raw),
-			Tenant: TenantFrom(hctx.Context()),
-			App:    AppFrom(hctx.Context()),
+			Tenant: TenantFrom(ctx),
+			App:    AppFrom(ctx),
 		}
 
 		// 4) Let the adapter rewrite to the real upstream.
@@ -210,7 +222,7 @@ func writeProxyError(rw http.ResponseWriter, r *http.Request, err error) {
 // NewCoreWithRegistry builds Core from a model registry (via cache+db)
 // and dynamically wires up provider adapters (azure, openai, etc).
 // Any future providers can be added easily in this registration step.
-func NewCoreWithRegistry(rt http.RoundTripper, reg *Registry) *Core {
+func NewCoreWithRegistry(rt http.RoundTripper, auth Authenticator, reg *Registry) *Core {
 	deployments, err := reg.All("modelreg:*")
 	if err != nil {
 		panic(fmt.Sprintf("failed to load registry: %v", err))
@@ -225,7 +237,7 @@ func NewCoreWithRegistry(rt http.RoundTripper, reg *Registry) *Core {
 	if openaiAdapter != nil {
 		adapters = append(adapters, openaiAdapter)
 	}
-	return NewCoreWithAdapters(rt, adapters...)
+	return NewCoreWithAdapters(rt, auth, adapters...)
 }
 
 // ---- helpers ----

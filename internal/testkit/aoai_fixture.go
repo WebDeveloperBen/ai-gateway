@@ -4,15 +4,18 @@ import (
 	"os"
 	"testing"
 
+	"github.com/insurgence-ai/llm-gateway/internal/auth"
 	"github.com/insurgence-ai/llm-gateway/internal/config"
+	"github.com/insurgence-ai/llm-gateway/internal/gateway"
 	"github.com/insurgence-ai/llm-gateway/internal/provider"
 	"github.com/insurgence-ai/llm-gateway/internal/provider/azureopenai"
 )
 
 type AOAITest struct {
-	Adapter  *azureopenai.Adapter
-	Model    string
-	BasePath string // where you mount it in your API (used by tests)
+	Adapter       *azureopenai.Adapter
+	Model         string
+	BasePath      string // where you mount it in your API (used by tests)
+	Authenticator gateway.Authenticator
 }
 
 // AOAIOption Functional options for easy overrides in specific tests
@@ -89,9 +92,10 @@ func NewAOAIE2E(t *testing.T, opts ...AOAIOption) *AOAITest {
 	}
 
 	return &AOAITest{
-		Adapter:  ad,
-		Model:    o.Model,
-		BasePath: "/azure/openai",
+		Adapter:       ad,
+		Model:         o.Model,
+		BasePath:      "/azure/openai",
+		Authenticator: &auth.NoopAuthenticator{},
 	}
 }
 
@@ -122,7 +126,7 @@ func NewAOAIUnit(t *testing.T, opts ...AOAIUnitOption) *AOAITest {
 		ad.Keys = provider.KeySource{EnvVar: o.KeyEnv}
 	} // else leave default EnvVar="AOAI_API_KEY" (rare in unit tests)
 
-	return &AOAITest{Adapter: ad, Model: o.Model, BasePath: "/azure/openai"}
+	return &AOAITest{Adapter: ad, Model: o.Model, BasePath: "/azure/openai", Authenticator: &auth.NoopAuthenticator{}}
 }
 
 // WithModel and the others are conviencance E2E test defaults

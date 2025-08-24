@@ -15,7 +15,6 @@ import (
 	"github.com/insurgence-ai/llm-gateway/internal/auth"
 	"github.com/insurgence-ai/llm-gateway/internal/config"
 	"github.com/insurgence-ai/llm-gateway/internal/gateway"
-	keyspg "github.com/insurgence-ai/llm-gateway/internal/keys/postgres"
 	"github.com/insurgence-ai/llm-gateway/internal/kv"
 	"github.com/insurgence-ai/llm-gateway/internal/model/models"
 	"github.com/insurgence-ai/llm-gateway/internal/server"
@@ -47,8 +46,7 @@ func main() {
 	reg := gateway.NewRegistry(ctx, kvStore)
 	_ = gateway.EnsureRegistryPopulated(reg, loadAllModelDeploymentsFromDatabase)
 
-	keyStore := keyspg.New(pool)
-	authn := auth.NewDefaultAPIKeyAuthenticator(keyStore)
+	authn := &auth.NoopAuthenticator{}
 
 	router, humaCfg := server.New(cfg)
 	api := humachi.New(router, humaCfg)
