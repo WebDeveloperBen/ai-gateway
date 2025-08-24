@@ -1,126 +1,138 @@
-# **1. Executive Summary**
+# Developer Stories: Outstanding Features
 
-## Project Overview
+## Data Plane (Proxy)
+### Implement Redis-backed rate limiting for API keys with 429 response handling
+- [ ] Add Redis token and request bucket infrastructure
+- [ ] Enforce per-key limits on proxy requests
+- [ ] Respond with 429 and Retry-After header on limit exceeded
+- [ ] Integrate with key store for config-driven policy
 
-We are delivering an LLM Proxy Service that sits between internal developers/applications and Azure OpenAI instances. The proxy provides a secure, consistent, and scalable way for teams to use large language models without directly managing Azure resources.
+### Support Proxy Keys for Apps and Users With Resource-constrained Rate Limits
+- [ ] Design key provisioning system for per-app and per-user proxy keys
+- [ ] UI/API to create, assign, and manage proxy keys scoped to apps/users
+- [ ] Allow setting tpm/rate limits as a fraction/portion of a parent resource quota per key
+- [ ] Enforce per-key and per-parent resource total accounting in the ratelimiter logic
+- [ ] Allow real-time audit and usage tracking per key and aggregate at resource level
+- [ ] Documentation for best practices and admin workflows
 
-## Business Context
+### Track and export per-request usage metrics, including tokens, cost, latency, status
+- [ ] Instrument request pipeline for token usage, cost, and latency
+- [ ] Aggregate and persist usage metrics to Redis/Cosmos
+- [ ] Implement periodic rollups to DB for long-term reporting
+- [ ] Support CSV/JSON export endpoints
 
-The organization is expanding use of AI services across multiple teams and client environments. A proxy approach allows centralised governance, rate limiting per application, cost control, and future-proof flexibility, while still enabling developer speed and compatibility with existing SDKs.
+### Enforce model/endpoint allow-deny policy and context/token caps on all proxy traffic
+- [ ] Design per-key/model (and org) policy definitions
+- [ ] Middleware to check/deny requests per policy
+- [ ] UI/API for creating/updating policies
+- [ ] Tests for allowed/denied model scenarios
 
-**1.1 Key Objectives**
+### Expand OpenAI endpoint support to cover all v1 endpoints: completions, embeddings, files, fine-tunes, etc.
+- [ ] Map and implement missing endpoints
+- [ ] Ensure provider adapters route/transform as required
+- [ ] Add e2e and conformance tests for all endpoints
 
-1. Provide a unified API gateway for Azure OpenAI access.
-2. Ensure secure authentication and role-based control.
-3. Support rate limiting, quotas, and usage tracking for accountability.
-4. Remain compatible with existing OpenAI SDKs (drop-in replacement).
-5. Deploy flexibly to multiple client environments with minimal overhead.
-6. Enable future extension to managed identity / Entra-based authentication.
+### Integrate OpenTelemetry (tracing, RPS/timing/tokens/cost/error metrics) into proxy requests
+- [ ] Instrument traces for each API call
+- [ ] Emit key metrics (errors, rps, tokens, costs)
+- [ ] Add Grafana/Prometheus/OpenTelemetry backend docs/support
 
-# **2. Business Context**
+### Add Entra ID JWT authentication for proxy API users (optional, phase 2)
+- [ ] Add Entra ID token JWT verification to proxy
+- [ ] Map roles/permissions from claims
+- [ ] Support mixed API-key + JWT environments
 
-**2.1 Target Audience**
+### Switch AOAI upstream authentication to Managed Identity
+- [ ] Integrate managed identity token flow for Azure OpenAI
+- [ ] Fallback to API keys if MI not configured
+- [ ] Rotate identity tokens on TTL expiry
 
-| **Stakeholder Group** | **Needs**                                          | **Impact**                                      |
-| --------------------- | -------------------------------------------------- | ----------------------------------------------- |
-| Developers            | Simple, drop-in compatible API for OpenAI SDKs     | Faster onboarding, less friction                |
-| IT / Security         | Centralized governance, authentication, audit logs | Stronger compliance, minimized key sprawl       |
-| Product Teams         | Reliable, scalable access to AI models             | Consistent performance & reduced downtime       |
-| Clients               | Deployable solution in their infrastructure        | Confidence in security & control over resources |
+### Apply request/response log redaction and support configurable log retention
+- [ ] Add configurable redaction policy for logs
+- [ ] Implement retention policy and automated cleanup
+- [ ] Ensure admin/audit logs follow retention rules
 
-**2.2 Business Benefits**
+### Dynamic Model Catalog and API Route Hot Reload
+- [ ] Use Postgres as source of truth for model/route registrations
+- [ ] Design schema and API endpoints for CRUD of model catalog entries
+- [ ] Ensure admin UI supports live registration/updating of models and aliases
+- [ ] Sync updated catalog to Redis for fast access by proxy
+- [ ] Implement hot-reloading logic: proxy listens for changes and (re)registers API routes on-the-fly
+- [ ] Guarantee zero downtime/connection dropping when updating routes
+- [ ] Add validation and conflict detection for overlapping or malformed routes
 
-| **Benefit**                | **Metric**                       | **Expected Impact**                    |
-| -------------------------- | -------------------------------- | -------------------------------------- |
-| Centralized access control | Number of unmanaged keys reduced | Lower security risk                    |
-| Cost transparency          | Per-tenant usage reports         | Improved cost allocation & forecasting |
-| Developer velocity         | Time to first use of models      | Hours → Minutes                        |
-| Flexibility                | Deployable across Azure tenants  | Faster client rollouts                 |
+## Admin/API & UI
+### Build admin endpoints for management of routing rules, model aliases, and usage policies
+- [ ] CRUD endpoints for routing rules/model aliases
+- [ ] Persist policy/routing meta to DB
+- [ ] Integrate API with Nuxt admin frontend
 
-# **3. Technical Architecture**
+### Implement dashboards for real-time and historical usage (tokens, cost, latency, error rates)
+- [ ] API endpoints for aggregated usage data
+- [ ] UI (charts/tables) for per-app/team/client metrics
+- [ ] Export capabilities (CSV/JSON)
 
-**3.1 High-Level Architecture**
+### UI for audit log exports showing user, time, and performed action
+- [ ] Structured export endpoint for audit logs
+- [ ] UI for filtered search/downloads by user/date/action
 
-Infrastructure Overview
+### Support key provisioning, revocation, expiry, and rotation from Nuxt admin
+- [ ] Build UI for key lifecycle actions
+- [ ] Backend endpoints for key operations/metadata
 
-- Azure Container Apps (two roles: Proxy & Admin)
-- Redis for rate limiting and caching
-- Cosmos DB (initial store) with option for Postgres later
-- Managed Identities for secure connection to Azure OpenAI
+### Surface model routing: allow admin to map models to AOAI/OpenAI deployments
+- [ ] UI and API to assign models to deployments
+- [ ] Validation and override logic for model aliasing
 
-System Components
+### Integrate role assignment and permission management via Entra ID
+- [ ] Entra ID role mapping CRUD in admin
+- [ ] API enforcement for admin-facing endpoints
 
-- Data Plane (Proxy): Handles SDK requests, applies authentication, rate limits, and forwards to AOAI.
-- Admin Plane (API + UI): Provides secure UI (Nuxt + Go BFF) for managing keys, roles, policies, and reporting usage.
-- Storage: Cosmos DB for metadata, Redis for performance-critical operations.
+### Enable app/team/client usage & cost CSV export from the admin UI
+- [ ] Add bulk export endpoints and UI flows
 
-Security Architecture
+## Platform, Security, & Infra
+### Implement central pluggable SecretResolver to resolve secret_ref formats at runtime
+- [ ] Design and implement the SecretResolver
+- [ ] Support env, kv://, db:// lookups with TTL caching
+- [ ] Replace direct secret usage throughout backend
 
-- Data plane: API key authentication (MVP) with plan to add Entra ID JWTs.
-- Admin plane: Entra ID login with app roles (llm.admin, llm.reader).
-- Managed Identity replaces raw keys for upstream AOAI access.
-- Audit logging for all admin actions.
+### Ensure no plaintext upstream secrets ever persist in DB; audit for secret_ref practices
+- [ ] Add secret persistence audit/scripts
+- [ ] Migrate all stored secrets to secret_ref
 
-**3.2 Detailed Architecture**
+### Complete VNET, PrivateLink, and private DNS Azure integration
+- [ ] Add Terraform/infra for end-to-end private connectivity
+- [ ] Update deployment runbooks/docs
 
-**3.2.1 Data Architecture**
+### Maintain or add Terraform modules provisioning the entire stack for new tenants
+- [ ] Modularize existing infrastructure Terraform
+- [ ] Document for tenant onboarding/extension
 
-| **Data Entity** | **Source** | **Destination**   | **Transform Logic**                   |
-| --------------- | ---------- | ----------------- | ------------------------------------- |
-| API Keys        | Admin UI   | Cosmos DB         | Hashing, role assignment              |
-| Rate Policies   | Admin UI   | Cosmos DB         | Stored as configs                     |
-| Usage Metrics   | Proxy      | Redis → Cosmos DB | Rollup & aggregation                  |
-| Routing Rules   | Admin UI   | Cosmos DB         | Model alias → AOAI deployment mapping |
+## Cost Controls & Analytics
+### Enforce app/team budgets—with 80%/100% alerting & automatic throttling
+- [ ] Add per-app/team budget config
+- [ ] Implement 80%/100% spend triggers/alerts
+- [ ] Trigger traffic throttling/downshift when exceeded
 
-**3.2.2 Integrations**
+### Convert token usage to dollars/euros/per-app costs and roll up by team/client
+- [ ] Token→cost conversion for each call
+- [ ] Aggregation/rollup by app/team/client
 
-| **Integration Point** | **Type**     | **Protocol**  | **Frequency**           | **Data Flow**                              |
-| --------------------- | ------------ | ------------- | ----------------------- | ------------------------------------------ |
-| Proxy → Azure OpenAI  | Service call | HTTPS         | Per request             | Forwarded requests (Managed Identity auth) |
-| Admin → Entra ID      | Auth         | OAuth2 / OIDC | Per login               | User identity + roles                      |
-| Proxy → Redis         | Cache        | TLS           | Per request             | Token buckets, key lookup                  |
-| Proxy → Cosmos DB     | Store        | TLS           | On cache miss / rollups | Key metadata, usage                        |
+### Create SIEM/PowerBI/EventHub/FinOps exports for usage, cost, error data
+- [ ] Build export pipeline for reporting
+- [ ] Doc integration with external analytics suites
 
-**3.2.3 System Dependencies**
+## SLOs & Operational Resilience
+### Instrument and test for <20ms P95 added proxy latency at 100 RPS
+- [ ] Add request/response timing/tracing
+- [ ] Load test for compliance
+- [ ] Report SLI/SLOs in dashboards
 
-- Azure Container Apps
-- Azure Cosmos DB (or Postgres future option)
-- Azure Redis Cache
-- Azure Entra ID (for admin auth)
-- Azure OpenAI Services
+### Deploy multi-zone Redis to achieve ≥99.9% uptime SLO
+- [ ] Configure multi-zone Redis for prod
+- [ ] Alerting/monitoring for failover scenarios
 
-# **4. Solution Components**
-
-**4.1 Data Plane (Proxy)**
-
-- Compatible with OpenAI SDKs.
-- API key authentication (future: Entra ID).
-- Rate limiting, quotas, and usage logging.
-- Managed Identity to call Azure OpenAI.
-
-**4.2 Admin Plane (API & UI)**
-
-- Nuxt frontend served from Go API (BFF model).
-- Entra ID authentication with role-based access.
-- Key provisioning and lifecycle management.
-- Usage dashboards and audit logs.
-
-# **5. Acceptance Criteria**
-
-Developers can call the proxy using standard OpenAI SDKs with only baseURL + proxy key.
-
-- Proxy enforces per-key rate limits and quotas (429 with Retry-After).
-- Responses (including streaming) are passed through correctly.
-- Admins can log in via Entra, manage API keys, and view usage.
-- No raw AOAI keys are exposed; Managed Identity is used.
-- Audit logs capture all admin actions.
-- Solution can be deployed in multiple client Azure environments via Terraform.
-
-# **6. Roadmap**
-
-Draft Roadmap
-
-- MVP (Q1): API key–based proxy + admin UI with key mgmt, usage logs, audit. Cosmos + Redis.
-- Phase 2: Add Entra ID authentication for data plane (JWT). Postgres adapter + migrations.
-- Phase 3: Advanced routing policies, cost reporting, optional CDN/WAF in front.
-- Phase 4: Multi-cloud portability (non-Azure clients).
+### (Optional/Future) Add WAF/CDN protection, explore multi-cloud deployments
+- [ ] Infra code and runbooks for WAF/CDN
+- [ ] Draft architecture for non-Azure support

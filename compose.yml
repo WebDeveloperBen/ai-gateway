@@ -10,8 +10,13 @@ services:
     volumes:
       - data:/var/lib/postgresql/data
 
-      # TODO: add redis
-      # TODO: add proxy app
-      # TODO: add admin app
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+
+  # TODO: add proxy app
+  # TODO: add admin app
 volumes:
   data:
