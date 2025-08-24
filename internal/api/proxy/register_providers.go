@@ -1,0 +1,31 @@
+// Package proxy provides the HTTP endpoints that proxy client requests
+// through the gateway to upstream LLM providers.
+package proxy
+
+import (
+	"net/http"
+
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/insurgence-ai/llm-gateway/internal/gateway"
+)
+
+var openAIPaths = []string{
+	"/v1/chat/completions",
+	"/v1/completions",
+	"/v1/embeddings",
+	// TODO: add more as needed
+}
+
+func RegisterProvider(grp *huma.Group, base string, core *gateway.Core) {
+	h := core.StreamingHandler()
+	for _, p := range openAIPaths {
+		huma.Register(grp, huma.Operation{
+			OperationID:   "proxy-" + base + p,
+			Method:        http.MethodPost,
+			Path:          base + p,
+			Summary:       "Proxy " + base + p,
+			DefaultStatus: http.StatusOK,
+			Tags:          []string{"Proxy", base},
+		}, h)
+	}
+}

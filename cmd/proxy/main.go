@@ -39,26 +39,7 @@ func main() {
 	// Shared keys store + hasher + authenticator
 	keyStore := keyspg.New(pool) // implements keys.Store (Reader+Writer)
 
-	// option A: default hasher
 	authn := auth.NewDefaultAPIKeyAuthenticator(keyStore)
-
-	// option B: explicit hasher params
-	// hasher := keys.NewArgon2IDHasher(1, 64*1024, 1, 32)
-	// authn  := auth.NewAPIKeyAuthenticator(keyStore, hasher)
-
-	// Provider router (AOAI)
-	aoai := azureopenai.New()
-	aoaiBase := mustEnv("AOAI_BASE_URL")
-	aoaiVer := envOr("AOAI_API_VERSION", "2024-07-01-preview")
-	if dep := envOr("AOAI_DEPLOY_GPT4O", "gpt4o"); dep != "" {
-		aoai.Global["gpt-4o"] = azureopenai.Entry{BaseURL: aoaiBase, Deployment: dep, APIVer: aoaiVer}
-	}
-	if dep := envOr("AOAI_DEPLOY_GPT4O_MINI", "gpt4o-mini"); dep != "" {
-		aoai.Global["gpt-4o-mini"] = azureopenai.Entry{BaseURL: aoaiBase, Deployment: dep, APIVer: aoaiVer}
-	}
-	if dep := os.Getenv("AOAI_DEPLOY_DEFAULT"); dep != "" {
-		aoai.Default = &azureopenai.Entry{BaseURL: aoaiBase, Deployment: dep, APIVer: aoaiVer}
-	}
 
 	// Transport chain
 	rl := allowAllLimiter{}
@@ -69,13 +50,18 @@ func main() {
 		gateway.WithRateLimit(rl),
 		gateway.WithMetrics(met),
 	)
-
-	core := gateway.NewCore(aoai, transport)
-
+	aoai := azureopenai.New()
+	aoai.Global["gpt-4o"] = azureopenai.Entry{
+		BaseURL:    "https://<your-aoai-resource>.openai.azure.com",
+		Deployment: "<your-deployment-name>",
+		APIVer:     "2024-07-01-preview",
+	}
+	core := gateway.NewCoreWithAdapters(transport, aoai)
 	grp := huma.NewGroup(api, "/api")
-	proxyapi.RegisterRoutes(grp, core)
+	proxyapi.RegisterProvider(grp, "/azure/openai/", core)
 
 	addr := config.Envs.AppPort
+
 	server.Start(addr, router)
 }
 

@@ -14,7 +14,7 @@ func SetupPublicTestAPI(
 	register func(grp *huma.Group),
 ) humatest.TestAPI {
 	_, api := humatest.New(t)
-	group := huma.NewGroup(api, "/api/v1")
+	group := huma.NewGroup(api, "/api")
 	register(group)
 	return api
 }
