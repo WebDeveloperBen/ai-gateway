@@ -1,4 +1,4 @@
-package guards
+package middleware
 
 import (
 	"context"
@@ -9,10 +9,12 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/insurgence-ai/llm-gateway/internal/admin/models"
 	"github.com/insurgence-ai/llm-gateway/internal/config"
 	"github.com/insurgence-ai/llm-gateway/internal/lib/exceptions"
+	"github.com/insurgence-ai/llm-gateway/internal/model"
 )
+
+type RequireFunc func(ctx huma.Context) error
 
 // Use is a convienance function that wraps and allows the use of middleware
 func Use(api huma.API, mw func(huma.API) func(huma.Context, func(huma.Context))) func(huma.Context, func(huma.Context)) {
@@ -23,6 +25,7 @@ func Use(api huma.API, mw func(huma.API) func(huma.Context, func(huma.Context)))
 }
 
 // TODO: update this to be relevant to this app
+
 func AuthenticationMiddleware(api huma.API) func(ctx huma.Context, next func(huma.Context)) {
 	return func(ctx huma.Context, next func(huma.Context)) {
 		authHeader := ctx.Header("Authorization")
@@ -32,7 +35,7 @@ func AuthenticationMiddleware(api huma.API) func(ctx huma.Context, next func(hum
 		}
 
 		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-		claims := &models.ScopedTokenClaims{}
+		claims := &model.ScopedTokenClaims{}
 
 		token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (any, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -51,26 +54,26 @@ func AuthenticationMiddleware(api huma.API) func(ctx huma.Context, next func(hum
 			return
 		}
 
-		session := models.UserClaims{
+		session := model.UserClaims{
 			UserID: userID,
 			Email:  claims.Email,
 		}
 
 		if claims.Organisation != nil && claims.Organisation.OrganisationID != uuid.Nil {
-			session.Organisations = []models.OrganisationMembership{*claims.Organisation}
+			session.Organisations = []model.OrganisationMembership{*claims.Organisation}
 		} else if len(claims.Organisations) > 0 {
 			session.Organisations = claims.Organisations
 		}
 
-		ctx = huma.WithValue(ctx, models.UserClaimsKey, session)
+		ctx = huma.WithValue(ctx, model.UserClaimsKey, session)
 		next(ctx)
 	}
 }
 
 // Accessors for handlers
 
-func GetUserSession(ctx context.Context) (models.UserClaims, bool) {
-	claims, ok := ctx.Value(models.UserClaimsKey).(models.UserClaims)
+func GetUserSession(ctx context.Context) (model.UserClaims, bool) {
+	claims, ok := ctx.Value(model.UserClaimsKey).(model.UserClaims)
 	return claims, ok
 }
 
@@ -89,4 +92,16 @@ func GetScopedOrganisationID(ctx context.Context) (uuid.UUID, error) {
 	}
 
 	return session.Organisations[0].OrganisationID, nil
+}
+
+func RequireMiddleware(api huma.API, checks ...RequireFunc) func(huma.Context, func(huma.Context)) {
+	return func(ctx huma.Context, next func(huma.Context)) {
+		for _, check := range checks {
+			if err := check(ctx); err != nil {
+				huma.WriteErr(api, ctx, http.StatusForbidden, "Forbidden", err)
+				return
+			}
+		}
+		next(ctx)
+	}
 }

@@ -1,4 +1,4 @@
-package admin
+package keys
 
 import (
 	"context"

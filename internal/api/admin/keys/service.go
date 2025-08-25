@@ -1,4 +1,4 @@
-package services
+package keys
 
 import (
 	"context"
@@ -9,14 +9,13 @@ import (
 
 	"github.com/oklog/ulid/v2"
 
-	"github.com/insurgence-ai/llm-gateway/internal/admin/models"
 	"github.com/insurgence-ai/llm-gateway/internal/keys"
 )
 
 type KeysService interface {
-	MintKey(ctx context.Context, req models.MintKeyRequest) (models.MintKeyResponse, error)
+	MintKey(ctx context.Context, req MintKeyRequest) (MintKeyResponse, error)
 	RevokeKey(ctx context.Context, keyID string) error
-	GetByKeyID(ctx context.Context, keyID string) (models.APIKey, error)
+	GetByKeyID(ctx context.Context, keyID string) (APIKey, error)
 }
 
 type keysService struct {
@@ -28,9 +27,9 @@ func NewKeysService(store keys.Store, hasher keys.Hasher) KeysService {
 	return &keysService{store: store, hasher: hasher}
 }
 
-func (s *keysService) MintKey(ctx context.Context, req models.MintKeyRequest) (models.MintKeyResponse, error) {
+func (s *keysService) MintKey(ctx context.Context, req MintKeyRequest) (MintKeyResponse, error) {
 	if req.Tenant == "" || req.App == "" {
-		return models.MintKeyResponse{}, errors.New("tenant & app required")
+		return MintKeyResponse{}, errors.New("tenant & app required")
 	}
 	prefix := req.Prefix
 	if prefix == "" {
@@ -43,14 +42,14 @@ func (s *keysService) MintKey(ctx context.Context, req models.MintKeyRequest) (m
 
 	secret := make([]byte, 32)
 	if _, err := rand.Read(secret); err != nil {
-		return models.MintKeyResponse{}, err
+		return MintKeyResponse{}, err
 	}
 	secretB64 := base64.RawStdEncoding.EncodeToString(secret)
 
 	// PHC (random salt is generated inside Hash)
 	phc, err := s.hasher.Hash(secret)
 	if err != nil {
-		return models.MintKeyResponse{}, err
+		return MintKeyResponse{}, err
 	}
 
 	// optional expiry
@@ -77,16 +76,16 @@ func (s *keysService) MintKey(ctx context.Context, req models.MintKeyRequest) (m
 		// CreatedAt is filled by DB default; ok to leave zero here
 	}
 	if err := s.store.Insert(ctx, k, phc); err != nil {
-		return models.MintKeyResponse{}, err
+		return MintKeyResponse{}, err
 	}
 
-	return models.MintKeyResponse{
+	return MintKeyResponse{
 		Token: keyID + "." + secretB64, // show ONCE
-		Key: models.APIKey{
+		Key: APIKey{
 			KeyID:     keyID,
 			Tenant:    req.Tenant,
 			App:       req.App,
-			Status:    models.KeyActive,
+			Status:    KeyActive,
 			ExpiresAt: exp,
 			LastFour:  last4,
 		},
@@ -97,16 +96,16 @@ func (s *keysService) RevokeKey(ctx context.Context, keyID string) error {
 	return s.store.UpdateStatus(ctx, keyID, keys.Revoked)
 }
 
-func (s *keysService) GetByKeyID(ctx context.Context, keyID string) (models.APIKey, error) {
+func (s *keysService) GetByKeyID(ctx context.Context, keyID string) (APIKey, error) {
 	rec, err := s.store.GetByKeyID(ctx, keyID)
 	if err != nil || rec == nil {
-		return models.APIKey{}, errors.New("not found")
+		return APIKey{}, errors.New("not found")
 	}
-	return models.APIKey{
+	return APIKey{
 		KeyID:      rec.KeyID,
 		Tenant:     rec.Tenant,
 		App:        rec.App,
-		Status:     models.KeyStatus(rec.Status),
+		Status:     KeyStatus(rec.Status),
 		ExpiresAt:  rec.ExpiresAt,
 		LastUsedAt: rec.LastUsedAt,
 		LastFour:   rec.LastFour,
