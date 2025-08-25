@@ -6,6 +6,7 @@ import (
 
 	"github.com/insurgence-ai/llm-gateway/internal/auth"
 	"github.com/insurgence-ai/llm-gateway/internal/config"
+	"github.com/insurgence-ai/llm-gateway/internal/loadbalancing"
 	"github.com/insurgence-ai/llm-gateway/internal/provider"
 	"github.com/insurgence-ai/llm-gateway/internal/provider/azureopenai"
 )
@@ -77,12 +78,7 @@ func NewAOAIE2E(t *testing.T, opts ...AOAIOption) *AOAITest {
 		t.Skipf("%s missing; set it or populate config.Envs.AzureOpenAiAPIKey via .env", o.KeyEnv)
 	}
 
-	ad := azureopenai.New()
-	ad.Global[o.Model] = azureopenai.Entry{
-		BaseURL:    o.BaseURL,
-		Deployment: o.Deployment,
-		APIVer:     o.APIVer,
-	}
+	ad := azureopenai.New(loadbalancing.NewRoundRobinSelector())
 	// Prefer explicit env var; otherwise fall back to config.Envs
 	if key != "" {
 		ad.Keys = provider.KeySource{EnvVar: o.KeyEnv}
@@ -112,12 +108,7 @@ func NewAOAIUnit(t *testing.T, opts ...AOAIUnitOption) *AOAITest {
 		f(&o)
 	}
 
-	ad := azureopenai.New()
-	ad.Global[o.Model] = azureopenai.Entry{
-		BaseURL:    o.BaseURL,
-		Deployment: o.Deployment,
-		APIVer:     o.APIVer,
-	}
+	ad := azureopenai.New(loadbalancing.NewRoundRobinSelector())
 
 	if o.Key != "" {
 		ad.Keys = provider.KeySource{ForTenant: func(string) string { return o.Key }}

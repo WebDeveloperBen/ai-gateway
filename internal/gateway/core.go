@@ -15,6 +15,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/insurgence-ai/llm-gateway/internal/auth"
+	"github.com/insurgence-ai/llm-gateway/internal/loadbalancing"
 	"github.com/insurgence-ai/llm-gateway/internal/provider"
 	"github.com/insurgence-ai/llm-gateway/internal/provider/azureopenai"
 	"github.com/insurgence-ai/llm-gateway/internal/provider/openai"
@@ -228,9 +229,8 @@ func NewCoreWithRegistry(rt http.RoundTripper, auth auth.Authenticator, reg *Reg
 	if err != nil {
 		panic(fmt.Sprintf("failed to load registry: %v", err))
 	}
-
-	azureAdapter := azureopenai.BuildProvider(deployments)
-	openaiAdapter := openai.BuildProvider(deployments)
+	azureAdapter := azureopenai.BuildProvider(deployments, loadbalancing.NewRoundRobinSelector())
+	openaiAdapter := openai.BuildProvider(deployments, loadbalancing.NewRoundRobinSelector())
 	adapters := []provider.Adapter{}
 	if azureAdapter != nil {
 		adapters = append(adapters, azureAdapter)

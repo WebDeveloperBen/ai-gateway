@@ -67,6 +67,21 @@ func (r *Registry) All(pattern string) ([]model.ModelDeployment, error) {
 	return all, nil
 }
 
+// DeploymentsForModel returns all deployments for a given model and tenant.
+func (r *Registry) DeploymentsForModel(mod, tenant string) ([]model.ModelDeployment, error) {
+	all, err := r.All("modelreg:*")
+	if err != nil {
+		return nil, err
+	}
+	var result []model.ModelDeployment
+	for _, d := range all {
+		if d.Model == mod && (tenant == "" || d.Tenant == tenant) {
+			result = append(result, d)
+		}
+	}
+	return result, nil
+}
+
 func (r *Registry) key(model, tenant string) string {
 	return fmt.Sprintf("modelreg:%s:%s", tenant, model)
 }
