@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/insurgence-ai/llm-gateway/internal/auth"
 	"github.com/insurgence-ai/llm-gateway/internal/provider"
 	"github.com/insurgence-ai/llm-gateway/internal/provider/azureopenai"
 	"github.com/insurgence-ai/llm-gateway/internal/provider/openai"
@@ -23,10 +24,10 @@ type Core struct {
 	MaxBody       int
 	Transport     http.RoundTripper
 	Adapters      []provider.Adapter
-	Authenticator Authenticator
+	Authenticator auth.Authenticator
 }
 
-func NewCoreWithAdapters(rt http.RoundTripper, auth Authenticator, adapters ...provider.Adapter) *Core {
+func NewCoreWithAdapters(rt http.RoundTripper, auth auth.Authenticator, adapters ...provider.Adapter) *Core {
 	if rt == nil {
 		rt = http.DefaultTransport
 	}
@@ -222,7 +223,7 @@ func writeProxyError(rw http.ResponseWriter, r *http.Request, err error) {
 // NewCoreWithRegistry builds Core from a model registry (via cache+db)
 // and dynamically wires up provider adapters (azure, openai, etc).
 // Any future providers can be added easily in this registration step.
-func NewCoreWithRegistry(rt http.RoundTripper, auth Authenticator, reg *Registry) *Core {
+func NewCoreWithRegistry(rt http.RoundTripper, auth auth.Authenticator, reg *Registry) *Core {
 	deployments, err := reg.All("modelreg:*")
 	if err != nil {
 		panic(fmt.Sprintf("failed to load registry: %v", err))

@@ -20,8 +20,8 @@ type KeysService interface {
 }
 
 type keysService struct {
-	store  keys.Store  // shared keys store (pg impl under internal/keys/postgres)
-	hasher keys.Hasher // Argon2ID hasher (internal/keys.NewArgon2IDHasher)
+	store  keys.Store
+	hasher keys.Hasher
 }
 
 func NewKeysService(store keys.Store, hasher keys.Hasher) KeysService {

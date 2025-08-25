@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/insurgence-ai/llm-gateway/internal/auth"
 )
 
 type RTFunc func(*http.Request) (*http.Response, error)
@@ -20,11 +22,7 @@ func Chain(base http.RoundTripper, mws ...func(http.RoundTripper) http.RoundTrip
 	return rt
 }
 
-type Authenticator interface {
-	Authenticate(*http.Request) (tenant, app string, err error)
-}
-
-func WithAuth(a Authenticator) func(http.RoundTripper) http.RoundTripper {
+func WithAuth(a auth.Authenticator) func(http.RoundTripper) http.RoundTripper {
 	return func(next http.RoundTripper) http.RoundTripper {
 		return RTFunc(func(r *http.Request) (*http.Response, error) {
 			_, _, err := a.Authenticate(r)

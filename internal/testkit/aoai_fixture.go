@@ -6,7 +6,6 @@ import (
 
 	"github.com/insurgence-ai/llm-gateway/internal/auth"
 	"github.com/insurgence-ai/llm-gateway/internal/config"
-	"github.com/insurgence-ai/llm-gateway/internal/gateway"
 	"github.com/insurgence-ai/llm-gateway/internal/provider"
 	"github.com/insurgence-ai/llm-gateway/internal/provider/azureopenai"
 )
@@ -15,7 +14,7 @@ type AOAITest struct {
 	Adapter       *azureopenai.Adapter
 	Model         string
 	BasePath      string // where you mount it in your API (used by tests)
-	Authenticator gateway.Authenticator
+	Authenticator auth.Authenticator
 }
 
 // AOAIOption Functional options for easy overrides in specific tests

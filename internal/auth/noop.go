@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-// AnyAPIKeyAuthenticator is for local testing/developlemnt usage only it removes authentication at the proxy
+// NoopAuthenticator is for local testing/developlemnt usage only it removes authentication at the proxy
 type NoopAuthenticator struct{}
 
 func (a *NoopAuthenticator) Authenticate(r *http.Request) (string, string, error) {

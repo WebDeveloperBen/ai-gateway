@@ -14,7 +14,7 @@ import (
 	"github.com/insurgence-ai/llm-gateway/internal/lib/exceptions"
 )
 
-// wrapper func
+// Use is a convienance function that wraps and allows the use of middleware
 func Use(api huma.API, mw func(huma.API) func(huma.Context, func(huma.Context))) func(huma.Context, func(huma.Context)) {
 	return func(ctx huma.Context, next func(huma.Context)) {
 		handler := mw(api) // create new instance on each request
@@ -68,6 +68,7 @@ func AuthenticationMiddleware(api huma.API) func(ctx huma.Context, next func(hum
 }
 
 // Accessors for handlers
+
 func GetUserSession(ctx context.Context) (models.UserClaims, bool) {
 	claims, ok := ctx.Value(models.UserClaimsKey).(models.UserClaims)
 	return claims, ok
