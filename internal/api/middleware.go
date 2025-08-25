@@ -9,9 +9,9 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/insurgence-ai/llm-gateway/internal/api/auth"
 	"github.com/insurgence-ai/llm-gateway/internal/config"
 	"github.com/insurgence-ai/llm-gateway/internal/lib/exceptions"
-	"github.com/insurgence-ai/llm-gateway/internal/model"
 )
 
 type RequireFunc func(ctx huma.Context) error
@@ -35,7 +35,7 @@ func AuthenticationMiddleware(api huma.API) func(ctx huma.Context, next func(hum
 		}
 
 		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-		claims := &model.ScopedTokenClaims{}
+		claims := &auth.ScopedTokenClaims{}
 
 		token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (any, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -54,26 +54,26 @@ func AuthenticationMiddleware(api huma.API) func(ctx huma.Context, next func(hum
 			return
 		}
 
-		session := model.UserClaims{
+		session := auth.UserClaims{
 			UserID: userID,
 			Email:  claims.Email,
 		}
 
 		if claims.Organisation != nil && claims.Organisation.OrganisationID != uuid.Nil {
-			session.Organisations = []model.OrganisationMembership{*claims.Organisation}
+			session.Organisations = []auth.OrganisationMembership{*claims.Organisation}
 		} else if len(claims.Organisations) > 0 {
 			session.Organisations = claims.Organisations
 		}
 
-		ctx = huma.WithValue(ctx, model.UserClaimsKey, session)
+		ctx = huma.WithValue(ctx, auth.UserClaimsKey, session)
 		next(ctx)
 	}
 }
 
 // Accessors for handlers
 
-func GetUserSession(ctx context.Context) (model.UserClaims, bool) {
-	claims, ok := ctx.Value(model.UserClaimsKey).(model.UserClaims)
+func GetUserSession(ctx context.Context) (auth.UserClaims, bool) {
+	claims, ok := ctx.Value(auth.UserClaimsKey).(auth.UserClaims)
 	return claims, ok
 }
 
