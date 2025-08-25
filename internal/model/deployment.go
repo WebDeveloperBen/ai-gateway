@@ -1,4 +1,4 @@
-package models
+package model
 
 type ModelDeployment struct {
 	Model      string            `json:"model"`

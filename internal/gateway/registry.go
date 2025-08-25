@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/insurgence-ai/llm-gateway/internal/kv"
-	"github.com/insurgence-ai/llm-gateway/internal/model/models"
+	"github.com/insurgence-ai/llm-gateway/internal/model"
 )
 
 type Registry struct {
@@ -20,7 +20,7 @@ func NewRegistry(ctx context.Context, store kv.Store) *Registry {
 	return &Registry{kv: store, ctx: ctx}
 }
 
-func (r *Registry) Add(md models.ModelDeployment, ttl time.Duration) error {
+func (r *Registry) Add(md model.ModelDeployment, ttl time.Duration) error {
 	b, err := json.Marshal(md)
 	if err != nil {
 		return err
@@ -28,7 +28,7 @@ func (r *Registry) Add(md models.ModelDeployment, ttl time.Duration) error {
 	return r.kv.Set(r.ctx, r.key(md.Model, md.Tenant), string(b), ttl)
 }
 
-func (r *Registry) Update(md models.ModelDeployment, ttl time.Duration) error {
+func (r *Registry) Update(md model.ModelDeployment, ttl time.Duration) error {
 	return r.Add(md, ttl)
 }
 
@@ -36,30 +36,30 @@ func (r *Registry) Remove(model, tenant string) error {
 	return r.kv.Del(r.ctx, r.key(model, tenant))
 }
 
-func (r *Registry) Get(model, tenant string) (models.ModelDeployment, bool, error) {
-	val, err := r.kv.Get(r.ctx, r.key(model, tenant))
+func (r *Registry) Get(mod, tenant string) (model.ModelDeployment, bool, error) {
+	val, err := r.kv.Get(r.ctx, r.key(mod, tenant))
 	if err != nil || val == "" {
-		return models.ModelDeployment{}, false, err
+		return model.ModelDeployment{}, false, err
 	}
-	var md models.ModelDeployment
+	var md model.ModelDeployment
 	if err := json.Unmarshal([]byte(val), &md); err != nil {
-		return models.ModelDeployment{}, false, err
+		return model.ModelDeployment{}, false, err
 	}
 	return md, true, nil
 }
 
-func (r *Registry) All(pattern string) ([]models.ModelDeployment, error) {
+func (r *Registry) All(pattern string) ([]model.ModelDeployment, error) {
 	keys, err := r.kv.Keys(r.ctx, pattern)
 	if err != nil {
 		return nil, err
 	}
-	var all []models.ModelDeployment
+	var all []model.ModelDeployment
 	for _, k := range keys {
 		v, _ := r.kv.Get(r.ctx, k)
 		if v == "" {
 			continue
 		}
-		var md models.ModelDeployment
+		var md model.ModelDeployment
 		if json.Unmarshal([]byte(v), &md) == nil {
 			all = append(all, md)
 		}
@@ -73,7 +73,7 @@ func (r *Registry) key(model, tenant string) string {
 
 // EnsureRegistryPopulated loads all model deployments from the registry, and if empty, calls the provided loader to seed the registry with initial deployments.
 // Returns the final set of all model deployments available in the registry.
-func EnsureRegistryPopulated(reg *Registry, loadFn func() []models.ModelDeployment) []models.ModelDeployment {
+func EnsureRegistryPopulated(reg *Registry, loadFn func() []model.ModelDeployment) []model.ModelDeployment {
 	all, err := reg.All("modelreg:*")
 	if err != nil {
 		log.Fatal("registry read failed: ", err)

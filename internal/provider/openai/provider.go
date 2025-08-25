@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/insurgence-ai/llm-gateway/internal/model/models"
+	"github.com/insurgence-ai/llm-gateway/internal/model"
 	"github.com/insurgence-ai/llm-gateway/internal/provider"
 )
 
@@ -31,7 +31,7 @@ func (a *Adapter) Prefix() string { return "/openai" }
 // BuildProvider builds and returns a provider.Adapter configured with all models/deployments.
 // Used to dynamically instantiate tenant/model/provider adapters from registry/model config at runtime.
 // Accepts all deployments, must filter & populate its own adapter-specific mapping.
-func BuildProvider(deployments []models.ModelDeployment) *Adapter {
+func BuildProvider(deployments []model.ModelDeployment) *Adapter {
 	has := false
 	adapter := New()
 	for _, md := range deployments {

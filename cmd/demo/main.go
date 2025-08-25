@@ -16,7 +16,7 @@ import (
 	"github.com/insurgence-ai/llm-gateway/internal/config"
 	"github.com/insurgence-ai/llm-gateway/internal/gateway"
 	"github.com/insurgence-ai/llm-gateway/internal/kv"
-	"github.com/insurgence-ai/llm-gateway/internal/model/models"
+	"github.com/insurgence-ai/llm-gateway/internal/model"
 	"github.com/insurgence-ai/llm-gateway/internal/server"
 )
 
@@ -69,8 +69,8 @@ func main() {
 }
 
 // loadAllModelDeploymentsFromDatabase is a stub for demonstration. Replace with real DB logic.
-func loadAllModelDeploymentsFromDatabase() []models.ModelDeployment {
-	return []models.ModelDeployment{
+func loadAllModelDeploymentsFromDatabase() []model.ModelDeployment {
+	return []model.ModelDeployment{
 		{Model: "gpt-4.1", Deployment: "dev-openai-gpt4-1", Provider: "azure", Tenant: "default", Meta: map[string]string{"APIVer": "2024-07-01-preview", "BaseURL": "https://dev-insurgence-openai.openai.azure.com"}},
 	}
 }
