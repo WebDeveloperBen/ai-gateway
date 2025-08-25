@@ -6,15 +6,13 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/insurgence-ai/llm-gateway/internal/admin/models"
-	"github.com/insurgence-ai/llm-gateway/internal/admin/services"
 )
 
 type Server struct {
-	Keys services.KeysService
+	Keys KeysService
 }
 
-func NewServer(keys services.KeysService) *Server {
+func NewServer(keys KeysService) *Server {
 	return &Server{Keys: keys}
 }
 
@@ -34,15 +32,15 @@ func (s *Server) RegisterRoutes(grp *huma.Group) {
 		Prefix   string         `json:"prefix,omitempty"`
 		Metadata map[string]any `json:"metadata,omitempty"`
 	}) (*struct {
-		Token string        `json:"token"`
-		Key   models.APIKey `json:"key"`
+		Token string `json:"token"`
+		Key   APIKey `json:"key"`
 	}, error,
 	) {
 		var ttl time.Duration
 		if in.TTL != nil {
 			ttl = *in.TTL
 		}
-		out, err := s.Keys.MintKey(ctx, models.MintKeyRequest{
+		out, err := s.Keys.MintKey(ctx, MintKeyRequest{
 			Tenant:   in.Tenant,
 			App:      in.App,
 			TTL:      ttl,
@@ -53,8 +51,8 @@ func (s *Server) RegisterRoutes(grp *huma.Group) {
 			return nil, huma.Error500InternalServerError("mint failed")
 		}
 		return &struct {
-			Token string        `json:"token"`
-			Key   models.APIKey `json:"key"`
+			Token string `json:"token"`
+			Key   APIKey `json:"key"`
 		}{Token: out.Token, Key: out.Key}, nil
 	})
 
