@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/insurgence-ai/llm-gateway/internal/loadbalancing"
+	"github.com/insurgence-ai/llm-gateway/internal/gateway/loadbalancing"
 	"github.com/insurgence-ai/llm-gateway/internal/model"
 	"github.com/insurgence-ai/llm-gateway/internal/provider"
 )

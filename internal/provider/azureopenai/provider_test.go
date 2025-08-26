@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/insurgence-ai/llm-gateway/internal/loadbalancing"
+	"github.com/insurgence-ai/llm-gateway/internal/gateway/loadbalancing"
 	"github.com/insurgence-ai/llm-gateway/internal/provider"
 	aoai "github.com/insurgence-ai/llm-gateway/internal/provider/azureopenai"
 )
