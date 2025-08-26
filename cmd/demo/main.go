@@ -12,10 +12,10 @@ import (
 	"github.com/insurgence-ai/llm-gateway/internal/api/docs"
 	"github.com/insurgence-ai/llm-gateway/internal/api/health"
 	"github.com/insurgence-ai/llm-gateway/internal/api/proxy"
-	"github.com/insurgence-ai/llm-gateway/internal/auth"
 	"github.com/insurgence-ai/llm-gateway/internal/config"
 	"github.com/insurgence-ai/llm-gateway/internal/drivers/kv"
 	"github.com/insurgence-ai/llm-gateway/internal/gateway"
+	"github.com/insurgence-ai/llm-gateway/internal/gateway/auth"
 	"github.com/insurgence-ai/llm-gateway/internal/model"
 	"github.com/insurgence-ai/llm-gateway/internal/server"
 )

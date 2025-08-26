@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/insurgence-ai/llm-gateway/internal/auth"
+	"github.com/insurgence-ai/llm-gateway/internal/gateway/auth"
 )
 
 type RTFunc func(*http.Request) (*http.Response, error)

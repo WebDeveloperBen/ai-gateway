@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/insurgence-ai/llm-gateway/internal/auth"
 	"github.com/insurgence-ai/llm-gateway/internal/config"
-	"github.com/insurgence-ai/llm-gateway/internal/loadbalancing"
+	"github.com/insurgence-ai/llm-gateway/internal/gateway/auth"
+	"github.com/insurgence-ai/llm-gateway/internal/gateway/loadbalancing"
 	"github.com/insurgence-ai/llm-gateway/internal/provider"
 	"github.com/insurgence-ai/llm-gateway/internal/provider/azureopenai"
 )
