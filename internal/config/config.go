@@ -17,19 +17,23 @@ var Envs = loadConfig()
 func Reload() { Envs = loadConfig() }
 
 type Config struct {
-	ProxyPort          string
-	AdminPort          string
-	AuthSecret         string
-	DBConnectionString string
-	JWTExpiration      time.Duration
-	IsProd             bool
-	ApplicationName    string
-	Version            string
-	AzureOpenAiAPIKey  string
-	KVBackend          string
-	DBBackend          model.RepositoryBackend
-	RedisAddr          string
-	RedisPW            string
+	ProxyPort                   string
+	AdminPort                   string
+	AuthSecret                  string
+	DBConnectionString          string
+	JWTExpiration               time.Duration
+	IsProd                      bool
+	ApplicationName             string
+	Version                     string
+	AzureOpenAiAPIKey           string
+	KVBackend                   string
+	DBBackend                   model.RepositoryBackend
+	RedisAddr                   string
+	RedisPW                     string
+	AppRegistrationClientID     string
+	AppRegistrationClientSecret string
+	AppRegistrationTenantID     string
+	AppRegistrationRedirectURL  string
 }
 
 // Loads all environment variables from the .env file
@@ -40,19 +44,23 @@ func loadConfig() Config {
 		}
 	}
 	return Config{
-		ProxyPort:          getEnv("PROXY_PORT", ":8000"),
-		AdminPort:          getEnv("ADMIN_PORT", ":8080"),
-		JWTExpiration:      getEnvAsDuration("JWT_EXPIRATION_IN_SECONDS", time.Hour),
-		IsProd:             getEnvAsBoolean("IS_PROD", true),
-		DBConnectionString: getEnv("POSTGRES_DNS", ""),
-		AuthSecret:         getEnv("AUTH_SECRET", "superSecretNeedsToBeChanged"),
-		ApplicationName:    getEnv("APPLICATION_NAME", "LLM Gateway"),
-		Version:            getEnv("VERSION", "v1.0.0"),
-		AzureOpenAiAPIKey:  getEnv("AZURE_OPENAI_API_KEY", ""),
-		KVBackend:          getEnv("KV_BACKEND", "memory"),
-		RedisAddr:          getEnv("REDIS_ADDR", ""),
-		RedisPW:            getEnv("REDIS_PASSWORD", ""),
-		DBBackend:          model.RepositoryBackend(getEnv("DB_BACKEND", "postgres")),
+		ProxyPort:                   getEnv("PROXY_PORT", ":8000"),
+		AdminPort:                   getEnv("ADMIN_PORT", ":8080"),
+		JWTExpiration:               getEnvAsDuration("JWT_EXPIRATION_IN_SECONDS", time.Hour),
+		IsProd:                      getEnvAsBoolean("IS_PROD", true),
+		DBConnectionString:          getEnv("POSTGRES_DNS", ""),
+		AuthSecret:                  getEnv("AUTH_SECRET", "superSecretNeedsToBeChanged"),
+		ApplicationName:             getEnv("APPLICATION_NAME", "LLM Gateway"),
+		Version:                     getEnv("VERSION", "v1.0.0"),
+		AzureOpenAiAPIKey:           getEnv("AZURE_OPENAI_API_KEY", ""),
+		KVBackend:                   getEnv("KV_BACKEND", "memory"),
+		RedisAddr:                   getEnv("REDIS_ADDR", ""),
+		RedisPW:                     getEnv("REDIS_PASSWORD", ""),
+		DBBackend:                   model.RepositoryBackend(getEnv("DB_BACKEND", "postgres")),
+		AppRegistrationClientID:     os.Getenv("AZURE_APP_REGISTRATION_CLIENT_ID"),
+		AppRegistrationClientSecret: os.Getenv("AZURE_APP_REGISTRATION_CLIENT_SECRET"),
+		AppRegistrationTenantID:     os.Getenv("AZURE_APP_REGISTRATION_TENANT_ID"),
+		AppRegistrationRedirectURL:  getEnv("AZURE_APP_REGISTRATION_REDIRECT_URL", "http://localhost:8000/auth/callback"),
 	}
 }
 

@@ -9,6 +9,8 @@ import (
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	middleware "github.com/insurgence-ai/llm-gateway/internal/api"
+	apiauth "github.com/insurgence-ai/llm-gateway/internal/api/auth"
 	"github.com/insurgence-ai/llm-gateway/internal/api/docs"
 	"github.com/insurgence-ai/llm-gateway/internal/api/health"
 	"github.com/insurgence-ai/llm-gateway/internal/api/proxy"
@@ -52,11 +54,24 @@ func main() {
 	authn := auth.NewDefaultAPIKeyAuthenticator(keyStore)
 
 	router, humaCfg := server.New(cfg)
-	api := humachi.New(router, humaCfg)
+	base := humachi.New(router, humaCfg)
 
 	docs.RegisterRoutes(router)
 
-	health.RegisterPublicRoutes(api)
+	health.RegisterPublicRoutes(base)
+
+	// Route groups
+	protected := huma.NewGroup(base, "/api/v1/admin")
+	public := huma.NewGroup(base, "/api")
+	auth := huma.NewGroup(base, "/auth")
+	protected.UseMiddleware(middleware.Use(base, middleware.AuthenticationMiddleware))
+
+	oidcService, err := apiauth.NewOIDCService(ctx, apiauth.OIDCConfig{ClientID: cfg.AppRegistrationClientID, ClientSecret: cfg.AppRegistrationClientSecret, TenantID: cfg.AppRegistrationTenantID, RedirectURL: cfg.AppRegistrationRedirectURL})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	apiauth.RegisterAuthRoutes(auth, oidcService)
 
 	transport := gateway.Chain(
 		http.DefaultTransport,
@@ -65,8 +80,7 @@ func main() {
 	)
 
 	core := gateway.NewCoreWithRegistry(transport, authn, reg)
-	grp := huma.NewGroup(api, "/api")
-	proxy.RegisterProvider(grp, "/azure/openai", core)
+	proxy.RegisterProvider(public, "/azure/openai", core)
 
 	addr := config.Envs.ProxyPort
 	server.Start(addr, router)
