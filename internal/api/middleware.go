@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/insurgence-ai/llm-gateway/internal/api/auth"
 	"github.com/insurgence-ai/llm-gateway/internal/config"
-	"github.com/insurgence-ai/llm-gateway/internal/lib/exceptions"
+	"github.com/insurgence-ai/llm-gateway/internal/exceptions"
 )
 
 type RequireFunc func(ctx huma.Context) error

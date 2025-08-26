@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/insurgence-ai/llm-gateway/internal/lib"
+	"github.com/insurgence-ai/llm-gateway/internal/logger"
 )
 
 type HandlerFunc[In any, Out any] func(ctx context.Context, input *In) (*Out, error)
@@ -38,7 +38,7 @@ func Handle[In any, Out any](handler HandlerFunc[In, Out]) HandlerFunc[In, Out] 
 			return out, nil
 		}
 
-		lib.LogError(ctx, err, "handler error")
+		logger.LogError(ctx, err, "handler error")
 
 		if apiErr, ok := err.(APIError); ok {
 			detailErrors := make([]error, 0, len(apiErr.ErrorDetails()))

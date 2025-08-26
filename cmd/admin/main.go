@@ -4,64 +4,58 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/insurgence-ai/llm-gateway/internal/admin/services"
-	"github.com/insurgence-ai/llm-gateway/internal/api/admin"
+	"github.com/insurgence-ai/llm-gateway/internal/api/admin/keys"
 	"github.com/insurgence-ai/llm-gateway/internal/api/docs"
 	"github.com/insurgence-ai/llm-gateway/internal/api/health"
-	"github.com/insurgence-ai/llm-gateway/internal/keys"
-	"github.com/insurgence-ai/llm-gateway/internal/keys/postgres"
+	"github.com/insurgence-ai/llm-gateway/internal/config"
+	"github.com/insurgence-ai/llm-gateway/internal/drivers/db"
+	"github.com/insurgence-ai/llm-gateway/internal/model"
+	keyrepo "github.com/insurgence-ai/llm-gateway/internal/repository/keys"
 )
 
 func main() {
-	pool, err := pgxpool.New(context.Background(), mustEnv("DATABASE_URL"))
+	cfg := config.Envs
+	ctx := context.Background()
+
+	// Utilities
+	hasher := keyrepo.NewArgon2IDHasher(1, 64*1024, 1, 32)
+
+	// Drivers
+	pg, err := db.NewPostgresDriver(ctx, cfg.DBConnectionString)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer pool.Close()
+	defer pg.Pool.Close()
 
-	// shared keys store + hasher
-	keyStore := postgres.New(pool)                      // implements keys.Store
-	hasher := keys.NewArgon2IDHasher(1, 64*1024, 1, 32) // t=1, m=64MiB, p=1, 32-byte key
+	// Repositories
+	keyStore, err := keyrepo.NewKeyRepository(ctx, model.RepositoryConfig{Backend: model.RepositoryBackend(cfg.DBBackend), PGPool: pg.Pool})
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// admin service
-	keysSvc := services.NewKeysService(keyStore, hasher)
+	// Services
+	keysSvc := keys.NewService(keyStore, hasher)
 
-	// http
+	// Routers
 	r := chi.NewRouter()
-	cfg := huma.DefaultConfig("Admin API", "v1")
 
-	api := humachi.New(r, cfg)
+	api := humachi.New(r, huma.DefaultConfig("Admin API", "v1"))
 
 	grp := huma.NewGroup(api, "/api")
 
+	// Routes
 	docs.RegisterRoutes(r)
 
 	health.RegisterPublicRoutes(api)
 
-	admin.NewServer(keysSvc).RegisterRoutes(grp)
+	keys.NewRouter(keysSvc).RegisterRoutes(grp)
 
-	addr := envOr("ADMIN_ADDR", ":8081")
+	// Server Start
+	addr := cfg.AdminPort
 	log.Fatal(http.ListenAndServe(addr, r))
-}
-
-func envOr(k, def string) string {
-	if v := os.Getenv(k); v != "" {
-		return v
-	}
-	return def
-}
-
-func mustEnv(k string) string {
-	v := os.Getenv(k)
-	if v == "" {
-		log.Fatalf("missing required env %s", k)
-	}
-	return v
 }

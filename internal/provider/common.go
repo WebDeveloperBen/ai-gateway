@@ -120,7 +120,7 @@ func ModelOrDefault(model string, hasExact func(string) bool, single func() (str
 // KeySource resolves secrets for upstream auth either from a per-tenant function
 // or from an environment variable.
 type KeySource struct {
-	EnvVar    string                     // e.g. "OPENAI_API_KEY" / "AOAI_API_KEY"
+	EnvVar    string                     // e.g. "OPENAI_API_KEY" / "AZURE_OPENAI_API_KEY"
 	ForTenant func(tenant string) string // optional; if returns non-empty, wins
 }
 

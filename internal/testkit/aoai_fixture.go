@@ -2,6 +2,7 @@ package testkit
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/insurgence-ai/llm-gateway/internal/auth"
@@ -15,7 +16,7 @@ type AOAITest struct {
 	Adapter       *azureopenai.Adapter
 	Model         string
 	BasePath      string // where you mount it in your API (used by tests)
-	Authenticator auth.Authenticator
+	Authenticator auth.KeyAuthenticator
 }
 
 // AOAIOption Functional options for easy overrides in specific tests
@@ -43,7 +44,7 @@ type aoaiUnitOpts struct {
 // NewAOAIE2E loads env, refreshes config, validates required vars, and returns a ready adapter.
 // Defaults come from environment so you can configure once in .env:
 //
-//	AOAI_BASE_URL      = https://dev-insurgence-openai.openai.azure.com
+//	AZURE_OPENAI_ENDPOINT      = https://dev-insurgence-openai.openai.azure.com
 //	AOAI_DEPLOYMENT    = dev-openai-gpt4-1
 //	AOAI_API_VERSION   = 2024-07-01-preview
 //	AZURE_OPENAI_API_KEY = <secret>        (or choose your own via AOAI_KEY_ENV)
@@ -60,8 +61,8 @@ func NewAOAIE2E(t *testing.T, opts ...AOAIOption) *AOAITest {
 
 	o := aoaiOpts{
 		Model:      getenvDefault("AOAI_MODEL", "dev-openai-gpt4-1"),
-		BaseURL:    os.Getenv("AOAI_BASE_URL"),
-		Deployment: os.Getenv("AOAI_DEPLOYMENT"),
+		BaseURL:    getenvDefault("AZURE_OPENAI_ENDPOINT", "https://dev-insurgence-openai.openai.azure.com"),
+		Deployment: getenvDefault("AOAI_DEPLOYMENT", "dev-insurgence-openai"),
 		APIVer:     getenvDefault("AOAI_API_VERSION", "2024-07-01-preview"),
 		KeyEnv:     getenvDefault("AOAI_KEY_ENV", "AZURE_OPENAI_API_KEY"),
 	}
@@ -71,7 +72,7 @@ func NewAOAIE2E(t *testing.T, opts ...AOAIOption) *AOAITest {
 
 	// Fail/skip loudly with actionable messages.
 	if o.BaseURL == "" || o.Deployment == "" {
-		t.Skipf("AOAI_BASE_URL and/or AOAI_DEPLOYMENT missing; set them in your .env or pass WithBaseURL/WithDeployment")
+		t.Skipf("AZURE_OPENAI_ENDPOINT and/or AOAI_DEPLOYMENT missing; set them in your .env or pass WithBaseURL/WithDeployment")
 	}
 	key := os.Getenv(o.KeyEnv)
 	if key == "" && config.Envs.AzureOpenAiAPIKey == "" {
@@ -84,6 +85,16 @@ func NewAOAIE2E(t *testing.T, opts ...AOAIOption) *AOAITest {
 		ad.Keys = provider.KeySource{EnvVar: o.KeyEnv}
 	} else {
 		ad.Keys = provider.KeySource{ForTenant: func(string) string { return config.Envs.AzureOpenAiAPIKey }}
+	}
+
+	// Fix for E2E: set mapping for the tested model
+	ad.Instances[strings.ToLower(o.Model)] = []azureopenai.Entry{
+		{
+			BaseURL:    o.BaseURL,
+			Deployment: o.Deployment,
+			APIVer:     o.APIVer,
+			SecretRef:  "",
+		},
 	}
 
 	return &AOAITest{
@@ -114,7 +125,16 @@ func NewAOAIUnit(t *testing.T, opts ...AOAIUnitOption) *AOAITest {
 		ad.Keys = provider.KeySource{ForTenant: func(string) string { return o.Key }}
 	} else if o.KeyEnv != "" {
 		ad.Keys = provider.KeySource{EnvVar: o.KeyEnv}
-	} // else leave default EnvVar="AOAI_API_KEY" (rare in unit tests)
+	}
+
+	ad.Instances[strings.ToLower(o.Model)] = []azureopenai.Entry{
+		{
+			BaseURL:    o.BaseURL,
+			Deployment: o.Deployment,
+			APIVer:     o.APIVer,
+			SecretRef:  "",
+		},
+	}
 
 	return &AOAITest{Adapter: ad, Model: o.Model, BasePath: "/azure/openai", Authenticator: &auth.NoopAuthenticator{}}
 }

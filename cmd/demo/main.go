@@ -14,8 +14,8 @@ import (
 	"github.com/insurgence-ai/llm-gateway/internal/api/proxy"
 	"github.com/insurgence-ai/llm-gateway/internal/auth"
 	"github.com/insurgence-ai/llm-gateway/internal/config"
+	"github.com/insurgence-ai/llm-gateway/internal/drivers/kv"
 	"github.com/insurgence-ai/llm-gateway/internal/gateway"
-	"github.com/insurgence-ai/llm-gateway/internal/kv"
 	"github.com/insurgence-ai/llm-gateway/internal/model"
 	"github.com/insurgence-ai/llm-gateway/internal/server"
 )
@@ -25,8 +25,8 @@ func main() {
 	cfg := config.Envs
 
 	// KV store
-	kvStore, err := kv.New(kv.Config{
-		Backend:   kv.Backend(cfg.KVBackend),
+	kvStore, err := kv.NewDriver(kv.Config{
+		Backend:   kv.KvStoreType(cfg.KVBackend),
 		RedisAddr: cfg.RedisAddr,
 		RedisPW:   cfg.RedisPW,
 		RedisDB:   0, // change as needed
@@ -64,7 +64,7 @@ func main() {
 	grp := huma.NewGroup(api, "/api")
 	proxy.RegisterProvider(grp, "/azure/openai", core)
 
-	addr := config.Envs.AppPort
+	addr := config.Envs.ProxyPort
 	server.Start(addr, router)
 }
 

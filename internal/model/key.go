@@ -1,20 +1,22 @@
-package keys
+package model
 
-import "time"
+import (
+	"time"
+)
 
-type Status string
+type KeyStatus string
 
 const (
-	Active  Status = "active"
-	Revoked Status = "revoked"
-	Expired Status = "expired"
+	KeyActive  KeyStatus = "active"
+	KeyRevoked KeyStatus = "revoked"
+	KeyExpired KeyStatus = "expired"
 )
 
 type Key struct {
 	KeyID      string
 	Tenant     string
 	App        string
-	Status     Status
+	Status     KeyStatus
 	ExpiresAt  *time.Time
 	LastUsedAt *time.Time
 	LastFour   string

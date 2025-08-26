@@ -14,31 +14,8 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/insurgence-ai/llm-gateway/internal/auth"
-	"github.com/insurgence-ai/llm-gateway/internal/loadbalancing"
 	"github.com/insurgence-ai/llm-gateway/internal/provider"
-	"github.com/insurgence-ai/llm-gateway/internal/provider/azureopenai"
-	"github.com/insurgence-ai/llm-gateway/internal/provider/openai"
 )
-
-type Core struct {
-	MaxBody       int
-	Transport     http.RoundTripper
-	Adapters      []provider.Adapter
-	Authenticator auth.Authenticator
-}
-
-func NewCoreWithAdapters(rt http.RoundTripper, auth auth.Authenticator, adapters ...provider.Adapter) *Core {
-	if rt == nil {
-		rt = http.DefaultTransport
-	}
-	return &Core{
-		MaxBody:       1 << 20,
-		Transport:     rt,
-		Adapters:      adapters,
-		Authenticator: auth,
-	}
-}
 
 func (c *Core) StreamingHandler() func(ctx context.Context, _ *struct{}) (*huma.StreamResponse, error) {
 	return func(ctx context.Context, _ *struct{}) (*huma.StreamResponse, error) {
@@ -219,26 +196,6 @@ func writeProxyError(rw http.ResponseWriter, r *http.Request, err error) {
 		detail += " | adapters: [" + have + "]"
 	}
 	_, _ = fmt.Fprintf(rw, `{"title":"Bad Gateway","status":502,"detail":%q}`, detail)
-}
-
-// NewCoreWithRegistry builds Core from a model registry (via cache+db)
-// and dynamically wires up provider adapters (azure, openai, etc).
-// Any future providers can be added easily in this registration step.
-func NewCoreWithRegistry(rt http.RoundTripper, auth auth.Authenticator, reg *Registry) *Core {
-	deployments, err := reg.All("modelreg:*")
-	if err != nil {
-		panic(fmt.Sprintf("failed to load registry: %v", err))
-	}
-	azureAdapter := azureopenai.BuildProvider(deployments, loadbalancing.NewRoundRobinSelector())
-	openaiAdapter := openai.BuildProvider(deployments, loadbalancing.NewRoundRobinSelector())
-	adapters := []provider.Adapter{}
-	if azureAdapter != nil {
-		adapters = append(adapters, azureAdapter)
-	}
-	if openaiAdapter != nil {
-		adapters = append(adapters, openaiAdapter)
-	}
-	return NewCoreWithAdapters(rt, auth, adapters...)
 }
 
 // ---- helpers ----

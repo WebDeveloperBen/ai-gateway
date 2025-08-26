@@ -138,7 +138,7 @@ func TestRewrite_IncompleteRoute_Error(t *testing.T) {
 
 func TestRewrite_EnvFallback_WhenNoTenantKey(t *testing.T) {
 	ad := aoai.New(loadbalancing.NewRoundRobinSelector())
-	ad.Keys = provider.KeySource{EnvVar: "AOAI_API_KEY"} // default
+	ad.Keys = provider.KeySource{EnvVar: "AZURE_OPENAI_API_KEY"} // default
 
 	ad.Instances[""] = []aoai.Entry{{
 		BaseURL:    "defres.openai.azure.com",
@@ -146,7 +146,7 @@ func TestRewrite_EnvFallback_WhenNoTenantKey(t *testing.T) {
 		APIVer:     "2024-07-01-preview",
 	}}
 
-	t.Setenv("AOAI_API_KEY", "envk")
+	t.Setenv("AZURE_OPENAI_API_KEY", "envk")
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/embeddings", bytes.NewBufferString(`{"model":"gpt-4o"}`))
 	err := ad.Rewrite(req, "/v1/embeddings", provider.ReqInfo{})

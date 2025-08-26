@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/insurgence-ai/llm-gateway/internal/model"
 	"github.com/joho/godotenv"
 )
 
@@ -16,7 +17,8 @@ var Envs = loadConfig()
 func Reload() { Envs = loadConfig() }
 
 type Config struct {
-	AppPort            string
+	ProxyPort          string
+	AdminPort          string
 	AuthSecret         string
 	DBConnectionString string
 	JWTExpiration      time.Duration
@@ -25,6 +27,7 @@ type Config struct {
 	Version            string
 	AzureOpenAiAPIKey  string
 	KVBackend          string
+	DBBackend          model.RepositoryBackend
 	RedisAddr          string
 	RedisPW            string
 }
@@ -37,7 +40,8 @@ func loadConfig() Config {
 		}
 	}
 	return Config{
-		AppPort:            getEnv("PORT", ":8000"),
+		ProxyPort:          getEnv("PROXY_PORT", ":8000"),
+		AdminPort:          getEnv("ADMIN_PORT", ":8080"),
 		JWTExpiration:      getEnvAsDuration("JWT_EXPIRATION_IN_SECONDS", time.Hour),
 		IsProd:             getEnvAsBoolean("IS_PROD", true),
 		DBConnectionString: getEnv("POSTGRES_DNS", ""),
@@ -48,6 +52,7 @@ func loadConfig() Config {
 		KVBackend:          getEnv("KV_BACKEND", "memory"),
 		RedisAddr:          getEnv("REDIS_ADDR", ""),
 		RedisPW:            getEnv("REDIS_PASSWORD", ""),
+		DBBackend:          model.RepositoryBackend(getEnv("DB_BACKEND", "postgres")),
 	}
 }
 

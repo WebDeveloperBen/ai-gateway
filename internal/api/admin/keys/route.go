@@ -12,7 +12,7 @@ type Server struct {
 	Keys KeysService
 }
 
-func NewServer(keys KeysService) *Server {
+func NewRouter(keys KeysService) *Server {
 	return &Server{Keys: keys}
 }
 

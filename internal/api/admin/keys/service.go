@@ -9,7 +9,8 @@ import (
 
 	"github.com/oklog/ulid/v2"
 
-	"github.com/insurgence-ai/llm-gateway/internal/keys"
+	"github.com/insurgence-ai/llm-gateway/internal/model"
+	"github.com/insurgence-ai/llm-gateway/internal/repository/keys"
 )
 
 type KeysService interface {
@@ -19,11 +20,11 @@ type KeysService interface {
 }
 
 type keysService struct {
-	store  keys.Store
+	store  keys.KeyRepository
 	hasher keys.Hasher
 }
 
-func NewKeysService(store keys.Store, hasher keys.Hasher) KeysService {
+func NewService(store keys.KeyRepository, hasher keys.Hasher) KeysService {
 	return &keysService{store: store, hasher: hasher}
 }
 
@@ -65,11 +66,11 @@ func (s *keysService) MintKey(ctx context.Context, req MintKeyRequest) (MintKeyR
 	}
 
 	// persist metadata via shared keys.Store
-	k := keys.Key{
+	k := model.Key{
 		KeyID:     keyID,
 		Tenant:    req.Tenant,
 		App:       req.App,
-		Status:    keys.Active,
+		Status:    model.KeyActive,
 		ExpiresAt: exp,
 		LastFour:  last4,
 		Metadata:  []byte("{}"),
@@ -85,7 +86,7 @@ func (s *keysService) MintKey(ctx context.Context, req MintKeyRequest) (MintKeyR
 			KeyID:     keyID,
 			Tenant:    req.Tenant,
 			App:       req.App,
-			Status:    KeyActive,
+			Status:    model.KeyActive,
 			ExpiresAt: exp,
 			LastFour:  last4,
 		},
@@ -93,7 +94,7 @@ func (s *keysService) MintKey(ctx context.Context, req MintKeyRequest) (MintKeyR
 }
 
 func (s *keysService) RevokeKey(ctx context.Context, keyID string) error {
-	return s.store.UpdateStatus(ctx, keyID, keys.Revoked)
+	return s.store.UpdateStatus(ctx, keyID, model.KeyRevoked)
 }
 
 func (s *keysService) GetByKeyID(ctx context.Context, keyID string) (APIKey, error) {
@@ -105,7 +106,7 @@ func (s *keysService) GetByKeyID(ctx context.Context, keyID string) (APIKey, err
 		KeyID:      rec.KeyID,
 		Tenant:     rec.Tenant,
 		App:        rec.App,
-		Status:     KeyStatus(rec.Status),
+		Status:     model.KeyStatus(rec.Status),
 		ExpiresAt:  rec.ExpiresAt,
 		LastUsedAt: rec.LastUsedAt,
 		LastFour:   rec.LastFour,

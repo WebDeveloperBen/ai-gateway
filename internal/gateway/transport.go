@@ -22,7 +22,7 @@ func Chain(base http.RoundTripper, mws ...func(http.RoundTripper) http.RoundTrip
 	return rt
 }
 
-func WithAuth(a auth.Authenticator) func(http.RoundTripper) http.RoundTripper {
+func WithAuth(a auth.KeyAuthenticator) func(http.RoundTripper) http.RoundTripper {
 	return func(next http.RoundTripper) http.RoundTripper {
 		return RTFunc(func(r *http.Request) (*http.Response, error) {
 			_, _, err := a.Authenticate(r)

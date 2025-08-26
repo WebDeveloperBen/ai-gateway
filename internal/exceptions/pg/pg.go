@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/insurgence-ai/llm-gateway/internal/lib/exceptions"
+	"github.com/insurgence-ai/llm-gateway/internal/exceptions"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )

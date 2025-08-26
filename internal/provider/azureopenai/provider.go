@@ -30,7 +30,7 @@ func New(selector loadbalancing.InstanceSelector) *Adapter {
 	return &Adapter{
 		Instances: map[string][]Entry{},
 		Selector:  selector,
-		Keys:      provider.KeySource{EnvVar: "AOAI_API_KEY"},
+		Keys:      provider.KeySource{EnvVar: "AZURE_OPENAI_API_KEY"},
 	}
 }
 
@@ -77,7 +77,7 @@ func (a *Adapter) Rewrite(req *http.Request, suffix string, info provider.ReqInf
 	provider.SetUpstreamURL(req, u)
 
 	provider.StripCallerAuth(req.Header)
-	key := a.Keys.Resolve(info.Tenant, "AOAI_API_KEY")
+	key := a.Keys.Resolve(info.Tenant, "AZURE_OPENAI_API_KEY")
 	if ent.SecretRef != "" {
 		if v := os.Getenv(ent.SecretRef); v != "" {
 			key = v

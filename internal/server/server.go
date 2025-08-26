@@ -8,14 +8,14 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/insurgence-ai/llm-gateway/internal/config"
-	"github.com/insurgence-ai/llm-gateway/internal/lib"
+	"github.com/insurgence-ai/llm-gateway/internal/logger"
 
 	chi_middleware "github.com/go-chi/chi/v5/middleware"
 )
 
 // New initializes the router with all standard middleware.
 func New(cfg config.Config) (*chi.Mux, huma.Config) {
-	lib.NewLogger(cfg.IsProd)
+	logger.NewLogger(cfg.IsProd)
 
 	router := chi.NewRouter()
 
@@ -54,9 +54,9 @@ func Start(port string, router *chi.Mux) {
 
 	addr := ":" + port
 
-	lib.Logger.Info().Msgf("Starting server on %s", addr)
+	logger.Logger.Info().Msgf("Starting server on %s", addr)
 
 	if err := http.ListenAndServe(addr, router); err != nil {
-		lib.Logger.Fatal().Err(err).Msg("failed to start server")
+		logger.Logger.Fatal().Err(err).Msg("failed to start server")
 	}
 }

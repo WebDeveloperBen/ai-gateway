@@ -5,7 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/insurgence-ai/llm-gateway/internal/keys"
+	"github.com/insurgence-ai/llm-gateway/internal/model"
+	"github.com/insurgence-ai/llm-gateway/internal/repository/keys"
 )
 
 // NewAPIKeyAuthenticator Constructor with explicit dependencies.
@@ -33,7 +34,7 @@ func (a *APIKeyAuthenticator) Authenticate(r *http.Request) (tenant, app string,
 		return "", "", errors.New("unauthorized")
 	}
 
-	if rec.Status != keys.Active {
+	if rec.Status != model.KeyActive {
 		return "", "", errors.New("unauthorized")
 	}
 	if rec.ExpiresAt != nil && time.Now().After(*rec.ExpiresAt) {

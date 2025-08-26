@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/insurgence-ai/llm-gateway/internal/keys"
+	"github.com/insurgence-ai/llm-gateway/internal/repository/keys"
 )
 
 func getHeaderToken(r *http.Request) string {

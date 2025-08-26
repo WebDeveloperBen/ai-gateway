@@ -7,16 +7,16 @@ import (
 	"log"
 	"time"
 
-	"github.com/insurgence-ai/llm-gateway/internal/kv"
+	"github.com/insurgence-ai/llm-gateway/internal/drivers/kv"
 	"github.com/insurgence-ai/llm-gateway/internal/model"
 )
 
 type Registry struct {
-	kv  kv.Store
+	kv  kv.KvStore
 	ctx context.Context
 }
 
-func NewRegistry(ctx context.Context, store kv.Store) *Registry {
+func NewRegistry(ctx context.Context, store kv.KvStore) *Registry {
 	return &Registry{kv: store, ctx: ctx}
 }
 

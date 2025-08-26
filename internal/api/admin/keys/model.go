@@ -2,21 +2,15 @@ package keys
 
 import (
 	"time"
-)
 
-type KeyStatus string
-
-const (
-	KeyActive  KeyStatus = "active"
-	KeyRevoked KeyStatus = "revoked"
-	KeyExpired KeyStatus = "expired"
+	"github.com/insurgence-ai/llm-gateway/internal/model"
 )
 
 type APIKey struct {
 	KeyID      string
 	Tenant     string
 	App        string
-	Status     KeyStatus
+	Status     model.KeyStatus
 	ExpiresAt  *time.Time
 	LastUsedAt *time.Time
 	LastFour   string

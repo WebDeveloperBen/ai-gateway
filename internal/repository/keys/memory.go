@@ -1,15 +1,15 @@
-package memory
+package keys
 
 import (
 	"context"
 	"sync"
 	"time"
 
-	"github.com/insurgence-ai/llm-gateway/internal/keys"
+	"github.com/insurgence-ai/llm-gateway/internal/model"
 )
 
 type keyRecord struct {
-	key keys.Key
+	key model.Key
 	phc string
 }
 
@@ -18,18 +18,18 @@ type MemoryStore struct {
 	store map[string]keyRecord
 }
 
-func New() *MemoryStore {
+func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{store: make(map[string]keyRecord)}
 }
 
-func (m *MemoryStore) Insert(ctx context.Context, k keys.Key, phc string) error {
+func (m *MemoryStore) Insert(ctx context.Context, k model.Key, phc string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.store[k.KeyID] = keyRecord{key: k, phc: phc}
 	return nil
 }
 
-func (m *MemoryStore) GetByKeyID(ctx context.Context, keyID string) (*keys.Key, error) {
+func (m *MemoryStore) GetByKeyID(ctx context.Context, keyID string) (*model.Key, error) {
 	m.mu.RLock()
 	rec, ok := m.store[keyID]
 	m.mu.RUnlock()
@@ -49,7 +49,7 @@ func (m *MemoryStore) GetPHCByKeyID(ctx context.Context, keyID string) (string, 
 	return rec.phc, nil
 }
 
-func (m *MemoryStore) UpdateStatus(ctx context.Context, keyID string, status keys.Status) error {
+func (m *MemoryStore) UpdateStatus(ctx context.Context, keyID string, status model.KeyStatus) error {
 	m.mu.Lock()
 	rec, ok := m.store[keyID]
 	if ok {

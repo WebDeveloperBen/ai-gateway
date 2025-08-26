@@ -1,24 +1,24 @@
-package postgres
+package keys
 
 import (
 	"context"
 	"errors"
 
-	"github.com/insurgence-ai/llm-gateway/internal/keys"
+	"github.com/insurgence-ai/llm-gateway/internal/model"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Store is a concrete Postgres implementation of keys.Store.
-type Store struct {
+type store struct {
 	pool *pgxpool.Pool
 }
 
-func New(pool *pgxpool.Pool) *Store {
-	return &Store{pool: pool}
+func NewPostgresStore(pool *pgxpool.Pool) *store {
+	return &store{pool: pool}
 }
 
 // Insert stores key metadata and its PHC hash.
-func (s *Store) Insert(ctx context.Context, k keys.Key, phc string) error {
+func (s *store) Insert(ctx context.Context, k model.Key, phc string) error {
 	_, err := s.pool.Exec(ctx, `
 		INSERT INTO api_keys
 			(key_id, secret_phc, tenant, app, status, last_four, metadata, expires_at)
@@ -31,7 +31,7 @@ func (s *Store) Insert(ctx context.Context, k keys.Key, phc string) error {
 }
 
 // GetByKeyID returns key metadata (no PHC).
-func (s *Store) GetByKeyID(ctx context.Context, keyID string) (*keys.Key, error) {
+func (s *store) GetByKeyID(ctx context.Context, keyID string) (*model.Key, error) {
 	row := s.pool.QueryRow(ctx, `
 		SELECT key_id, tenant, app, status, expires_at, last_used_at,
 		       COALESCE(metadata,'{}'::jsonb), created_at, COALESCE(last_four,'')
@@ -40,7 +40,7 @@ func (s *Store) GetByKeyID(ctx context.Context, keyID string) (*keys.Key, error)
 	`, keyID)
 
 	var (
-		k        keys.Key
+		k        model.Key
 		status   string
 		metadata []byte
 		lastFour string
@@ -52,14 +52,14 @@ func (s *Store) GetByKeyID(ctx context.Context, keyID string) (*keys.Key, error)
 	if err != nil {
 		return nil, err
 	}
-	k.Status = keys.Status(status)
+	k.Status = model.KeyStatus(status)
 	k.Metadata = metadata
 	k.LastFour = lastFour
 	return &k, nil
 }
 
 // GetPHCByKeyID fetches the PHC (argon2id) string for verification.
-func (s *Store) GetPHCByKeyID(ctx context.Context, keyID string) (string, error) {
+func (s *store) GetPHCByKeyID(ctx context.Context, keyID string) (string, error) {
 	var phc string
 	if err := s.pool.QueryRow(ctx, `
 		SELECT secret_phc FROM api_keys WHERE key_id = $1
@@ -70,7 +70,7 @@ func (s *Store) GetPHCByKeyID(ctx context.Context, keyID string) (string, error)
 }
 
 // TouchLastUsed updates last_used_at; best-effort.
-func (s *Store) TouchLastUsed(ctx context.Context, keyID string) error {
+func (s *store) TouchLastUsed(ctx context.Context, keyID string) error {
 	_, err := s.pool.Exec(ctx, `
 		UPDATE api_keys SET last_used_at = now() WHERE key_id = $1
 	`, keyID)
@@ -78,9 +78,9 @@ func (s *Store) TouchLastUsed(ctx context.Context, keyID string) error {
 }
 
 // UpdateStatus sets the key status (active/revoked/expired).
-func (s *Store) UpdateStatus(ctx context.Context, keyID string, status keys.Status) error {
+func (s *store) UpdateStatus(ctx context.Context, keyID string, status model.KeyStatus) error {
 	switch status {
-	case keys.Active, keys.Revoked, keys.Expired:
+	case model.KeyActive, model.KeyRevoked, model.KeyExpired:
 	default:
 		return errors.New("invalid status")
 	}
