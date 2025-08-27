@@ -2,8 +2,11 @@ package auth
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/insurgence-ai/llm-gateway/internal/model"
 	"golang.org/x/oauth2"
 )
 
@@ -23,6 +26,8 @@ type OIDCService struct {
 type OIDCServiceInterface interface {
 	GetOAuth2Config() *oauth2.Config
 	GetVerifier() *oidc.IDTokenVerifier
+	VerifyIDToken(ctx context.Context, tok *oauth2.Token) (*oidc.IDToken, map[string]any, error)
+	ClaimsToScopedToken(claims map[string]any, idToken *oidc.IDToken) model.ScopedToken
 }
 
 func (s *OIDCService) GetOAuth2Config() *oauth2.Config {
@@ -31,6 +36,60 @@ func (s *OIDCService) GetOAuth2Config() *oauth2.Config {
 
 func (s *OIDCService) GetVerifier() *oidc.IDTokenVerifier {
 	return s.Verifier
+}
+
+func (s *OIDCService) VerifyIDToken(ctx context.Context, tok *oauth2.Token) (*oidc.IDToken, map[string]any, error) {
+	raw, ok := tok.Extra("id_token").(string)
+	if !ok {
+		return nil, nil, fmt.Errorf("id_token missing in token response")
+	}
+
+	idToken, err := s.GetVerifier().Verify(ctx, raw)
+	if err != nil {
+		return nil, nil, fmt.Errorf("id_token verification failed: %w", err)
+	}
+
+	var claims map[string]any
+	if err := idToken.Claims(&claims); err != nil {
+		return nil, nil, fmt.Errorf("id_token claim parse failed: %w", err)
+	}
+
+	return idToken, claims, nil
+}
+
+func (s *OIDCService) ClaimsToScopedToken(claims map[string]any, idToken *oidc.IDToken) model.ScopedToken {
+	getStr := func(k string) string {
+		if v, ok := claims[k].(string); ok {
+			return v
+		}
+		return ""
+	}
+	getStrSlice := func(k string) []string {
+		out := []string{}
+		if arr, ok := claims[k].([]any); ok {
+			for _, v := range arr {
+				if s, ok := v.(string); ok {
+					out = append(out, s)
+				}
+			}
+		}
+		return out
+	}
+
+	return model.ScopedToken{
+		Email:             getStr("email"),
+		Name:              getStr("name"),
+		GivenName:         getStr("given_name"),
+		FamilyName:        getStr("family_name"),
+		PreferredUsername: getStr("preferred_username"),
+		Roles:             getStrSlice("roles"),
+		Groups:            getStrSlice("groups"),
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   getStr("sub"),
+			Issuer:    idToken.Issuer,
+			ExpiresAt: jwt.NewNumericDate(idToken.Expiry),
+		},
+	}
 }
 
 // TODO: change this to be config driven where the user is able to register authenticaton providers and we use the database to lookup the oidc service config options

@@ -16,6 +16,7 @@ type ScopedToken struct {
 	Email             string   `json:"email"`
 	Name              string   `json:"name,omitempty"`
 	OrgID             string   `json:"org_id,omitempty"` // this is hydrated post auth login from our db
+	UserID            string   `json:"id,omitempty"`
 	GivenName         string   `json:"given_name,omitempty"`
 	FamilyName        string   `json:"family_name,omitempty"`
 	PreferredUsername string   `json:"preferred_username,omitempty"`

@@ -12,18 +12,19 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/golang-jwt/jwt/v5"
-	middleware "github.com/insurgence-ai/llm-gateway/internal/api"
+	"github.com/insurgence-ai/llm-gateway/internal/api/middleware"
+	"github.com/insurgence-ai/llm-gateway/internal/api/organisations"
 	"github.com/insurgence-ai/llm-gateway/internal/config"
 	"github.com/insurgence-ai/llm-gateway/internal/exceptions"
-	"github.com/insurgence-ai/llm-gateway/internal/model"
 )
 
 type AuthService struct {
-	oidc OIDCServiceInterface
+	oidcService OIDCServiceInterface
+	orgService  organisations.OrganisationServiceInterface
 }
 
-func NewRouter(oidc OIDCServiceInterface) *AuthService {
-	return &AuthService{oidc: oidc}
+func NewRouter(oidc OIDCServiceInterface, orgSvc organisations.OrganisationServiceInterface) *AuthService {
+	return &AuthService{oidcService: oidc, orgService: orgSvc}
 }
 
 func (svc *AuthService) RegisterRoutes(grp *huma.Group) {
@@ -39,7 +40,7 @@ func (svc *AuthService) RegisterRoutes(grp *huma.Group) {
 		if err != nil {
 			return nil, fmt.Errorf("error generating oauth state")
 		}
-		url := svc.oidc.GetOAuth2Config().AuthCodeURL(state)
+		url := svc.oidcService.GetOAuth2Config().AuthCodeURL(state)
 		return &LoginRedirect{
 			Location: url,
 		}, nil
@@ -54,72 +55,38 @@ func (svc *AuthService) RegisterRoutes(grp *huma.Group) {
 		Tags:          []string{"Auth"},
 	}, exceptions.Handle(func(ctx context.Context, req *CallbackRequest) (*CallbackRedirect, error) {
 		if req.Error != "" {
-			return nil, fmt.Errorf("OIDC error: %s", req.Error)
+			return nil, exceptions.Unauthorized("oidc error")
 		}
 
 		if req.Code == "" {
-			return nil, exceptions.Unauthorized("code not found")
+			return nil, exceptions.Unauthorized("response code not found")
 		}
 
-		tok, err := svc.oidc.GetOAuth2Config().Exchange(ctx, req.Code)
+		tok, err := svc.oidcService.GetOAuth2Config().Exchange(ctx, req.Code)
 		if err != nil {
 			return nil, exceptions.Unauthorized("token exchange failed")
 		}
 
-		rawIDToken, ok := tok.Extra("id_token").(string)
-		if !ok {
-			return nil, exceptions.Unauthorized("id_token missing")
-		}
-
-		idToken, err := svc.oidc.GetVerifier().Verify(ctx, rawIDToken)
+		idToken, claims, err := svc.oidcService.VerifyIDToken(ctx, tok)
 		if err != nil {
-			return nil, exceptions.Unauthorized("id_token verification failed")
+			return nil, exceptions.Unauthorized(err.Error())
 		}
 
-		var rawClaims map[string]any
-		if err := idToken.Claims(&rawClaims); err != nil {
-			return nil, exceptions.Unauthorized(fmt.Sprintf("claim parse failed: %+v", err))
+		scoped := svc.oidcService.ClaimsToScopedToken(claims, idToken)
+		if scoped.Subject == "" {
+			return nil, fmt.Errorf("OIDC claims or ID token missing required fields: %+v", claims)
 		}
 
-		email, _ := rawClaims["email"].(string)
-
-		sub, _ := rawClaims["sub"].(string)
-
-		name, _ := rawClaims["name"].(string)
-		givenName, _ := rawClaims["given_name"].(string)
-		familyName, _ := rawClaims["family_name"].(string)
-		preferredUsername, _ := rawClaims["preferred_username"].(string)
-		// Cast slices carefully (OIDC may have roles/groups as []any)
-		var roles, groups []string
-		if r, ok := rawClaims["roles"].([]any); ok {
-			for _, v := range r {
-				if s, ok := v.(string); ok {
-					roles = append(roles, s)
-				}
-			}
-		}
-		if g, ok := rawClaims["groups"].([]any); ok {
-			for _, v := range g {
-				if s, ok := v.(string); ok {
-					groups = append(groups, s)
-				}
-			}
+		user, org, err := svc.orgService.EnsureUserAndOrg(ctx, scoped)
+		if err != nil || user == nil || org == nil {
+			fmt.Printf("EnsureUserAndOrg failed: user=%+v org=%+v err=%v scoped=%+v\n", user, org, err, scoped)
+			return nil, fmt.Errorf("failed to persist user/org: %w", err)
 		}
 
-		scoped := model.ScopedToken{
-			Email:             email,
-			Name:              name,
-			GivenName:         givenName,
-			FamilyName:        familyName,
-			PreferredUsername: preferredUsername,
-			Roles:             roles,
-			Groups:            groups,
-			RegisteredClaims: jwt.RegisteredClaims{
-				Subject:   sub,
-				Issuer:    idToken.Issuer,
-				ExpiresAt: jwt.NewNumericDate(idToken.Expiry),
-			},
-		}
+		// Hydrate ScopedToken with org info
+		scoped.OrgID = org.ID
+		scoped.UserID = user.ID
+		scoped.Roles = user.Roles
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, scoped)
 		cfg := config.Envs

@@ -1,5 +1,5 @@
 services:
-  postgres:
+  llm-gateway-db:
     image: postgres:16
     ports:
       - "5432:5432"

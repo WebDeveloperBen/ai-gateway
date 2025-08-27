@@ -17,9 +17,8 @@ func AuthCookieMiddleware(api huma.API) func(huma.Context, func(huma.Context)) {
 	return func(ctx huma.Context, next func(huma.Context)) {
 		req, err := huma.ReadCookie(ctx, AuthCookieName)
 
-		logger.Logger.Info().Msgf("[AuthCookieMiddleware Cookie]: ", req.Value)
 		if err != nil || req == nil {
-			logger.Logger.Info().Msgf("[AuthCookieMiddleware Error]: ", err)
+			logger.Logger.Info().Msgf("[AuthCookieMiddleware Error]: %+v", err)
 			// No cookie: just let pass through
 			next(ctx)
 			return

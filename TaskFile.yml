@@ -1,6 +1,6 @@
 version: "3"
 
-dotenv: [".env.local"]
+dotenv: [".env"]
 
 tasks:
   default:
@@ -28,38 +28,45 @@ tasks:
     cmds:
       - go test -v ./...
 
-  db:push:
-    desc: Push the migrations to the database using Drizzle
-    cmds:
-      - cd ./db/drizzle && pnpm run push
+  # -------------------
+  # Goose database tasks
+  # -------------------
 
-  db:introspect:
-    desc: Introspect the database schema using Drizzle
+  db:status:
+    desc: Show migration status
     cmds:
-      - cd ./db/drizzle && pnpm run introspect
+      - goose -dir ./db/migrations postgres "$DATABASE_URL" status
 
-  db:studio:
-    desc: Open the Drizzle Studio
+  db:up:
+    desc: Apply all up migrations
     cmds:
-      - cd ./db/drizzle && pnpm run studio
+      - goose -dir ./db/migrations postgres "$DATABASE_URL" up
 
-  db:gen_migrate:
-    desc: Generate migrations
+  db:down:
+    desc: Roll back the last migration
     cmds:
-      - cd ./db/drizzle && pnpm run generate
+      - goose -dir ./db/migrations postgres "$DATABASE_URL" down
 
-  db:gen_query:
+  db:reset:
+    desc: Reset the database (rollback all, then migrate up)
+    cmds:
+      - goose -dir ./db/migrations postgres "$DATABASE_URL" reset
+
+  db:create:
+    desc: Create a new migration file
+    cmds:
+      - goose -dir ./db/migrations create {{.CLI_ARGS | default "new_migration"}} sql
+
+  # -------------------
+  # SQLC generation
+  # -------------------
+
+  generate:
     desc: Generate SQLC code from queries
     cmds:
       - rm -rf ./internal/repository/postgres && sqlc generate
 
-  generate:
-    desc: Generate both migrations and SQLC code
-    cmds:
-      - task db:gen_migrate
-      - task db:gen_query
-
   clean:migrations:
-    desc: Generate SQLC code from queries
+    desc: Remove all migration files (careful!)
     cmds:
-      - rm -rf ./db/drizzle/src/migrations
+      - rm -rf ./db/migrations/*

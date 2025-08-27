@@ -3,8 +3,9 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"yourapp/db"
 
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/insurgence-ai/llm-gateway/internal/db"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -46,20 +47,24 @@ func (oq *OrgQueries) Close(ctx context.Context) error {
 	return oq.tx.Commit(ctx)
 }
 
-func WithOrg(pool *pgxpool.Pool) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			orgID, _ := GetOrgIDFromSession(r.Context())
-
-			oq, err := NewOrgQueries(r.Context(), pool, orgID)
-			if err != nil {
-				http.Error(w, "db error", http.StatusInternalServerError)
+func WithScopedOrg(pool *pgxpool.Pool) func(huma.API) func(huma.Context, func(huma.Context)) {
+	return func(api huma.API) func(huma.Context, func(huma.Context)) {
+		return func(ctx huma.Context, next func(huma.Context)) {
+			orgID, ok := GetOrgIDFromSession(ctx.Context())
+			if !ok {
+				huma.WriteErr(api, ctx, http.StatusForbidden, "missing organisation context")
 				return
 			}
-			defer oq.Close(r.Context())
 
-			ctx := context.WithValue(r.Context(), orgQueriesKey, oq)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
+			oq, err := NewOrgQueries(ctx.Context(), pool, orgID)
+			if err != nil {
+				huma.WriteErr(api, ctx, http.StatusBadRequest, "something went wrong")
+				return
+			}
+			defer oq.Close(ctx.Context())
+
+			c := huma.WithValue(ctx, orgQueriesKey, oq)
+			next(c)
+		}
 	}
 }

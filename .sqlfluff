@@ -1,0 +1,9 @@
+[sqlfluff]
+dialect = postgres
+templater = placeholder
+max_line_length = 120
+large_file_skip_byte_limit = 0
+exclude_rules = L003,L001,L016,L014
+
+[sqlfluff:templater:placeholder]
+param_style = dollar
