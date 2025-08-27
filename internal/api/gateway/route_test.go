@@ -1,4 +1,4 @@
-package proxy
+package gateway_test
 
 import (
 	"bytes"
@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/danielgtaylor/huma/v2"
+	apigw "github.com/insurgence-ai/llm-gateway/internal/api/gateway"
 	"github.com/insurgence-ai/llm-gateway/internal/gateway"
 	"github.com/insurgence-ai/llm-gateway/internal/testkit"
 	"github.com/stretchr/testify/require"
@@ -29,7 +30,7 @@ func TestProxyRoutes(t *testing.T) {
 	core := gateway.NewCoreWithAdapters(transport, fx.Authenticator, fx.Adapter)
 
 	api := testkit.SetupPublicTestAPI(t, func(grp *huma.Group) {
-		RegisterProvider(grp, fx.BasePath, core)
+		apigw.RegisterProvider(grp, fx.BasePath, core)
 	})
 
 	body := map[string]any{"model": fx.Model, "messages": []string{"hi"}}
@@ -63,7 +64,7 @@ func TestUnitProxy_AzureOpenAI(t *testing.T) {
 
 	core := gateway.NewCoreWithAdapters(transport, fx.Authenticator, fx.Adapter)
 	api := testkit.SetupPublicTestAPI(t, func(grp *huma.Group) {
-		RegisterProvider(grp, fx.BasePath, core)
+		apigw.RegisterProvider(grp, fx.BasePath, core)
 	})
 
 	body := map[string]any{
@@ -103,7 +104,7 @@ func TestUnitProxy_AzureOpenAI_EnvFallback(t *testing.T) {
 
 	core := gateway.NewCoreWithAdapters(transport, fx.Authenticator, fx.Adapter)
 	api := testkit.SetupPublicTestAPI(t, func(grp *huma.Group) {
-		RegisterProvider(grp, fx.BasePath, core)
+		apigw.RegisterProvider(grp, fx.BasePath, core)
 	})
 
 	resp := api.Post("/api"+fx.BasePath+"/v1/chat/completions", "Content-Type: application/json",
@@ -116,7 +117,7 @@ func TestUnitProxy_AzureOpenAI_EnvFallback(t *testing.T) {
 func TestE2EProxy_AzureOpenAI(t *testing.T) {
 	fx := testkit.NewAOAIE2E(t)
 	core := gateway.NewCoreWithAdapters(http.DefaultTransport, fx.Authenticator, fx.Adapter)
-	api := testkit.SetupPublicTestAPI(t, func(grp *huma.Group) { RegisterProvider(grp, fx.BasePath, core) })
+	api := testkit.SetupPublicTestAPI(t, func(grp *huma.Group) { apigw.RegisterProvider(grp, fx.BasePath, core) })
 	body := map[string]any{"model": fx.Model, "messages": []map[string]string{{"role": "user", "content": "Say hello test!"}}}
 	b, _ := json.Marshal(body)
 	resp := api.Post("/api"+fx.BasePath+"/v1/chat/completions", "Content-Type: application/json", bytes.NewReader(b))

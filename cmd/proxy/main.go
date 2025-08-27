@@ -7,19 +7,22 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	middleware "github.com/insurgence-ai/llm-gateway/internal/api"
 	apiauth "github.com/insurgence-ai/llm-gateway/internal/api/auth"
 	"github.com/insurgence-ai/llm-gateway/internal/api/docs"
+	apigw "github.com/insurgence-ai/llm-gateway/internal/api/gateway"
 	"github.com/insurgence-ai/llm-gateway/internal/api/health"
-	"github.com/insurgence-ai/llm-gateway/internal/api/proxy"
 	"github.com/insurgence-ai/llm-gateway/internal/config"
+	"github.com/insurgence-ai/llm-gateway/internal/drivers/db"
 	"github.com/insurgence-ai/llm-gateway/internal/drivers/kv"
 	"github.com/insurgence-ai/llm-gateway/internal/gateway"
 	"github.com/insurgence-ai/llm-gateway/internal/gateway/auth"
 	"github.com/insurgence-ai/llm-gateway/internal/model"
-	"github.com/insurgence-ai/llm-gateway/internal/repository/keys"
+	"github.com/insurgence-ai/llm-gateway/internal/provider"
+
+	"github.com/insurgence-ai/llm-gateway/internal/api/admin/keys"
+	keyrepo "github.com/insurgence-ai/llm-gateway/internal/repository/keys"
 	"github.com/insurgence-ai/llm-gateway/internal/server"
 )
 
@@ -27,62 +30,92 @@ func main() {
 	ctx := context.Background()
 	cfg := config.Envs
 
-	// KV store
+	// ------------- Utilities ------------ //
+	hasher := keyrepo.NewArgon2IDHasher(1, 64*1024, 1, 32)
+
+	// ------------- Drivers ------------ //
 	kvStore, err := kv.NewDriver(kv.Config{
 		Backend:   kv.KvStoreType(cfg.KVBackend),
 		RedisAddr: cfg.RedisAddr,
 		RedisPW:   cfg.RedisPW,
-		RedisDB:   0, // change as needed
+		RedisDB:   0, // use first database - change if necessary
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// postgres
-	pool, err := pgxpool.New(context.Background(), cfg.DBConnectionString)
+	pg, err := db.NewPostgresDriver(ctx, cfg.DBConnectionString)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer pool.Close()
+	defer pg.Pool.Close()
 
-	// Registry
+	// --------------- Registry ------------- //
 	reg := gateway.NewRegistry(ctx, kvStore)
 	_ = gateway.EnsureRegistryPopulated(reg, loadAllModelDeploymentsFromDatabase)
 
-	keyStore := keys.NewPostgresStore(pool)
-
-	authn := auth.NewDefaultAPIKeyAuthenticator(keyStore)
-
-	router, humaCfg := server.New(cfg)
-	base := humachi.New(router, humaCfg)
-
-	docs.RegisterRoutes(router)
-
-	health.RegisterPublicRoutes(base)
-
-	// Route groups
-	// protected := huma.NewGroup(base, "/api/v1/admin")
-	public := huma.NewGroup(base, "/api")
-	auth := huma.NewGroup(base, "/auth")
-	auth.UseMiddleware(middleware.Use(base, middleware.AuthCookieMiddleware))
-	// protected.UseMiddleware(middleware.Use(base, middleware.AuthenticationMiddleware))
-
-	oidcService, err := apiauth.NewOIDCService(ctx, apiauth.OIDCConfig{ClientID: cfg.AppRegistrationClientID, ClientSecret: cfg.AppRegistrationClientSecret, TenantID: cfg.AppRegistrationTenantID, RedirectURL: cfg.AppRegistrationRedirectURL})
+	// ------------- Repositories ------------ //
+	keyStore, err := keyrepo.NewKeyRepository(ctx,
+		model.RepositoryConfig{
+			Backend: model.RepositoryBackend(cfg.DBBackend),
+			PGPool:  pg.Pool,
+		})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	apiauth.RegisterAuthRoutes(auth, oidcService)
+	// ---------- Middleware Utilities -------- //
+	authn := auth.NewDefaultAPIKeyAuthenticator(keyStore)
+	oidcService, err := apiauth.NewOIDCService(ctx,
+		apiauth.OIDCConfig{
+			ClientID:     cfg.AppRegistrationClientID,
+			ClientSecret: cfg.AppRegistrationClientSecret,
+			TenantID:     cfg.AppRegistrationTenantID,
+			RedirectURL:  cfg.AppRegistrationRedirectURL,
+		})
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	// ------------- Services ------------ //
+	keysSvc := keys.NewService(keyStore, hasher)
+
+	// ----------- API Router Setup ---------- //
+	router, humaCfg := server.New(cfg)
+	base := humachi.New(router, humaCfg)
+
+	// ----------- Register Public Routers ---------- //
+	docs.RegisterRoutes(router)
+	health.RegisterPublicRoutes(base)
+
+	// ------------ Route Groups ----------- //
+	apigrp := huma.NewGroup(base, "/api")
+	admingrp := huma.NewGroup(base, "/api/v1/admin")
+	authgrp := huma.NewGroup(base, "/auth")
+
+	// --- Attach Authentication Middleware to Route Groups --- //
+	authgrp.UseMiddleware(middleware.Use(base, middleware.AuthCookieMiddleware))
+	admingrp.UseMiddleware(middleware.Use(base, middleware.AuthCookieMiddleware))
+	// protected.UseMiddleware(middleware.Use(base, middleware.AuthenticationMiddleware))
+
+	// ------------ Register API Routers ----------- //
+	apiauth.NewRouter(oidcService).RegisterRoutes(authgrp)
+	keys.NewRouter(keysSvc).RegisterRoutes(authgrp)
+
+	// ------------ Gateway Proxy Setup ----------- //
 	transport := gateway.Chain(
 		http.DefaultTransport,
 		gateway.WithAuth(authn),
-		// TODO: real limiter and metrics
+		// TODO: add the ratelimiter
+		// TODO: add the policies
+		// TODO: add the load balancer
 	)
-
 	core := gateway.NewCoreWithRegistry(transport, authn, reg)
-	proxy.RegisterProvider(public, "/azure/openai", core)
 
+	// ------------ AI Providers ----------- //
+	apigw.RegisterProvider(apigrp, provider.AzureOpenAIPrefix, core)
+
+	// ------------ Server Start ----------- //
 	addr := config.Envs.ProxyPort
 	server.Start(addr, router)
 }

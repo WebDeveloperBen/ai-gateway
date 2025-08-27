@@ -30,7 +30,7 @@ func New(selector loadbalancing.InstanceSelector) *Adapter {
 	}
 }
 
-func (a *Adapter) Prefix() string { return "/openai" }
+func (a *Adapter) Prefix() string { return provider.OpenAIPrefix }
 
 func (a *Adapter) Rewrite(req *http.Request, suffix string, info provider.ReqInfo) error {
 	modelKey := strings.ToLower(strings.TrimSpace(info.Model))

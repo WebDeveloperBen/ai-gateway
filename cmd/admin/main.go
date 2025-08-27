@@ -56,7 +56,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	auth.RegisterAuthRoutes(protected, oidcService)
+	auth.NewRouter(oidcService).RegisterRoutes(protected)
 
 	// Routes
 	docs.RegisterRoutes(r)

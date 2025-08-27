@@ -1,6 +1,6 @@
-// Package proxy provides the HTTP endpoints that proxy client requests
+// Package provider provides the HTTP endpoints that proxy client requests
 // through the gateway to upstream LLM providers.
-package proxy
+package gateway
 
 import (
 	"net/http"

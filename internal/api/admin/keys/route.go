@@ -8,15 +8,15 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 )
 
-type Server struct {
+type KeyService struct {
 	Keys KeysService
 }
 
-func NewRouter(keys KeysService) *Server {
-	return &Server{Keys: keys}
+func NewRouter(keys KeysService) *KeyService {
+	return &KeyService{Keys: keys}
 }
 
-func (s *Server) RegisterRoutes(grp *huma.Group) {
+func (s *KeyService) RegisterRoutes(grp *huma.Group) {
 	// POST /admin/keys
 	huma.Register(grp, huma.Operation{
 		OperationID:   "admin-mint-key",

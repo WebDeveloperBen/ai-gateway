@@ -6,6 +6,11 @@ import (
 	"net/http"
 )
 
+const (
+	AzureOpenAIPrefix = "/azure/openai"
+	OpenAIPrefix      = "/openai"
+)
+
 // ReqInfo is what adapters need to decide routing/rewrite.
 // Keep this in provider pkg to avoid gateway<->provider cycles.
 type ReqInfo struct {

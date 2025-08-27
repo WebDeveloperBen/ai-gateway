@@ -18,7 +18,15 @@ import (
 	"github.com/insurgence-ai/llm-gateway/internal/model"
 )
 
-func RegisterAuthRoutes(grp *huma.Group, svc *OIDCService) {
+type AuthService struct {
+	oidc OIDCServiceInterface
+}
+
+func NewRouter(oidc OIDCServiceInterface) *AuthService {
+	return &AuthService{oidc: oidc}
+}
+
+func (svc *AuthService) RegisterRoutes(grp *huma.Group) {
 	huma.Register(grp, huma.Operation{
 		OperationID:   "auth-login",
 		Method:        http.MethodGet,
@@ -31,7 +39,7 @@ func RegisterAuthRoutes(grp *huma.Group, svc *OIDCService) {
 		if err != nil {
 			return nil, fmt.Errorf("error generating oauth state")
 		}
-		url := svc.OAuth2Config.AuthCodeURL(state)
+		url := svc.oidc.GetOAuth2Config().AuthCodeURL(state)
 		return &LoginRedirect{
 			Location: url,
 		}, nil
@@ -53,7 +61,7 @@ func RegisterAuthRoutes(grp *huma.Group, svc *OIDCService) {
 			return nil, exceptions.Unauthorized("code not found")
 		}
 
-		tok, err := svc.OAuth2Config.Exchange(ctx, req.Code)
+		tok, err := svc.oidc.GetOAuth2Config().Exchange(ctx, req.Code)
 		if err != nil {
 			return nil, exceptions.Unauthorized("token exchange failed")
 		}
@@ -63,7 +71,7 @@ func RegisterAuthRoutes(grp *huma.Group, svc *OIDCService) {
 			return nil, exceptions.Unauthorized("id_token missing")
 		}
 
-		idToken, err := svc.Verifier.Verify(ctx, rawIDToken)
+		idToken, err := svc.oidc.GetVerifier().Verify(ctx, rawIDToken)
 		if err != nil {
 			return nil, exceptions.Unauthorized("id_token verification failed")
 		}

@@ -2,9 +2,12 @@ package kv
 
 import (
 	"context"
+	"path"
 	"sync"
 	"time"
 )
+
+var _ = (*RedisStore)(nil)
 
 type memoryItem struct {
 	value   string
@@ -68,13 +71,70 @@ func (m *MemoryStore) Keys(ctx context.Context, pattern string) ([]string, error
 	return keys, nil
 }
 
+func (m *MemoryStore) Close(ctx context.Context) error {
+	m.mu.Lock()
+	for k := range m.store {
+		delete(m.store, k)
+	}
+	m.mu.Unlock()
+	return nil
+}
+
+// ScanAll simulates Redis SCAN MATCH by returning all keys that match the pattern.
+// 'count' is ignored (it’s a hint in Redis; memory can just return all).
+func (m *MemoryStore) ScanAll(ctx context.Context, pattern string, count int64) ([]string, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	now := time.Now()
+
+	var keys []string
+	for k, item := range m.store {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		if !item.expires.IsZero() && now.After(item.expires) {
+			continue
+		}
+		if matchPattern(k, pattern) {
+			keys = append(keys, k)
+		}
+	}
+	return keys, nil
+}
+
+// ScanGetAll returns key -> value for all keys matching the pattern (skips expired).
+// Matches Redis Scan + pipelined GET behavior.
+func (m *MemoryStore) ScanGetAll(ctx context.Context, pattern string, count int64) (map[string]string, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	now := time.Now()
+
+	out := make(map[string]string)
+	for k, item := range m.store {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		if !item.expires.IsZero() && now.After(item.expires) {
+			continue
+		}
+		if matchPattern(k, pattern) {
+			out[k] = item.value
+		}
+	}
+	return out, nil
+}
+
+// matchPattern implements Redis-like glob matching:
+//   - matches any sequence
+//     ?  matches any single char
+//
+// [abc] or [a-c] character classes
+// \  escapes the next metacharacter
 func matchPattern(key, pattern string) bool {
-	if pattern == "*" {
-		return true
+	ok, err := path.Match(pattern, key)
+	if err != nil {
+		// Bad pattern (e.g., unterminated class) -> treat as no match
+		return false
 	}
-	if len(pattern) > 0 && pattern[len(pattern)-1] == '*' {
-		prefix := pattern[:len(pattern)-1]
-		return len(key) >= len(prefix) && key[:len(prefix)] == prefix
-	}
-	return key == pattern
+	return ok
 }

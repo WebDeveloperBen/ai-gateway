@@ -18,6 +18,8 @@ type MemoryStore struct {
 	store map[string]keyRecord
 }
 
+var _ KeyRepository = (*store)(nil)
+
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{store: make(map[string]keyRecord)}
 }

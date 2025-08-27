@@ -20,6 +20,19 @@ type OIDCService struct {
 	Verifier     *oidc.IDTokenVerifier
 }
 
+type OIDCServiceInterface interface {
+	GetOAuth2Config() *oauth2.Config
+	GetVerifier() *oidc.IDTokenVerifier
+}
+
+func (s *OIDCService) GetOAuth2Config() *oauth2.Config {
+	return s.OAuth2Config
+}
+
+func (s *OIDCService) GetVerifier() *oidc.IDTokenVerifier {
+	return s.Verifier
+}
+
 // TODO: change this to be config driven where the user is able to register authenticaton providers and we use the database to lookup the oidc service config options
 
 func NewOIDCService(ctx context.Context, cfg OIDCConfig) (*OIDCService, error) {
