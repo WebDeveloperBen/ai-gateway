@@ -61,10 +61,11 @@ func main() {
 	health.RegisterPublicRoutes(base)
 
 	// Route groups
-	protected := huma.NewGroup(base, "/api/v1/admin")
+	// protected := huma.NewGroup(base, "/api/v1/admin")
 	public := huma.NewGroup(base, "/api")
 	auth := huma.NewGroup(base, "/auth")
-	protected.UseMiddleware(middleware.Use(base, middleware.AuthenticationMiddleware))
+	auth.UseMiddleware(middleware.Use(base, middleware.AuthCookieMiddleware))
+	// protected.UseMiddleware(middleware.Use(base, middleware.AuthenticationMiddleware))
 
 	oidcService, err := apiauth.NewOIDCService(ctx, apiauth.OIDCConfig{ClientID: cfg.AppRegistrationClientID, ClientSecret: cfg.AppRegistrationClientSecret, TenantID: cfg.AppRegistrationTenantID, RedirectURL: cfg.AppRegistrationRedirectURL})
 	if err != nil {

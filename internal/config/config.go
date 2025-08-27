@@ -47,7 +47,7 @@ func loadConfig() Config {
 		ProxyPort:                   getEnv("PROXY_PORT", ":8000"),
 		AdminPort:                   getEnv("ADMIN_PORT", ":8080"),
 		JWTExpiration:               getEnvAsDuration("JWT_EXPIRATION_IN_SECONDS", time.Hour),
-		IsProd:                      getEnvAsBoolean("IS_PROD", true),
+		IsProd:                      getEnvAsBoolean("IS_PROD", false),
 		DBConnectionString:          getEnv("POSTGRES_DNS", ""),
 		AuthSecret:                  getEnv("AUTH_SECRET", "superSecretNeedsToBeChanged"),
 		ApplicationName:             getEnv("APPLICATION_NAME", "LLM Gateway"),
@@ -60,7 +60,7 @@ func loadConfig() Config {
 		AppRegistrationClientID:     os.Getenv("AZURE_APP_REGISTRATION_CLIENT_ID"),
 		AppRegistrationClientSecret: os.Getenv("AZURE_APP_REGISTRATION_CLIENT_SECRET"),
 		AppRegistrationTenantID:     os.Getenv("AZURE_APP_REGISTRATION_TENANT_ID"),
-		AppRegistrationRedirectURL:  getEnv("AZURE_APP_REGISTRATION_REDIRECT_URL", "http://localhost:8000/auth/callback"),
+		AppRegistrationRedirectURL:  getEnv("AZURE_APP_REGISTRATION_REDIRECT_URL", "http://localhost:3000/auth/callback"),
 	}
 }
 

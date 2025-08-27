@@ -21,6 +21,10 @@ export default defineNuxtConfig({
         changeOrigin: true,
         prependPath: true,
       },
+      "/auth": {
+        target: "http://localhost:8000/auth",
+        cookieDomainRewrite: "localhost",
+      },
     },
   },
 });

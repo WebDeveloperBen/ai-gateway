@@ -8,7 +8,6 @@ import (
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/chi/v5"
 
-	middleware "github.com/insurgence-ai/llm-gateway/internal/api"
 	"github.com/insurgence-ai/llm-gateway/internal/api/admin/keys"
 	"github.com/insurgence-ai/llm-gateway/internal/api/auth"
 	"github.com/insurgence-ai/llm-gateway/internal/api/docs"
@@ -48,7 +47,8 @@ func main() {
 
 	api := humachi.New(r, huma.DefaultConfig("Admin API", "v1"))
 	protected := huma.NewGroup(api, "/api/v1")
-	protected.UseMiddleware(middleware.Use(api, middleware.AuthenticationMiddleware))
+	// TODO: fix this
+	// protected.UseMiddleware(middleware.Use(api, middleware.AuthenticationMiddleware))
 	grp := huma.NewGroup(api, "/api")
 
 	oidcService, err := auth.NewOIDCService(ctx, auth.OIDCConfig{ClientID: cfg.AppRegistrationClientID, ClientSecret: cfg.AppRegistrationClientSecret, TenantID: cfg.AppRegistrationTenantID, RedirectURL: cfg.AppRegistrationRedirectURL})

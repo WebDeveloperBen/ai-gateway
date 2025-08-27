@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -41,18 +42,18 @@ func RegisterAuthRoutes(grp *huma.Group, svc *OIDCService) {
 		Method:        http.MethodGet,
 		Path:          "/callback",
 		Summary:       "OIDC callback handler",
-		DefaultStatus: http.StatusFound,
+		DefaultStatus: http.StatusSeeOther,
 		Tags:          []string{"Auth"},
-	}, exceptions.Handle(func(ctx context.Context, in *CallbackRequest) (*CallbackRedirect, error) {
-		if in.Error != "" {
-			return nil, fmt.Errorf("OIDC error: %s", in.Error)
+	}, exceptions.Handle(func(ctx context.Context, req *CallbackRequest) (*CallbackRedirect, error) {
+		if req.Error != "" {
+			return nil, fmt.Errorf("OIDC error: %s", req.Error)
 		}
 
-		if in.Code == "" {
+		if req.Code == "" {
 			return nil, exceptions.Unauthorized("code not found")
 		}
 
-		tok, err := svc.OAuth2Config.Exchange(ctx, in.Code)
+		tok, err := svc.OAuth2Config.Exchange(ctx, req.Code)
 		if err != nil {
 			return nil, exceptions.Unauthorized("token exchange failed")
 		}
@@ -76,8 +77,35 @@ func RegisterAuthRoutes(grp *huma.Group, svc *OIDCService) {
 
 		sub, _ := rawClaims["sub"].(string)
 
-		scoped := model.ScopedTokenClaims{
-			Email: email,
+		name, _ := rawClaims["name"].(string)
+		givenName, _ := rawClaims["given_name"].(string)
+		familyName, _ := rawClaims["family_name"].(string)
+		preferredUsername, _ := rawClaims["preferred_username"].(string)
+		// Cast slices carefully (OIDC may have roles/groups as []any)
+		var roles, groups []string
+		if r, ok := rawClaims["roles"].([]any); ok {
+			for _, v := range r {
+				if s, ok := v.(string); ok {
+					roles = append(roles, s)
+				}
+			}
+		}
+		if g, ok := rawClaims["groups"].([]any); ok {
+			for _, v := range g {
+				if s, ok := v.(string); ok {
+					groups = append(groups, s)
+				}
+			}
+		}
+
+		scoped := model.ScopedToken{
+			Email:             email,
+			Name:              name,
+			GivenName:         givenName,
+			FamilyName:        familyName,
+			PreferredUsername: preferredUsername,
+			Roles:             roles,
+			Groups:            groups,
 			RegisteredClaims: jwt.RegisteredClaims{
 				Subject:   sub,
 				Issuer:    idToken.Issuer,
@@ -100,12 +128,12 @@ func RegisterAuthRoutes(grp *huma.Group, svc *OIDCService) {
 			Secure:   cfg.IsProd,
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
-			Expires:  idToken.Expiry,
+			MaxAge:   int(time.Until(idToken.Expiry).Seconds()),
 		}
 
 		return &CallbackRedirect{
-			SetCookies: []*http.Cookie{&cookie},
-			Location:   "http://localhost:3000",
+			SetCookie: cookie,
+			Location:  "/",
 		}, nil
 	}))
 
@@ -116,14 +144,21 @@ func RegisterAuthRoutes(grp *huma.Group, svc *OIDCService) {
 		Summary:       "Get user info",
 		DefaultStatus: http.StatusOK,
 		Tags:          []string{"Auth"},
+		Middlewares:   huma.Middlewares{middleware.RequireMiddleware(grp.API, middleware.RequireCookieAuth())},
 	}, exceptions.Handle(func(ctx context.Context, _ *struct{}) (*MeResponse, error) {
-		claims, ok := ctx.Value(model.UserClaimsKey).(model.ScopedTokenClaims)
+		claims, ok := middleware.GetScopedToken(ctx)
 		if !ok {
 			return nil, fmt.Errorf("no session")
 		}
-		return &MeResponse{User: map[string]any{
-			"email": claims.Email,
-			"sub":   claims.Subject,
+		return &MeResponse{Body: MeResponseBody{
+			Email:             claims.Email,
+			Sub:               claims.Subject,
+			Name:              claims.Name,
+			GivenName:         claims.GivenName,
+			FamilyName:        claims.FamilyName,
+			PreferredUsername: claims.PreferredUsername,
+			Roles:             claims.Roles,
+			Groups:            claims.Groups,
 		}}, nil
 	}))
 }
