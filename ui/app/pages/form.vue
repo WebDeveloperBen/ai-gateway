@@ -1,11 +1,3 @@
-<template>
-  <form @submit="submit">
-    <fieldset :disabled="isSubmitting">
-      <UiFormBuilder class="grid grid-cols-12 gap-5" :fields="form" />
-    </fieldset>
-  </form>
-</template>
-
 <script lang="ts" setup>
 import { promiseTimeout } from "@vueuse/core";
 import type { FormBuilder } from "@/components/Ui/FormBuilder/FormBuilder.vue";
@@ -87,3 +79,10 @@ const form: FormBuilder[] = [
   },
 ];
 </script>
+<template>
+  <form @submit="submit">
+    <fieldset :disabled="isSubmitting">
+      <UiFormBuilder class="grid grid-cols-12 gap-5" :fields="form" />
+    </fieldset>
+  </form>
+</template>
