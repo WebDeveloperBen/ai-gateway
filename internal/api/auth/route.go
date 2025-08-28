@@ -13,17 +13,16 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/insurgence-ai/llm-gateway/internal/api/middleware"
-	"github.com/insurgence-ai/llm-gateway/internal/api/organisations"
 	"github.com/insurgence-ai/llm-gateway/internal/config"
 	"github.com/insurgence-ai/llm-gateway/internal/exceptions"
 )
 
 type AuthService struct {
 	oidcService OIDCServiceInterface
-	orgService  organisations.OrganisationServiceInterface
+	orgService  OrganisationServiceInterface
 }
 
-func NewRouter(oidc OIDCServiceInterface, orgSvc organisations.OrganisationServiceInterface) *AuthService {
+func NewRouter(oidc OIDCServiceInterface, orgSvc OrganisationServiceInterface) *AuthService {
 	return &AuthService{oidcService: oidc, orgService: orgSvc}
 }
 
@@ -38,7 +37,7 @@ func (svc *AuthService) RegisterRoutes(grp *huma.Group) {
 	}, exceptions.Handle(func(ctx context.Context, _ *struct{}) (*LoginRedirect, error) {
 		state, err := generateState(32)
 		if err != nil {
-			return nil, fmt.Errorf("error generating oauth state")
+			return nil, exceptions.Unauthorized("error generating oauth state")
 		}
 		url := svc.oidcService.GetOAuth2Config().AuthCodeURL(state)
 		return &LoginRedirect{
@@ -73,14 +72,11 @@ func (svc *AuthService) RegisterRoutes(grp *huma.Group) {
 		}
 
 		scoped := svc.oidcService.ClaimsToScopedToken(claims, idToken)
-		if scoped.Subject == "" {
-			return nil, fmt.Errorf("OIDC claims or ID token missing required fields: %+v", claims)
-		}
 
 		user, org, err := svc.orgService.EnsureUserAndOrg(ctx, scoped)
 		if err != nil || user == nil || org == nil {
 			fmt.Printf("EnsureUserAndOrg failed: user=%+v org=%+v err=%v scoped=%+v\n", user, org, err, scoped)
-			return nil, fmt.Errorf("failed to persist user/org: %w", err)
+			return nil, exceptions.InternalServerError(fmt.Sprintf("failed to persist user/org: %v", err))
 		}
 
 		// Hydrate ScopedToken with org info
@@ -93,7 +89,7 @@ func (svc *AuthService) RegisterRoutes(grp *huma.Group) {
 
 		signed, err := token.SignedString([]byte(cfg.AuthSecret))
 		if err != nil {
-			return nil, fmt.Errorf("JWT signing error: %w", err)
+			return nil, exceptions.InternalServerError(fmt.Sprintf("JWT signing error: %+v", err))
 		}
 
 		cookie := http.Cookie{
@@ -123,7 +119,7 @@ func (svc *AuthService) RegisterRoutes(grp *huma.Group) {
 	}, exceptions.Handle(func(ctx context.Context, _ *struct{}) (*MeResponse, error) {
 		claims, ok := middleware.GetScopedToken(ctx)
 		if !ok {
-			return nil, fmt.Errorf("no session")
+			return nil, exceptions.Unauthorized("no session")
 		}
 		return &MeResponse{Body: MeResponseBody{
 			Email:             claims.Email,

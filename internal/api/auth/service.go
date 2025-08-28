@@ -6,6 +6,7 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/insurgence-ai/llm-gateway/internal/exceptions"
 	"github.com/insurgence-ai/llm-gateway/internal/model"
 	"golang.org/x/oauth2"
 )
@@ -41,17 +42,17 @@ func (s *OIDCService) GetVerifier() *oidc.IDTokenVerifier {
 func (s *OIDCService) VerifyIDToken(ctx context.Context, tok *oauth2.Token) (*oidc.IDToken, map[string]any, error) {
 	raw, ok := tok.Extra("id_token").(string)
 	if !ok {
-		return nil, nil, fmt.Errorf("id_token missing in token response")
+		return nil, nil, exceptions.Unauthorized("id_token missing in token response")
 	}
 
 	idToken, err := s.GetVerifier().Verify(ctx, raw)
 	if err != nil {
-		return nil, nil, fmt.Errorf("id_token verification failed: %w", err)
+		return nil, nil, exceptions.Unauthorized(fmt.Sprintf("id_token verification failed: %v", err))
 	}
 
 	var claims map[string]any
 	if err := idToken.Claims(&claims); err != nil {
-		return nil, nil, fmt.Errorf("id_token claim parse failed: %w", err)
+		return nil, nil, exceptions.Unauthorized(fmt.Sprintf("id_token claim parse failed: %v", err))
 	}
 
 	return idToken, claims, nil
@@ -64,6 +65,7 @@ func (s *OIDCService) ClaimsToScopedToken(claims map[string]any, idToken *oidc.I
 		}
 		return ""
 	}
+
 	getStrSlice := func(k string) []string {
 		out := []string{}
 		if arr, ok := claims[k].([]any); ok {

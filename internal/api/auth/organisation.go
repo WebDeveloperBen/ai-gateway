@@ -1,4 +1,4 @@
-package organisations
+package auth
 
 import (
 	"context"
@@ -23,7 +23,7 @@ type OrganisationService struct {
 	userRepo users.Repository
 }
 
-func NewService(orgRepo organisations.Repository, userRepo users.Repository) OrganisationServiceInterface {
+func NewOrganisationService(orgRepo organisations.Repository, userRepo users.Repository) OrganisationServiceInterface {
 	return &OrganisationService{orgRepo: orgRepo, userRepo: userRepo}
 }
 

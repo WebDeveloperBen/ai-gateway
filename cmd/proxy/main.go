@@ -13,7 +13,6 @@ import (
 	apigw "github.com/insurgence-ai/llm-gateway/internal/api/gateway"
 	"github.com/insurgence-ai/llm-gateway/internal/api/health"
 	"github.com/insurgence-ai/llm-gateway/internal/api/middleware"
-	"github.com/insurgence-ai/llm-gateway/internal/api/organisations"
 	"github.com/insurgence-ai/llm-gateway/internal/config"
 	dbdriver "github.com/insurgence-ai/llm-gateway/internal/drivers/db"
 	"github.com/insurgence-ai/llm-gateway/internal/drivers/kv"
@@ -83,8 +82,8 @@ func main() {
 	}
 
 	// ------------- Services ------------ //
+	orgSvc := apiauth.NewOrganisationService(orgRepo, userRepo)
 	keysSvc := keys.NewService(keyRepo, hasher)
-	orgSvc := organisations.NewService(orgRepo, userRepo)
 
 	// ----------- API Router Setup ---------- //
 	router, humaCfg := server.New(cfg)
