@@ -35,27 +35,27 @@ tasks:
   db:status:
     desc: Show migration status
     cmds:
-      - goose -dir ./db/migrations postgres "$DATABASE_URL" status
+      - goose -dir ./sqlc/migrations postgres "$POSTGRES_DSN" status
 
   db:up:
     desc: Apply all up migrations
     cmds:
-      - goose -dir ./db/migrations postgres "$DATABASE_URL" up
+      - goose -dir ./sqlc/migrations postgres "$POSTGRES_DSN" up
 
   db:down:
     desc: Roll back the last migration
     cmds:
-      - goose -dir ./db/migrations postgres "$DATABASE_URL" down
+      - goose -dir ./sqlc/migrations postgres "$POSTGRES_DSN" down
 
   db:reset:
     desc: Reset the database (rollback all, then migrate up)
     cmds:
-      - goose -dir ./db/migrations postgres "$DATABASE_URL" reset
+      - goose -dir ./sqlc/migrations postgres "$POSTGRES_DSN" reset
 
   db:create:
     desc: Create a new migration file
     cmds:
-      - goose -dir ./db/migrations create {{.CLI_ARGS | default "new_migration"}} sql
+      - goose -dir ./sqlc/migrations create {{.CLI_ARGS | default "new_migration"}} sql
 
   # -------------------
   # SQLC generation

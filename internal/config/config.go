@@ -48,7 +48,7 @@ func loadConfig() Config {
 		AdminPort:                   getEnv("ADMIN_PORT", ":8080"),
 		JWTExpiration:               getEnvAsDuration("JWT_EXPIRATION_IN_SECONDS", time.Hour),
 		IsProd:                      getEnvAsBoolean("IS_PROD", false),
-		DBConnectionString:          getEnv("POSTGRES_DNS", ""),
+		DBConnectionString:          getEnv("POSTGRES_DSN", ""),
 		AuthSecret:                  getEnv("AUTH_SECRET", "superSecretNeedsToBeChanged"),
 		ApplicationName:             getEnv("APPLICATION_NAME", "LLM Gateway"),
 		Version:                     getEnv("VERSION", "v1.0.0"),
