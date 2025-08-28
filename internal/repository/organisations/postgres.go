@@ -2,7 +2,6 @@ package organisations
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 
@@ -17,7 +16,7 @@ type postgresRepo struct {
 	Q *db.Queries
 }
 
-func NewPostgresRepo(q *db.Queries) OrgRepository {
+func NewPostgresRepo(q *db.Queries) Repository {
 	return &postgresRepo{Q: q}
 }
 
@@ -36,7 +35,6 @@ func (r *postgresRepo) Create(ctx context.Context, name string) (*model.Organisa
 		if err != nil {
 			return nil, fmt.Errorf("error assigning role to org: %w", err)
 		}
-
 	}
 
 	return &model.Organisation{
@@ -64,47 +62,58 @@ func (r *postgresRepo) FindByID(ctx context.Context, id string) (*model.Organisa
 	}, nil
 }
 
-func (r *postgresRepo) EnsureRole(ctx context.Context, orgID, roleName, desc string) (*model.Role, error) {
-	orgUUID := repository.ParseUUID(orgID)
-	if orgUUID == (uuid.UUID{}) {
-		fmt.Printf("[EnsureRole] Invalid org uuid: %v\n", orgID)
-		return nil, errors.New("invalid org uuid")
-	}
-	// Find or create global role
-	role, err := r.Q.FindRoleByName(ctx, roleName)
-	fmt.Printf("[EnsureRole] FindRoleByName(%s): role=%+v err=%v\n", roleName, role, err)
+func (r *postgresRepo) EnsureMembership(ctx context.Context, orgID, userID uuid.UUID) error {
+	return r.Q.EnsureOrgMembership(ctx, db.EnsureOrgMembershipParams{OrgID: orgID, UserID: userID})
+}
+
+func (r *postgresRepo) FindRoleByName(ctx context.Context, name string) (*model.Role, error) {
+	role, err := r.Q.FindRoleByName(ctx, name)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			role, err = r.Q.CreateRole(ctx, db.CreateRoleParams{
-				Name:        roleName,
-				Description: &desc,
-			})
-			fmt.Printf("[EnsureRole] CreateRole(%s): role=%+v err=%v\n", roleName, role, err)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, err
-		}
-	}
-	// Assign the role to the org via org_roles
-	_, err = r.Q.AssignRoleToOrg(ctx, db.AssignRoleToOrgParams{
-		OrgID:  orgUUID,
-		RoleID: role.ID,
-	})
-	fmt.Printf("[EnsureRole] AssignRoleToOrg(orgID=%v, roleID=%v): err=%v\n", orgUUID, role.ID, err)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 	return &model.Role{
 		ID:          role.ID.String(),
-		OrgID:       orgID,
 		Name:        role.Name,
 		Description: repository.DerefString(role.Description),
 		CreatedAt:   role.CreatedAt.Time,
 	}, nil
 }
 
-func (r *postgresRepo) EnsureOrgMembership(ctx context.Context, orgID, userID uuid.UUID) error {
-	return r.Q.EnsureOrgMembership(ctx, db.EnsureOrgMembershipParams{OrgID: orgID, UserID: userID})
+func (r *postgresRepo) CreateRole(ctx context.Context, name, desc string) (*model.Role, error) {
+	role, err := r.Q.CreateRole(ctx, db.CreateRoleParams{
+		Name:        name,
+		Description: &desc,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.Role{
+		ID:          role.ID.String(),
+		Name:        role.Name,
+		Description: repository.DerefString(role.Description),
+		CreatedAt:   role.CreatedAt.Time,
+	}, nil
+}
+
+func (r *postgresRepo) AssignRole(ctx context.Context, orgID, roleID string) error {
+	orgUUID := repository.ParseUUID(orgID)
+	if orgUUID == (uuid.UUID{}) {
+		return errors.New("invalid uuid")
+	}
+
+	roleUUID := repository.ParseUUID(roleID)
+	if orgUUID == (uuid.UUID{}) {
+		return errors.New("invalid uuid")
+	}
+
+	_, err := r.Q.AssignRoleToOrg(ctx, db.AssignRoleToOrgParams{
+		OrgID:  orgUUID,
+		RoleID: roleUUID,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

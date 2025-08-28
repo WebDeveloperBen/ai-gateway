@@ -12,7 +12,7 @@
 
 ### Support Proxy Keys for Apps and Users With Resource-constrained Rate Limits
 
-- [ ] Design key provisioning system for per-app and per-user proxy keys
+- [x] Design key provisioning system for per-app and per-user proxy keys
 - [ ] UI/API to create, assign, and manage proxy keys scoped to apps/users
 - [ ] Allow setting tpm/rate limits as a fraction/portion of a parent resource quota per key
 - [ ] Enforce per-key and per-parent resource total accounting in the ratelimiter logic
@@ -47,8 +47,8 @@
 
 ### Add Entra ID JWT authentication for proxy API users (optional, phase 2)
 
-- [ ] Add Entra ID token JWT verification to proxy
-- [ ] Map roles/permissions from claims
+- [x] Add Entra ID token JWT verification to proxy
+- [x] Map roles/permissions from claims
 - [ ] Support mixed API-key + JWT environments
 
 ### Switch AOAI upstream authentication to Managed Identity
@@ -102,10 +102,18 @@
 - [ ] UI and API to assign models to deployments
 - [ ] Validation and override logic for model aliasing
 
+### Add organisation Sass style database schema with RLS scoped db pool
+
+- [x] Create organisation schema now to easily allow any future state
+- [x] Create home organisation for a user upon first login
+- [x] Create concept of RBAC on per org user basis to facilitate enterprise policy management / permission control
+- [ ] Allow invitations of users to other organisations
+
 ### Integrate role assignment and permission management via Entra ID
 
-- [ ] Entra ID role mapping CRUD in admin
-- [ ] API enforcement for admin-facing endpoints
+- [] Entra ID role mapping CRUD in admin (this should extend the default global roles if contained on the app registrations "expose an api scope" to allow entra
+  driven role config)
+- [x] API enforcement for admin-facing endpoints
 
 ### Enable app/team/client usage & cost CSV export from the admin UI
 
