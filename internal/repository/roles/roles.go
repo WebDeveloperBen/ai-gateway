@@ -1,3 +1,3 @@
 package roles
 
-// TODO: add roles repo
+var DefaultRoleNames = []string{"owner", "admin", "member"}

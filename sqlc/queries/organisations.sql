@@ -6,3 +6,4 @@ RETURNING *;
 -- name: FindOrgByID :one
 SELECT * FROM organisations
 WHERE id = $1;
+

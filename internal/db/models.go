@@ -45,9 +45,20 @@ type OrganisationKey struct {
 	LastUsed  pgtype.Timestamptz `json:"last_used"`
 }
 
+type OrganisationRole struct {
+	OrgID     uuid.UUID          `json:"org_id"`
+	RoleID    uuid.UUID          `json:"role_id"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type OrganisationUser struct {
+	UserID    uuid.UUID          `json:"user_id"`
+	OrgID     uuid.UUID          `json:"org_id"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type Role struct {
 	ID          uuid.UUID          `json:"id"`
-	OrgID       uuid.UUID          `json:"org_id"`
 	Name        string             `json:"name"`
 	Description *string            `json:"description"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`

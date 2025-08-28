@@ -11,13 +11,19 @@ import (
 )
 
 type Querier interface {
+	AssignRoleToOrg(ctx context.Context, arg AssignRoleToOrgParams) (OrganisationRole, error)
 	AssignRoleToUser(ctx context.Context, arg AssignRoleToUserParams) error
 	CreateOrg(ctx context.Context, name string) (Organisation, error)
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteRole(ctx context.Context, id uuid.UUID) error
+	EnsureOrgMembership(ctx context.Context, arg EnsureOrgMembershipParams) error
 	FindOrgByID(ctx context.Context, id uuid.UUID) (Organisation, error)
-	FindRoleByOrgAndName(ctx context.Context, arg FindRoleByOrgAndNameParams) (Role, error)
+	FindRoleByID(ctx context.Context, id uuid.UUID) (Role, error)
+	FindRoleByName(ctx context.Context, name string) (Role, error)
 	FindUserBySubOrEmail(ctx context.Context, arg FindUserBySubOrEmailParams) (User, error)
+	ListRoles(ctx context.Context) ([]Role, error)
+	UpdateRole(ctx context.Context, arg UpdateRoleParams) (Role, error)
 }
 
 var _ Querier = (*Queries)(nil)

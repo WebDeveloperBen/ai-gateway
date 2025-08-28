@@ -25,7 +25,6 @@ func NewService(orgRepo organisations.OrgRepository, userRepo users.Repository) 
 	return &OrganisationService{orgRepo: orgRepo, userRepo: userRepo}
 }
 
-// EnsureUserAndOrg finds or creates a user + org for OIDC login
 // EnsureUserAndOrg finds or creates a user + org for OIDC login.
 func (s *OrganisationService) EnsureUserAndOrg(ctx context.Context, scoped model.ScopedToken) (*model.User, *model.Organisation, error) {
 	if scoped.Subject == "" || scoped.Email == "" || scoped.Name == "" {
@@ -33,10 +32,7 @@ func (s *OrganisationService) EnsureUserAndOrg(ctx context.Context, scoped model
 	}
 
 	user, err := s.userRepo.FindBySubOrEmail(ctx, scoped.Subject, scoped.Email)
-	// ✅ only treat unexpected errors as fatal; ErrNoRows means "create"
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		// If you're using pgx/sqlc, also allow pgx.ErrNoRows here:
-		// if err != nil && !(errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows)) { ... }
 		return nil, nil, fmt.Errorf("find user: %w", err)
 	}
 
@@ -64,19 +60,19 @@ func (s *OrganisationService) EnsureUserAndOrg(ctx context.Context, scoped model
 	if err != nil {
 		return nil, nil, fmt.Errorf("create user: %w", err)
 	}
-
+	// 1. Ensure global owner role exists
 	ownerRole, err := s.orgRepo.EnsureRole(ctx, org.ID, "owner", "Organisation owner")
 	if err != nil {
 		return nil, nil, fmt.Errorf("ensure role(owner): %w", err)
 	}
+	// 2. Assign owner role to user
 	if err := s.userRepo.AssignRole(ctx, user.ID, ownerRole.ID, repository.ParseUUID(org.ID)); err != nil {
 		return nil, nil, fmt.Errorf("assign role(owner)): %w", err)
 	}
 
-	// If you have an organisation_users table, ensure membership too:
-	// if err := s.orgRepo.EnsureOrgMembership(ctx, org.ID, user.ID); err != nil {
-	//     return nil, nil, fmt.Errorf("ensure membership: %w", err)
-	// }
+	if err := s.orgRepo.EnsureOrgMembership(ctx, repository.ParseUUID(org.ID), repository.ParseUUID(user.ID)); err != nil {
+		return nil, nil, fmt.Errorf("ensure membership: %w", err)
+	}
 
 	return user, org, nil
 }

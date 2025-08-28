@@ -12,23 +12,21 @@ import (
 )
 
 const createRole = `-- name: CreateRole :one
-INSERT INTO roles (org_id, name, description)
-VALUES ($1, $2, $3)
-RETURNING id, org_id, name, description, created_at
+INSERT INTO roles (name, description)
+VALUES ($1, $2)
+RETURNING id, name, description, created_at
 `
 
 type CreateRoleParams struct {
-	OrgID       uuid.UUID `json:"org_id"`
-	Name        string    `json:"name"`
-	Description *string   `json:"description"`
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
 }
 
 func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error) {
-	row := q.db.QueryRow(ctx, createRole, arg.OrgID, arg.Name, arg.Description)
+	row := q.db.QueryRow(ctx, createRole, arg.Name, arg.Description)
 	var i Role
 	err := row.Scan(
 		&i.ID,
-		&i.OrgID,
 		&i.Name,
 		&i.Description,
 		&i.CreatedAt,
@@ -36,29 +34,114 @@ func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) (Role, e
 	return i, err
 }
 
-const findRoleByOrgAndName = `-- name: FindRoleByOrgAndName :one
-SELECT 
+const deleteRole = `-- name: DeleteRole :exec
+DELETE FROM roles
+WHERE id = $1
+`
+
+func (q *Queries) DeleteRole(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteRole, id)
+	return err
+}
+
+const findRoleByID = `-- name: FindRoleByID :one
+SELECT
   id,
-  org_id,
   name,
   description,
   created_at
 FROM roles
-WHERE org_id = $1 AND name = $2
+WHERE id = $1
 LIMIT 1
 `
 
-type FindRoleByOrgAndNameParams struct {
-	OrgID uuid.UUID `json:"org_id"`
-	Name  string    `json:"name"`
-}
-
-func (q *Queries) FindRoleByOrgAndName(ctx context.Context, arg FindRoleByOrgAndNameParams) (Role, error) {
-	row := q.db.QueryRow(ctx, findRoleByOrgAndName, arg.OrgID, arg.Name)
+func (q *Queries) FindRoleByID(ctx context.Context, id uuid.UUID) (Role, error) {
+	row := q.db.QueryRow(ctx, findRoleByID, id)
 	var i Role
 	err := row.Scan(
 		&i.ID,
-		&i.OrgID,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const findRoleByName = `-- name: FindRoleByName :one
+SELECT 
+  id,
+  name,
+  description,
+  created_at
+FROM roles
+WHERE name = $1
+LIMIT 1
+`
+
+func (q *Queries) FindRoleByName(ctx context.Context, name string) (Role, error) {
+	row := q.db.QueryRow(ctx, findRoleByName, name)
+	var i Role
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const listRoles = `-- name: ListRoles :many
+SELECT 
+  id,
+  name,
+  description,
+  created_at
+FROM roles
+`
+
+func (q *Queries) ListRoles(ctx context.Context) ([]Role, error) {
+	rows, err := q.db.Query(ctx, listRoles)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Role
+	for rows.Next() {
+		var i Role
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateRole = `-- name: UpdateRole :one
+UPDATE roles
+SET name = $2, description = $3
+WHERE id = $1
+RETURNING id, name, description, created_at
+`
+
+type UpdateRoleParams struct {
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Description *string   `json:"description"`
+}
+
+func (q *Queries) UpdateRole(ctx context.Context, arg UpdateRoleParams) (Role, error) {
+	row := q.db.QueryRow(ctx, updateRole, arg.ID, arg.Name, arg.Description)
+	var i Role
+	err := row.Scan(
+		&i.ID,
 		&i.Name,
 		&i.Description,
 		&i.CreatedAt,
