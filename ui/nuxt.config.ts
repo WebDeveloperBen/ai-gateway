@@ -9,7 +9,6 @@ export default defineNuxtConfig({
   },
   devtools: { enabled: true },
   build: { analyze: { analyzerMode: "static" } },
-
   nitro: {
     preset: "static", // bundle as standard vuejs app
     devProxy: {
@@ -24,20 +23,16 @@ export default defineNuxtConfig({
       },
     },
   },
-
   modules: [
     "@nuxtjs/color-mode",
     "@vueuse/nuxt",
-    "@nuxt/icon",
     "@nuxt/fonts",
     "@vee-validate/nuxt",
     "reka-ui/nuxt",
     "motion-v/nuxt",
   ],
-
   imports: {
     dirs: ["./tpes"],
-
     imports: [
       {
         from: "tailwind-variants",
@@ -50,21 +45,9 @@ export default defineNuxtConfig({
       },
     ],
   },
-
   colorMode: {
     storageKey: "ui-color-mode",
     classSuffix: "",
   },
-
-  icon: {
-    clientBundle: {
-      scan: true,
-      sizeLimitKb: 0,
-    },
-
-    mode: "svg",
-    class: "shrink-0",
-    fetchTimeout: 2000,
-    serverBundle: "local",
-  },
 });
+

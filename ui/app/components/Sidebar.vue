@@ -1,4 +1,23 @@
 <script lang="ts" setup>
+import {
+  SquareTerminal,
+  Command,
+  Settings2,
+  Frame,
+  Bot,
+  AudioWaveform,
+  GalleryVerticalEnd,
+  BookOpen,
+  PieChart,
+  Map,
+  ChevronsUpDown,
+  Plus,
+  Search,
+  ChevronRight,
+  EllipsisVertical,
+  Folder,
+  Trash2,
+} from "lucide-vue-next";
 // Breadcrumb items
 const breadcrumbItems = [
   { label: "Building Your Application", link: "#" },
@@ -14,17 +33,17 @@ const data = {
   teams: [
     {
       name: "Acme Inc",
-      logo: "lucide:gallery-vertical-end",
+      logo: GalleryVerticalEnd,
       plan: "Enterprise",
     },
     {
       name: "Acme Corp.",
-      logo: "lucide:audio-waveform",
+      logo: AudioWaveform,
       plan: "Startup",
     },
     {
       name: "Evil Corp.",
-      logo: "lucide:command",
+      logo: Command,
       plan: "Free",
     },
   ],
@@ -32,7 +51,7 @@ const data = {
     {
       title: "Playground",
       url: "#",
-      icon: "lucide:square-terminal",
+      icon: SquareTerminal,
       isActive: true,
       items: [
         {
@@ -52,7 +71,7 @@ const data = {
     {
       title: "Models",
       url: "#",
-      icon: "lucide:bot",
+      icon: Bot,
       items: [
         {
           title: "Genesis",
@@ -71,7 +90,7 @@ const data = {
     {
       title: "Documentation",
       url: "#",
-      icon: "lucide:book-open",
+      icon: BookOpen,
       items: [
         {
           title: "Introduction",
@@ -94,7 +113,7 @@ const data = {
     {
       title: "Settings",
       url: "#",
-      icon: "lucide:settings-2",
+      icon: Settings2,
       items: [
         {
           title: "General",
@@ -119,17 +138,17 @@ const data = {
     {
       name: "Design Engineering",
       url: "#",
-      icon: "lucide:frame",
+      icon: Frame,
     },
     {
       name: "Sales & Marketing",
       url: "#",
-      icon: "lucide:pie-chart",
+      icon: PieChart,
     },
     {
       name: "Travel",
       url: "#",
-      icon: "lucide:map",
+      icon: Map,
     },
   ],
 };
@@ -153,7 +172,7 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
                   <div
                     class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
                   >
-                    <Icon mode="svg" :name="activeTeam.logo" class="size-4" />
+                    <component :is="activeTeam.logo" class="size-4" />
                   </div>
                   <div class="grid flex-1 text-left text-sm leading-tight">
                     <span class="truncate font-semibold">
@@ -161,11 +180,7 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
                     </span>
                     <span class="truncate text-xs">{{ activeTeam.plan }}</span>
                   </div>
-                  <Icon
-                    mode="svg"
-                    name="lucide:chevrons-up-down"
-                    class="ml-auto"
-                  />
+                  <component :is="ChevronsUpDown" class="ml-auto" />
                 </UiSidebarMenuButton>
               </UiDropdownMenuTrigger>
               <UiDropdownMenuContent
@@ -186,11 +201,7 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
                     <div
                       class="flex size-6 items-center justify-center rounded-sm border"
                     >
-                      <Icon
-                        mode="svg"
-                        :name="team.logo"
-                        class="size-4 shrink-0"
-                      />
+                      <component :is="team.logo" class="size-4 shrink-0" />
                     </div>
                     {{ team.name }}
                     <UiDropdownMenuShortcut
@@ -203,7 +214,7 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
                   <div
                     class="flex size-6 items-center justify-center rounded-md border bg-background"
                   >
-                    <Icon name="lucide:plus" class="size-4" />
+                    <component :is="Plus" class="size-4" />
                   </div>
                   <div class="font-medium text-muted-foreground">Add team</div>
                 </UiDropdownMenuItem>
@@ -222,8 +233,8 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
                 placeholder="Search the docs..."
                 class="pl-8"
               />
-              <Icon
-                name="lucide:search"
+              <component
+                :is="Search"
                 class="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 opacity-50 select-none"
               />
             </UiSidebarGroupContent>
@@ -245,12 +256,11 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
               <UiSidebarMenuItem>
                 <UiCollapsibleTrigger as-child>
                   <UiSidebarMenuButton :tooltip="item.title">
-                    <Icon mode="svg" :name="item.icon" />
+                    <component :is="item.icon" />
 
                     <span>{{ item.title }}</span>
-                    <Icon
-                      mode="svg"
-                      name="lucide:chevron-right"
+                    <component
+                      :is="ChevronRight"
                       class="ml-auto transition-transform duration-200"
                       :class="[open && 'rotate-90']"
                     />
@@ -281,18 +291,14 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
             <UiSidebarMenuItem v-for="item in data.projects" :key="item.name">
               <UiSidebarMenuButton as-child>
                 <NuxtLink :href="item.url">
-                  <Icon mode="svg" :name="item.icon" />
+                  <compoennt :is="item.icon" />
                   <span>{{ item.name }}</span>
                 </NuxtLink>
               </UiSidebarMenuButton>
               <UiDropdownMenu>
                 <UiDropdownMenuTrigger as-child>
                   <UiSidebarMenuAction show-on-hover>
-                    <Icon
-                      mode="svg"
-                      name="lucide:ellipsis-vertical"
-                      class="rotate-90"
-                    />
+                    <component :is="EllipsisVertical" class="rotate-90" />
                     <span class="sr-only">More</span>
                   </UiSidebarMenuAction>
                 </UiDropdownMenuTrigger>
@@ -302,20 +308,16 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
                   :align="isMobile ? 'end' : 'start'"
                 >
                   <UiDropdownMenuItem>
-                    <Icon
-                      mode="svg"
-                      name="lucide:folder"
-                      class="text-muted-foreground"
-                    />
+                    <component :is="Folder" class="text-muted-foreground" />
                     <span>View Project</span>
                   </UiDropdownMenuItem>
                   <UiDropdownMenuItem>
-                    <Icon name="lucide:forward" class="text-muted-foreground" />
+                    <component :is="Folder" class="text-muted-foreground" />
                     <span>Share Project</span>
                   </UiDropdownMenuItem>
                   <UiDropdownMenuSeparator />
                   <UiDropdownMenuItem>
-                    <Icon name="lucide:trash-2" class="text-muted-foreground" />
+                    <component :is="Trash2" class="text-muted-foreground" />
                     <span>Delete Project</span>
                   </UiDropdownMenuItem>
                 </UiDropdownMenuContent>
@@ -324,8 +326,8 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
 
             <UiSidebarMenuItem>
               <UiSidebarMenuButton class="text-sidebar-foreground/70">
-                <Icon
-                  name="lucide:ellipsis-vertical"
+                <component
+                  :is="EllipsisVertical"
                   class="rotate-90 text-sidebar-foreground/70"
                 />
                 <span>More</span>
@@ -358,7 +360,7 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
                     }}</span>
                     <span class="truncate text-xs">{{ data.user.email }}</span>
                   </div>
-                  <Icon name="lucide:chevrons-up-down" class="ml-auto size-4" />
+                  <component :is="ChevronsUpDown" class="ml-auto size-4" />
                 </UiSidebarMenuButton>
               </UiDropdownMenuTrigger>
               <UiDropdownMenuContent

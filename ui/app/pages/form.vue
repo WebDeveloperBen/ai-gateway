@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { Mail, Lock } from "lucide-vue-next";
 import { promiseTimeout } from "@vueuse/core";
 import type { FormBuilder } from "@/components/Ui/FormBuilder/FormBuilder.vue";
 import { toast } from "vue-sonner";

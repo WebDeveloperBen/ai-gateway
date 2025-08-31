@@ -1,5 +1,156 @@
+<script lang="ts" setup>
+import {
+  BookOpen,
+  Map,
+  Bot,
+  Command,
+  Frame,
+  GalleryVerticalEnd,
+  PieChart,
+  Terminal,
+  Settings2,
+  ChevronRight,
+  EllipsisVertical,
+  Folder,
+  Forward,
+  Trash2,
+  ChevronsUpDown,
+  Plus,
+} from "lucide-vue-next";
+// Breadcrumb items
+const breadcrumbItems = [
+  { label: "Building Your Application", link: "#" },
+  { label: "Data Fetching", link: "#" },
+];
+// This is sample data.
+const data = {
+  user: {
+    name: "breezy",
+    email: "m@example.com",
+    avatar: "https://behonbaker.com/icon.png",
+  },
+  teams: [
+    {
+      name: "Hello World Inc",
+      logo: GalleryVerticalEnd,
+      plan: "Enterprise",
+    },
+    {
+      name: "Evil Corp.",
+      logo: Command,
+      plan: "Free",
+    },
+  ],
+  navMain: [
+    {
+      title: "Playground",
+      url: "#",
+      icon: Terminal,
+      isActive: true,
+      items: [
+        {
+          title: "History",
+          url: "#",
+        },
+        {
+          title: "Starred",
+          url: "#",
+        },
+        {
+          title: "Settings",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Models",
+      url: "#",
+      icon: Bot,
+      items: [
+        {
+          title: "Genesis",
+          url: "#",
+        },
+        {
+          title: "Explorer",
+          url: "#",
+        },
+        {
+          title: "Quantum",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Documentation",
+      url: "#",
+      icon: BookOpen,
+      items: [
+        {
+          title: "Introduction",
+          url: "#",
+        },
+        {
+          title: "Get Started",
+          url: "#",
+        },
+        {
+          title: "Tutorials",
+          url: "#",
+        },
+        {
+          title: "Changelog",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Settings",
+      url: "#",
+      icon: Settings2,
+      items: [
+        {
+          title: "General",
+          url: "#",
+        },
+        {
+          title: "Team",
+          url: "#",
+        },
+        {
+          title: "Billing",
+          url: "#",
+        },
+        {
+          title: "Limits",
+          url: "#",
+        },
+      ],
+    },
+  ],
+  projects: [
+    {
+      name: "Design Engineering",
+      url: "#",
+      icon: Frame,
+    },
+    {
+      name: "Sales & Marketing",
+      url: "#",
+      icon: PieChart,
+    },
+    {
+      name: "Travel",
+      url: "#",
+      icon: Map,
+    },
+  ],
+};
+const activeTeam = ref(data.teams[0]!);
+useSeoMeta({ title: "A sidebar that collapses to icons." });
+</script>
 <template>
-  <UiSidebarProvider v-slot="{ isMobile, state }">
+  <UiSidebarProvider v-slot="{ isMobile }">
     <!-- App Sidebar -->
     <UiSidebar collapsible="icon">
       <!-- Team switcher -->
@@ -15,7 +166,7 @@
                   <div
                     class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
                   >
-                    <Icon mode="svg" :name="activeTeam.logo" class="size-4" />
+                    <component :is="activeTeam.logo" class="size-4" />
                   </div>
                   <div class="grid flex-1 text-left text-sm leading-tight">
                     <span class="truncate font-semibold">
@@ -23,11 +174,8 @@
                     </span>
                     <span class="truncate text-xs">{{ activeTeam.plan }}</span>
                   </div>
-                  <Icon
-                    mode="svg"
-                    name="lucide:chevrons-up-down"
-                    class="ml-auto"
-                  />
+                  <component :is="" class="ml-auto" />
+                  <component :is="ChevronsUpDown" class="ml-auto" />
                 </UiSidebarMenuButton>
               </UiDropdownMenuTrigger>
               <UiDropdownMenuContent
@@ -48,11 +196,7 @@
                     <div
                       class="flex size-6 items-center justify-center rounded-sm border"
                     >
-                      <Icon
-                        mode="svg"
-                        :name="team.logo"
-                        class="size-4 shrink-0"
-                      />
+                      <component :is="team.logo" class="size-4 shrink-0" />
                     </div>
                     {{ team.name }}
                     <UiDropdownMenuShortcut
@@ -65,7 +209,7 @@
                   <div
                     class="flex size-6 items-center justify-center rounded-md border bg-background"
                   >
-                    <Icon name="lucide:plus" class="size-4" />
+                    <component :is="Plus" class="size-4" />
                   </div>
                   <div class="font-medium text-muted-foreground">Add team</div>
                 </UiDropdownMenuItem>
@@ -73,24 +217,6 @@
             </UiDropdownMenu>
           </UiSidebarMenuItem>
         </UiSidebarMenu>
-
-        <!-- Search form -->
-        <form v-if="state != 'collapsed'">
-          <UiSidebarGroup class="py-0">
-            <UiSidebarGroupContent class="relative">
-              <UiLabel for="search" class="sr-only"> Search </UiLabel>
-              <UiSidebarInput
-                id="search"
-                placeholder="Search the docs..."
-                class="pl-8"
-              />
-              <Icon
-                name="lucide:search"
-                class="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 opacity-50 select-none"
-              />
-            </UiSidebarGroupContent>
-          </UiSidebarGroup>
-        </form>
       </UiSidebarHeader>
       <UiSidebarContent>
         <!-- Main -->
@@ -107,12 +233,11 @@
               <UiSidebarMenuItem>
                 <UiCollapsibleTrigger as-child>
                   <UiSidebarMenuButton :tooltip="item.title">
-                    <Icon mode="svg" :name="item.icon" />
+                    <component :is="item.icon" />
 
                     <span>{{ item.title }}</span>
-                    <Icon
-                      mode="svg"
-                      name="lucide:chevron-right"
+                    <component
+                      :is="ChevronRight"
                       class="ml-auto transition-transform duration-200"
                       :class="[open && 'rotate-90']"
                     />
@@ -143,18 +268,14 @@
             <UiSidebarMenuItem v-for="item in data.projects" :key="item.name">
               <UiSidebarMenuButton as-child>
                 <NuxtLink :href="item.url">
-                  <Icon mode="svg" :name="item.icon" />
+                  <component :is="item.icon" />
                   <span>{{ item.name }}</span>
                 </NuxtLink>
               </UiSidebarMenuButton>
               <UiDropdownMenu>
                 <UiDropdownMenuTrigger as-child>
                   <UiSidebarMenuAction show-on-hover>
-                    <Icon
-                      mode="svg"
-                      name="lucide:ellipsis-vertical"
-                      class="rotate-90"
-                    />
+                    <component :is="EllipsisVertical" class="rotate-90" />
                     <span class="sr-only">More</span>
                   </UiSidebarMenuAction>
                 </UiDropdownMenuTrigger>
@@ -164,20 +285,16 @@
                   :align="isMobile ? 'end' : 'start'"
                 >
                   <UiDropdownMenuItem>
-                    <Icon
-                      mode="svg"
-                      name="lucide:folder"
-                      class="text-muted-foreground"
-                    />
+                    <component :is="Folder" class="text-muted-foreground" />
                     <span>View Project</span>
                   </UiDropdownMenuItem>
                   <UiDropdownMenuItem>
-                    <Icon name="lucide:forward" class="text-muted-foreground" />
+                    <component :is="Forward" class="text-muted-foreground" />
                     <span>Share Project</span>
                   </UiDropdownMenuItem>
                   <UiDropdownMenuSeparator />
                   <UiDropdownMenuItem>
-                    <Icon name="lucide:trash-2" class="text-muted-foreground" />
+                    <component :is="Trash2" class="text-muted-foreground" />
                     <span>Delete Project</span>
                   </UiDropdownMenuItem>
                 </UiDropdownMenuContent>
@@ -186,8 +303,8 @@
 
             <UiSidebarMenuItem>
               <UiSidebarMenuButton class="text-sidebar-foreground/70">
-                <Icon
-                  name="lucide:ellipsis-vertical"
+                <component
+                  :is="EllipsisVertical"
                   class="rotate-90 text-sidebar-foreground/70"
                 />
                 <span>More</span>
@@ -220,7 +337,7 @@
                     }}</span>
                     <span class="truncate text-xs">{{ data.user.email }}</span>
                   </div>
-                  <Icon name="lucide:chevrons-up-down" class="ml-auto size-4" />
+                  <component :is="ChevronsUpDown" class="ml-auto size-4" />
                 </UiSidebarMenuButton>
               </UiDropdownMenuTrigger>
               <UiDropdownMenuContent
@@ -252,10 +369,7 @@
                 </UiDropdownMenuLabel>
                 <UiDropdownMenuSeparator />
                 <UiDropdownMenuGroup>
-                  <UiDropdownMenuItem
-                    icon="lucide:sparkles"
-                    title="Upgrade to Pro"
-                  />
+                  <UiDropdownMenuItem icon="Sparkles," title="Upgrade to Pro" />
                 </UiDropdownMenuGroup>
                 <UiDropdownMenuSeparator />
                 <UiDropdownMenuGroup>
@@ -289,159 +403,16 @@
       <!-- Navbar -->
       <UiNavbar
         sticky
-        class="flex h-16 shrink-0 items-center gap-2 border-b px-4"
+        class="flex relative h-16 shrink-0 items-center gap-2 border-b px-4"
       >
         <UiSidebarTrigger class="-ml-1" />
         <UiDivider orientation="vertical" class="mr-2 h-4 w-px" />
         <UiBreadcrumbs :items="breadcrumbItems" />
+        <ThemeToggle />
       </UiNavbar>
-      <slot />
-      <!-- <div class="grid auto-rows-min gap-4 p-4 md:grid-cols-3"> -->
-      <!--   <UiPlaceholder -->
-      <!--     v-for="n in 30" -->
-      <!--     :key="n" -->
-      <!--     class="aspect-video rounded-lg" -->
-      <!--   /> -->
-      <!-- </div> -->
+      <PageContainer>
+        <slot />
+      </PageContainer>
     </UiSidebarInset>
   </UiSidebarProvider>
 </template>
-
-<script lang="ts" setup>
-// Breadcrumb items
-const breadcrumbItems = [
-  { label: "Building Your Application", link: "#" },
-  { label: "Data Fetching", link: "#" },
-];
-// This is sample data.
-const data = {
-  user: {
-    name: "breezy",
-    email: "m@example.com",
-    avatar: "https://behonbaker.com/icon.png",
-  },
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: "lucide:gallery-vertical-end",
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: "lucide:audio-waveform",
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: "lucide:command",
-      plan: "Free",
-    },
-  ],
-  navMain: [
-    {
-      title: "Playground",
-      url: "#",
-      icon: "lucide:square-terminal",
-      isActive: true,
-      items: [
-        {
-          title: "History",
-          url: "#",
-        },
-        {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Models",
-      url: "#",
-      icon: "lucide:bot",
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Documentation",
-      url: "#",
-      icon: "lucide:book-open",
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: "lucide:settings-2",
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: "lucide:frame",
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: "lucide:pie-chart",
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: "lucide:map",
-    },
-  ],
-};
-const activeTeam = ref(data.teams[1]!);
-useSeoMeta({ title: "A sidebar that collapses to icons." });
-</script>
