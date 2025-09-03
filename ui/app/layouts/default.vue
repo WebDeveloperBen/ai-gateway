@@ -1,27 +1,28 @@
 <script lang="ts" setup>
 import {
-  BookOpen,
-  Map,
   Bot,
   Command,
-  Frame,
   GalleryVerticalEnd,
-  PieChart,
-  Terminal,
   Settings2,
   ChevronRight,
-  EllipsisVertical,
-  Folder,
-  Forward,
-  Trash2,
   ChevronsUpDown,
   Plus,
+  BarChart3,
+  Users,
+  Layers,
+  Shield,
+  FileText,
+  Lock,
+  Globe,
+  Bell,
 } from "lucide-vue-next";
+
 // Breadcrumb items
 const breadcrumbItems = [
-  { label: "Building Your Application", link: "#" },
-  { label: "Data Fetching", link: "#" },
+  { label: "LLM Gateway", link: "#" },
+  { label: "Dashboard", link: "#" },
 ];
+
 // This is sample data.
 const data = {
   user: {
@@ -31,123 +32,92 @@ const data = {
   },
   teams: [
     {
-      name: "Hello World Inc",
+      name: "LLM Gateway",
       logo: GalleryVerticalEnd,
-      plan: "Enterprise",
+      plan: "Production",
     },
     {
-      name: "Evil Corp.",
+      name: "Development",
       logo: Command,
-      plan: "Free",
+      plan: "Dev",
     },
   ],
   navMain: [
     {
-      title: "Playground",
-      url: "#",
-      icon: Terminal,
+      title: "Applications",
+      url: "/applications",
+      icon: Layers,
       isActive: true,
       items: [
         {
-          title: "History",
-          url: "#",
+          title: "Overview",
+          url: "/applications",
         },
         {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
+          title: "API Keys",
+          url: "/applications/keys",
         },
       ],
+    },
+    {
+      title: "Metrics",
+      url: "/metrics",
+      icon: BarChart3,
     },
     {
       title: "Models",
-      url: "#",
+      url: "/models",
       icon: Bot,
       items: [
         {
-          title: "Genesis",
-          url: "#",
+          title: "Deployments",
+          url: "/models/deployments",
         },
         {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
+          title: "Providers",
+          url: "/models/providers",
         },
       ],
     },
     {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
+      title: "Users",
+      url: "/users",
+      icon: Users,
     },
+  ],
+  navGovernance: [
+    {
+      title: "Policies",
+      url: "/policies",
+      icon: Shield,
+    },
+    {
+      title: "Audit Logs",
+      url: "/audit-logs",
+      icon: FileText,
+    },
+  ],
+  navSettings: [
     {
       title: "Settings",
-      url: "#",
+      url: "/settings",
       icon: Settings2,
       items: [
         {
           title: "General",
-          url: "#",
+          url: "/settings/general",
         },
         {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
+          title: "Security",
+          url: "/settings/security",
         },
       ],
     },
   ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
-    },
-  ],
+  projects: [],
 };
 const activeTeam = ref(data.teams[0]!);
-useSeoMeta({ title: "A sidebar that collapses to icons." });
+useSeoMeta({ title: "LLM Gateway - Admin Dashboard" });
 </script>
 <template>
   <UiSidebarProvider v-slot="{ isMobile }">
@@ -219,97 +189,121 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
         </UiSidebarMenu>
       </UiSidebarHeader>
       <UiSidebarContent>
-        <!-- Main -->
+        <!-- Platform -->
         <UiSidebarGroup>
           <UiSidebarGroupLabel label="Platform" />
           <UiSidebarMenu>
-            <UiCollapsible
-              v-for="(item, index) in data.navMain"
-              :key="index"
-              v-slot="{ open }"
-              as-child
-              :default-open="item.isActive"
-            >
-              <UiSidebarMenuItem>
-                <UiCollapsibleTrigger as-child>
-                  <UiSidebarMenuButton :tooltip="item.title">
+            <template v-for="(item, index) in data.navMain" :key="index">
+              <!-- Items with sub-items -->
+              <UiCollapsible
+                v-if="item.items"
+                v-slot="{ open }"
+                as-child
+                :default-open="item.isActive"
+              >
+                <UiSidebarMenuItem>
+                  <UiCollapsibleTrigger as-child>
+                    <UiSidebarMenuButton :tooltip="item.title">
+                      <component :is="item.icon" />
+                      <span>{{ item.title }}</span>
+                      <component
+                        :is="ChevronRight"
+                        class="ml-auto transition-transform duration-200"
+                        :class="[open && 'rotate-90']"
+                      />
+                    </UiSidebarMenuButton>
+                  </UiCollapsibleTrigger>
+                  <UiCollapsibleContent>
+                    <UiSidebarMenuSub>
+                      <UiSidebarMenuSubItem
+                        v-for="subItem in item.items"
+                        :key="subItem.title"
+                      >
+                        <UiSidebarMenuSubButton as-child>
+                          <NuxtLink :href="subItem.url">
+                            <span>{{ subItem.title }}</span>
+                          </NuxtLink>
+                        </UiSidebarMenuSubButton>
+                      </UiSidebarMenuSubItem>
+                    </UiSidebarMenuSub>
+                  </UiCollapsibleContent>
+                </UiSidebarMenuItem>
+              </UiCollapsible>
+              <!-- Items without sub-items -->
+              <UiSidebarMenuItem v-else>
+                <UiSidebarMenuButton as-child :tooltip="item.title">
+                  <NuxtLink :href="item.url">
                     <component :is="item.icon" />
-
                     <span>{{ item.title }}</span>
-                    <component
-                      :is="ChevronRight"
-                      class="ml-auto transition-transform duration-200"
-                      :class="[open && 'rotate-90']"
-                    />
-                  </UiSidebarMenuButton>
-                </UiCollapsibleTrigger>
-                <UiCollapsibleContent>
-                  <UiSidebarMenuSub>
-                    <UiSidebarMenuSubItem
-                      v-for="subItem in item.items"
-                      :key="subItem.title"
-                    >
-                      <UiSidebarMenuSubButton as-child>
-                        <NuxtLink :href="subItem.url">
-                          <span>{{ subItem.title }}</span>
-                        </NuxtLink>
-                      </UiSidebarMenuSubButton>
-                    </UiSidebarMenuSubItem>
-                  </UiSidebarMenuSub>
-                </UiCollapsibleContent>
+                  </NuxtLink>
+                </UiSidebarMenuButton>
               </UiSidebarMenuItem>
-            </UiCollapsible>
+            </template>
           </UiSidebarMenu>
         </UiSidebarGroup>
-        <!-- Projects -->
-        <UiSidebarGroup class="group-data-[collapsible=icon]:hidden">
-          <UiSidebarGroupLabel label="Projects" />
+        <!-- Governance -->
+        <UiSidebarGroup>
+          <UiSidebarGroupLabel label="Governance" />
           <UiSidebarMenu>
-            <UiSidebarMenuItem v-for="item in data.projects" :key="item.name">
-              <UiSidebarMenuButton as-child>
+            <UiSidebarMenuItem v-for="(item, index) in data.navGovernance" :key="index">
+              <UiSidebarMenuButton as-child :tooltip="item.title">
                 <NuxtLink :href="item.url">
                   <component :is="item.icon" />
-                  <span>{{ item.name }}</span>
+                  <span>{{ item.title }}</span>
                 </NuxtLink>
               </UiSidebarMenuButton>
-              <UiDropdownMenu>
-                <UiDropdownMenuTrigger as-child>
-                  <UiSidebarMenuAction show-on-hover>
-                    <component :is="EllipsisVertical" class="rotate-90" />
-                    <span class="sr-only">More</span>
-                  </UiSidebarMenuAction>
-                </UiDropdownMenuTrigger>
-                <UiDropdownMenuContent
-                  class="w-48 rounded-lg"
-                  :side="isMobile ? 'bottom' : 'right'"
-                  :align="isMobile ? 'end' : 'start'"
-                >
-                  <UiDropdownMenuItem>
-                    <component :is="Folder" class="text-muted-foreground" />
-                    <span>View Project</span>
-                  </UiDropdownMenuItem>
-                  <UiDropdownMenuItem>
-                    <component :is="Forward" class="text-muted-foreground" />
-                    <span>Share Project</span>
-                  </UiDropdownMenuItem>
-                  <UiDropdownMenuSeparator />
-                  <UiDropdownMenuItem>
-                    <component :is="Trash2" class="text-muted-foreground" />
-                    <span>Delete Project</span>
-                  </UiDropdownMenuItem>
-                </UiDropdownMenuContent>
-              </UiDropdownMenu>
             </UiSidebarMenuItem>
-
-            <UiSidebarMenuItem>
-              <UiSidebarMenuButton class="text-sidebar-foreground/70">
-                <component
-                  :is="EllipsisVertical"
-                  class="rotate-90 text-sidebar-foreground/70"
-                />
-                <span>More</span>
-              </UiSidebarMenuButton>
-            </UiSidebarMenuItem>
+          </UiSidebarMenu>
+        </UiSidebarGroup>
+        <!-- Settings -->
+        <UiSidebarGroup>
+          <UiSidebarGroupLabel label="Settings" />
+          <UiSidebarMenu>
+            <template v-for="(item, index) in data.navSettings" :key="index">
+              <!-- Items with sub-items -->
+              <UiCollapsible
+                v-if="item.items"
+                v-slot="{ open }"
+                as-child
+              >
+                <UiSidebarMenuItem>
+                  <UiCollapsibleTrigger as-child>
+                    <UiSidebarMenuButton :tooltip="item.title">
+                      <component :is="item.icon" />
+                      <span>{{ item.title }}</span>
+                      <component
+                        :is="ChevronRight"
+                        class="ml-auto transition-transform duration-200"
+                        :class="[open && 'rotate-90']"
+                      />
+                    </UiSidebarMenuButton>
+                  </UiCollapsibleTrigger>
+                  <UiCollapsibleContent>
+                    <UiSidebarMenuSub>
+                      <UiSidebarMenuSubItem
+                        v-for="subItem in item.items"
+                        :key="subItem.title"
+                      >
+                        <UiSidebarMenuSubButton as-child>
+                          <NuxtLink :href="subItem.url">
+                            <span>{{ subItem.title }}</span>
+                          </NuxtLink>
+                        </UiSidebarMenuSubButton>
+                      </UiSidebarMenuSubItem>
+                    </UiSidebarMenuSub>
+                  </UiCollapsibleContent>
+                </UiSidebarMenuItem>
+              </UiCollapsible>
+              <!-- Items without sub-items -->
+              <UiSidebarMenuItem v-else>
+                <UiSidebarMenuButton as-child :tooltip="item.title">
+                  <NuxtLink :href="item.url">
+                    <component :is="item.icon" />
+                    <span>{{ item.title }}</span>
+                  </NuxtLink>
+                </UiSidebarMenuButton>
+              </UiSidebarMenuItem>
+            </template>
           </UiSidebarMenu>
         </UiSidebarGroup>
       </UiSidebarContent>

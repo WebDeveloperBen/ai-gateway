@@ -3,7 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   ssr: false,
-  css: ["~/assets/css/tailwind.css"],
+  css: ["~/assets/css/tailwind.css", "vue-data-ui/style.css"],
   vite: {
     plugins: [tailwindcss()],
   },
@@ -50,4 +50,3 @@ export default defineNuxtConfig({
     classSuffix: "",
   },
 });
-
