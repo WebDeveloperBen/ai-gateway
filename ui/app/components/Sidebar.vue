@@ -16,36 +16,36 @@ import {
   ChevronRight,
   EllipsisVertical,
   Folder,
-  Trash2,
-} from "lucide-vue-next";
+  Trash2
+} from "lucide-vue-next"
 // Breadcrumb items
 const breadcrumbItems = [
   { label: "Building Your Application", link: "#" },
-  { label: "Data Fetching", link: "#" },
-];
+  { label: "Data Fetching", link: "#" }
+]
 // This is sample data.
 const data = {
   user: {
     name: "breezy",
     email: "m@example.com",
-    avatar: "https://behonbaker.com/icon.png",
+    avatar: "https://behonbaker.com/icon.png"
   },
   teams: [
     {
       name: "Acme Inc",
       logo: GalleryVerticalEnd,
-      plan: "Enterprise",
+      plan: "Enterprise"
     },
     {
       name: "Acme Corp.",
       logo: AudioWaveform,
-      plan: "Startup",
+      plan: "Startup"
     },
     {
       name: "Evil Corp.",
       logo: Command,
-      plan: "Free",
-    },
+      plan: "Free"
+    }
   ],
   navMain: [
     {
@@ -56,17 +56,17 @@ const data = {
       items: [
         {
           title: "History",
-          url: "#",
+          url: "#"
         },
         {
           title: "Starred",
-          url: "#",
+          url: "#"
         },
         {
           title: "Settings",
-          url: "#",
-        },
-      ],
+          url: "#"
+        }
+      ]
     },
     {
       title: "Models",
@@ -75,17 +75,17 @@ const data = {
       items: [
         {
           title: "Genesis",
-          url: "#",
+          url: "#"
         },
         {
           title: "Explorer",
-          url: "#",
+          url: "#"
         },
         {
           title: "Quantum",
-          url: "#",
-        },
-      ],
+          url: "#"
+        }
+      ]
     },
     {
       title: "Documentation",
@@ -94,21 +94,21 @@ const data = {
       items: [
         {
           title: "Introduction",
-          url: "#",
+          url: "#"
         },
         {
           title: "Get Started",
-          url: "#",
+          url: "#"
         },
         {
           title: "Tutorials",
-          url: "#",
+          url: "#"
         },
         {
           title: "Changelog",
-          url: "#",
-        },
-      ],
+          url: "#"
+        }
+      ]
     },
     {
       title: "Settings",
@@ -117,43 +117,43 @@ const data = {
       items: [
         {
           title: "General",
-          url: "#",
+          url: "#"
         },
         {
           title: "Team",
-          url: "#",
+          url: "#"
         },
         {
           title: "Billing",
-          url: "#",
+          url: "#"
         },
         {
           title: "Limits",
-          url: "#",
-        },
-      ],
-    },
+          url: "#"
+        }
+      ]
+    }
   ],
   projects: [
     {
       name: "Design Engineering",
       url: "#",
-      icon: Frame,
+      icon: Frame
     },
     {
       name: "Sales & Marketing",
       url: "#",
-      icon: PieChart,
+      icon: PieChart
     },
     {
       name: "Travel",
       url: "#",
-      icon: Map,
-    },
-  ],
-};
-const activeTeam = ref(data.teams[1]!);
-useSeoMeta({ title: "A sidebar that collapses to icons." });
+      icon: Map
+    }
+  ]
+}
+const activeTeam = ref(data.teams[1]!)
+useSeoMeta({ title: "A sidebar that collapses to icons." })
 </script>
 <template>
   <UiSidebarProvider v-slot="{ isMobile, state }">
@@ -189,31 +189,23 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
                 :side="isMobile ? 'bottom' : 'right'"
                 :side-offset="4"
               >
-                <UiDropdownMenuLabel class="text-xs text-muted-foreground">
-                  Teams
-                </UiDropdownMenuLabel>
+                <UiDropdownMenuLabel class="text-xs text-muted-foreground"> Teams </UiDropdownMenuLabel>
                 <template v-for="(team, index) in data.teams" :key="index">
                   <UiDropdownMenuItem
                     class="cursor-pointer gap-2 p-2"
                     :class="[team.name == activeTeam.name && 'bg-muted']"
                     @click="activeTeam = team"
                   >
-                    <div
-                      class="flex size-6 items-center justify-center rounded-sm border"
-                    >
+                    <div class="flex size-6 items-center justify-center rounded-sm border">
                       <component :is="team.logo" class="size-4 shrink-0" />
                     </div>
                     {{ team.name }}
-                    <UiDropdownMenuShortcut
-                      >⌘{{ index + 1 }}</UiDropdownMenuShortcut
-                    >
+                    <UiDropdownMenuShortcut>⌘{{ index + 1 }}</UiDropdownMenuShortcut>
                   </UiDropdownMenuItem>
                 </template>
                 <UiDropdownMenuSeparator />
                 <UiDropdownMenuItem class="gap-2 p-2">
-                  <div
-                    class="flex size-6 items-center justify-center rounded-md border bg-background"
-                  >
+                  <div class="flex size-6 items-center justify-center rounded-md border bg-background">
                     <component :is="Plus" class="size-4" />
                   </div>
                   <div class="font-medium text-muted-foreground">Add team</div>
@@ -228,11 +220,7 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
           <UiSidebarGroup class="py-0">
             <UiSidebarGroupContent class="relative">
               <UiLabel for="search" class="sr-only"> Search </UiLabel>
-              <UiSidebarInput
-                id="search"
-                placeholder="Search the docs..."
-                class="pl-8"
-              />
+              <UiSidebarInput id="search" placeholder="Search the docs..." class="pl-8" />
               <component
                 :is="Search"
                 class="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 opacity-50 select-none"
@@ -268,10 +256,7 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
                 </UiCollapsibleTrigger>
                 <UiCollapsibleContent>
                   <UiSidebarMenuSub>
-                    <UiSidebarMenuSubItem
-                      v-for="subItem in item.items"
-                      :key="subItem.title"
-                    >
+                    <UiSidebarMenuSubItem v-for="subItem in item.items" :key="subItem.title">
                       <UiSidebarMenuSubButton as-child>
                         <NuxtLink :href="subItem.url">
                           <span>{{ subItem.title }}</span>
@@ -326,10 +311,7 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
 
             <UiSidebarMenuItem>
               <UiSidebarMenuButton class="text-sidebar-foreground/70">
-                <component
-                  :is="EllipsisVertical"
-                  class="rotate-90 text-sidebar-foreground/70"
-                />
+                <component :is="EllipsisVertical" class="rotate-90 text-sidebar-foreground/70" />
                 <span>More</span>
               </UiSidebarMenuButton>
             </UiSidebarMenuItem>
@@ -348,16 +330,11 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
                   class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
                   <UiAvatar class="size-8 rounded-lg">
-                    <UiAvatarImage
-                      :src="data.user.avatar"
-                      :alt="data.user.name"
-                    />
+                    <UiAvatarImage :src="data.user.avatar" :alt="data.user.name" />
                     <UiAvatarFallback class="rounded-lg">BB</UiAvatarFallback>
                   </UiAvatar>
                   <div class="grid flex-1 text-left text-sm leading-tight">
-                    <span class="truncate font-semibold">{{
-                      data.user.name
-                    }}</span>
+                    <span class="truncate font-semibold">{{ data.user.name }}</span>
                     <span class="truncate text-xs">{{ data.user.email }}</span>
                   </div>
                   <component :is="ChevronsUpDown" class="ml-auto size-4" />
@@ -370,51 +347,27 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
                 align="end"
               >
                 <UiDropdownMenuLabel class="p-0 font-normal">
-                  <div
-                    class="flex items-center gap-2 px-1 py-1.5 text-left text-sm"
-                  >
+                  <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                     <UiAvatar class="size-8 rounded-lg">
-                      <UiAvatarImage
-                        :src="data.user.avatar"
-                        :alt="data.user.name"
-                      />
+                      <UiAvatarImage :src="data.user.avatar" :alt="data.user.name" />
                       <UiAvatarFallback class="rounded-lg">BB</UiAvatarFallback>
                     </UiAvatar>
                     <div class="grid flex-1 text-left text-sm leading-tight">
-                      <span class="truncate font-semibold">{{
-                        data.user.name
-                      }}</span>
-                      <span class="truncate text-xs">{{
-                        data.user.email
-                      }}</span>
+                      <span class="truncate font-semibold">{{ data.user.name }}</span>
+                      <span class="truncate text-xs">{{ data.user.email }}</span>
                     </div>
                   </div>
                 </UiDropdownMenuLabel>
                 <UiDropdownMenuSeparator />
                 <UiDropdownMenuGroup>
-                  <UiDropdownMenuItem
-                    icon="lucide:sparkles"
-                    title="Upgrade to Pro"
-                  />
+                  <UiDropdownMenuItem icon="lucide:sparkles" title="Upgrade to Pro" />
                 </UiDropdownMenuGroup>
                 <UiDropdownMenuSeparator />
                 <UiDropdownMenuGroup>
-                  <UiDropdownMenuItem
-                    icon="lucide:badge-check"
-                    title="Account"
-                  />
-                  <UiDropdownMenuItem
-                    icon="lucide:credit-card"
-                    title="Billing"
-                  />
-                  <UiDropdownMenuItem
-                    icon="lucide:settings-2"
-                    title="Settings"
-                  />
-                  <UiDropdownMenuItem
-                    icon="lucide:bell"
-                    title="Notifications"
-                  />
+                  <UiDropdownMenuItem icon="lucide:badge-check" title="Account" />
+                  <UiDropdownMenuItem icon="lucide:credit-card" title="Billing" />
+                  <UiDropdownMenuItem icon="lucide:settings-2" title="Settings" />
+                  <UiDropdownMenuItem icon="lucide:bell" title="Notifications" />
                 </UiDropdownMenuGroup>
                 <UiDropdownMenuSeparator />
                 <UiDropdownMenuItem icon="lucide:log-out" title="Log out" />
@@ -427,10 +380,7 @@ useSeoMeta({ title: "A sidebar that collapses to icons." });
     <!-- Sidebar main content -->
     <UiSidebarInset>
       <!-- Navbar -->
-      <UiNavbar
-        sticky
-        class="flex h-16 shrink-0 items-center gap-2 border-b px-4"
-      >
+      <UiNavbar sticky class="flex h-16 shrink-0 items-center gap-2 border-b px-4">
         <UiSidebarTrigger class="-ml-1" />
         <UiDivider orientation="vertical" class="mr-2 h-4 w-px" />
         <UiBreadcrumbs :items="breadcrumbItems" />

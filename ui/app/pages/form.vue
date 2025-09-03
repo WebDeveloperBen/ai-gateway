@@ -1,43 +1,41 @@
 <script lang="ts" setup>
-import { Mail, Lock } from "lucide-vue-next";
-import { promiseTimeout } from "@vueuse/core";
-import type { FormBuilder } from "@/components/Ui/FormBuilder/FormBuilder.vue";
-import { toast } from "vue-sonner";
-import * as z from "zod";
+import { Mail, Lock } from "lucide-vue-next"
+import { promiseTimeout } from "@vueuse/core"
+import type { FormBuilder } from "@/components/Ui/FormBuilder/FormBuilder.vue"
+import { toast } from "vue-sonner"
+import * as z from "zod"
 
 const schema = z.object({
   firstName: z.string().min(2),
   lastName: z.string().min(2),
   email: z.email(),
-  password: z.string().min(6),
-});
+  password: z.string().min(6)
+})
 
-const { handleSubmit, isSubmitting, resetForm } = useForm<
-  z.infer<typeof schema>
->({
+const { handleSubmit, isSubmitting, resetForm } = useForm<z.infer<typeof schema>>({
   name: "form-builder-full",
   validationSchema: toTypedSchema(schema),
   initialValues: {
-    firstName: "Jane",
-  },
-});
+    firstName: "Jane"
+  }
+})
 
 const submit = handleSubmit((values: any) => {
   try {
-    console.log(values);
+    console.log(values)
     toast.success("Form submitted successfully", {
-      description: "We will reset the form in 5 seconds",
-    });
+      description: "We will reset the form in 5 seconds"
+    })
     promiseTimeout(5000).then(() => {
-      resetForm();
-    });
+      resetForm()
+    })
   } catch (error) {
-    console.log(error);
+    console.log(error)
     toast.error("Form submission failed", {
-      description: "Please try again",
-    });
+      description: "Please try again"
+    })
   }
-});
+})
 
 const form: FormBuilder[] = [
   {
@@ -47,7 +45,7 @@ const form: FormBuilder[] = [
     placeholder: "Enter your first name",
     required: true,
     hint: "Enter your first name",
-    wrapperClass: tw`col-span-full md:col-span-6`,
+    wrapperClass: tw`col-span-full md:col-span-6`
   },
   {
     variant: "Input",
@@ -56,7 +54,7 @@ const form: FormBuilder[] = [
     placeholder: "Enter your last name",
     required: true,
     hint: "Enter your last name",
-    wrapperClass: tw`col-span-full md:col-span-6`,
+    wrapperClass: tw`col-span-full md:col-span-6`
   },
   {
     variant: "Input",
@@ -66,7 +64,7 @@ const form: FormBuilder[] = [
     type: "email",
     required: true,
     icon: "lucide:mail",
-    wrapperClass: tw`col-span-full md:col-span-6`,
+    wrapperClass: tw`col-span-full md:col-span-6`
   },
   {
     variant: "Input",
@@ -76,9 +74,9 @@ const form: FormBuilder[] = [
     icon: "lucide:lock",
     required: true,
     type: "password",
-    wrapperClass: tw`col-span-full md:col-span-6`,
-  },
-];
+    wrapperClass: tw`col-span-full md:col-span-6`
+  }
+]
 </script>
 <template>
   <form @submit="submit">

@@ -1,47 +1,43 @@
 <script setup lang="ts">
 type Row = {
-  date: string;
-  costUsd: number;
-  tokens: number;
-  uniqueUsers: number;
-  requests: number;
-};
+  date: string
+  costUsd: number
+  tokens: number
+  uniqueUsers: number
+  requests: number
+}
 
-type ChartType = "line" | "bar" | "plot";
-type ChartableKey = Exclude<keyof Row, "date">;
+type ChartType = "line" | "bar" | "plot"
+type ChartableKey = Exclude<keyof Row, "date">
 
 export type MetricSpec<K extends ChartableKey = ChartableKey> = {
-  key: K;
-  title: string;
-  seriesName?: string;
-  type?: ChartType;
-  prefix?: string;
-  suffix?: string;
-  rounding?: number;
-  compactAxis?: boolean;
-  valueMap?: (r: Row) => number;
-  describe?: (v: number) => string;
-};
+  key: K
+  title: string
+  seriesName?: string
+  type?: ChartType
+  prefix?: string
+  suffix?: string
+  rounding?: number
+  compactAxis?: boolean
+  valueMap?: (r: Row) => number
+  describe?: (v: number) => string
+}
 
 const props = defineProps<{
-  rows: Row[];
-  labels: string[];
-  spec: MetricSpec;
-}>();
+  rows: Row[]
+  labels: string[]
+  spec: MetricSpec
+}>()
 
 const series = computed<number[]>(() =>
-  props.rows.map((r) =>
-    props.spec.valueMap
-      ? props.spec.valueMap(r)
-      : (r[props.spec.key] as number),
-  ),
-);
+  props.rows.map((r) => (props.spec.valueMap ? props.spec.valueMap(r) : (r[props.spec.key] as number)))
+)
 
 const currentText = computed(() => {
-  const v = series.value.at(-1);
-  if (v == null) return "-";
-  return props.spec.describe ? props.spec.describe(v) : v.toLocaleString();
-});
+  const v = series.value.at(-1)
+  if (v == null) return "-"
+  return props.spec.describe ? props.spec.describe(v) : v.toLocaleString()
+})
 </script>
 
 <template>

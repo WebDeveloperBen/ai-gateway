@@ -9,7 +9,7 @@
     <div class="relative">
       <slot name="icon">
         <span v-if="hasIcon" class="absolute inset-y-0 left-3 flex items-center justify-center">
-          <Icon v-if="icon" :name="icon" class="size-4 text-muted-foreground/70" />
+          <component v-if="icon" :is="icon" class="size-4 text-muted-foreground/70" />
         </span>
       </slot>
       <UiTagsInput
@@ -20,12 +20,7 @@
         v-bind="$attrs"
         :class="[hasIcon && 'pl-9']"
       >
-        <UiTagsInputItem
-          v-for="tag in value"
-          :key="tag"
-          :aria-invalid="!!errorMessage"
-          :value="tag"
-        />
+        <UiTagsInputItem v-for="tag in value" :key="tag" :aria-invalid="!!errorMessage" :value="tag" />
         <UiTagsInputInput
           :id="inputId"
           class="dark:bg-transparent"
@@ -66,36 +61,36 @@
 </template>
 
 <script lang="ts" setup>
-  import { AnimatePresence, motion } from "motion-v";
+import { AnimatePresence, motion } from "motion-v"
 
-  const variants = {
-    initial: { opacity: 0, y: -2 },
-    animate: { opacity: 1, y: 0 },
-  };
+const variants = {
+  initial: { opacity: 0, y: -2 },
+  animate: { opacity: 1, y: 0 }
+}
 
-  const props = defineProps<{
-    label?: string;
-    icon?: string;
-    hint?: string;
-    disabled?: boolean;
-    modelValue?: string[];
-    name?: string;
-    id?: string;
-    rules?: any;
-    validateOnMount?: boolean;
-    type?: string;
-    placeholder?: string;
-    required?: boolean;
-  }>();
+const props = defineProps<{
+  label?: string
+  icon?: string
+  hint?: string
+  disabled?: boolean
+  modelValue?: string[]
+  name?: string
+  id?: string
+  rules?: any
+  validateOnMount?: boolean
+  type?: string
+  placeholder?: string
+  required?: boolean
+}>()
 
-  const inputId = props.id || useId();
+const inputId = props.id || useId()
 
-  const hasIcon = computed(() => Boolean(props.icon) || Boolean(useSlots().icon));
+const hasIcon = computed(() => Boolean(props.icon) || Boolean(useSlots().icon))
 
-  const { errorMessage, value } = useField(() => props.name || inputId, props.rules, {
-    initialValue: props.modelValue,
-    label: props.label,
-    validateOnMount: props.validateOnMount,
-    syncVModel: true,
-  });
+const { errorMessage, value } = useField(() => props.name || inputId, props.rules, {
+  initialValue: props.modelValue,
+  label: props.label,
+  validateOnMount: props.validateOnMount,
+  syncVModel: true
+})
 </script>

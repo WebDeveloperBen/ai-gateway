@@ -15,32 +15,33 @@ import {
   Lock,
   Globe,
   Bell,
-} from "lucide-vue-next";
+  Server
+} from "lucide-vue-next"
 
 // Breadcrumb items
 const breadcrumbItems = [
   { label: "LLM Gateway", link: "#" },
-  { label: "Dashboard", link: "#" },
-];
+  { label: "Dashboard", link: "#" }
+]
 
 // This is sample data.
 const data = {
   user: {
     name: "breezy",
     email: "m@example.com",
-    avatar: "https://behonbaker.com/icon.png",
+    avatar: "https://behonbaker.com/icon.png"
   },
   teams: [
     {
       name: "LLM Gateway",
       logo: GalleryVerticalEnd,
-      plan: "Production",
+      plan: "Production"
     },
     {
       name: "Development",
       logo: Command,
-      plan: "Dev",
-    },
+      plan: "Dev"
+    }
   ],
   navMain: [
     {
@@ -51,18 +52,18 @@ const data = {
       items: [
         {
           title: "Overview",
-          url: "/applications",
+          url: "/applications"
         },
         {
           title: "API Keys",
-          url: "/applications/keys",
-        },
-      ],
+          url: "/applications/keys"
+        }
+      ]
     },
     {
       title: "Metrics",
       url: "/metrics",
-      icon: BarChart3,
+      icon: BarChart3
     },
     {
       title: "Models",
@@ -71,31 +72,46 @@ const data = {
       items: [
         {
           title: "Deployments",
-          url: "/models/deployments",
+          url: "/models/deployments"
         },
         {
           title: "Providers",
-          url: "/models/providers",
-        },
-      ],
+          url: "/models/providers"
+        }
+      ]
     },
     {
       title: "Users",
       url: "/users",
-      icon: Users,
+      icon: Users
     },
+    {
+      title: "Environments",
+      url: "/environments",
+      icon: Server,
+      items: [
+        {
+          title: "Overview",
+          url: "/environments"
+        },
+        {
+          title: "Configuration",
+          url: "/environments/config"
+        }
+      ]
+    }
   ],
   navGovernance: [
     {
       title: "Policies",
       url: "/policies",
-      icon: Shield,
+      icon: Shield
     },
     {
       title: "Audit Logs",
       url: "/audit-logs",
-      icon: FileText,
-    },
+      icon: FileText
+    }
   ],
   navSettings: [
     {
@@ -105,19 +121,19 @@ const data = {
       items: [
         {
           title: "General",
-          url: "/settings/general",
+          url: "/settings/general"
         },
         {
           title: "Security",
-          url: "/settings/security",
-        },
-      ],
-    },
+          url: "/settings/security"
+        }
+      ]
+    }
   ],
-  projects: [],
-};
-const activeTeam = ref(data.teams[0]!);
-useSeoMeta({ title: "LLM Gateway - Admin Dashboard" });
+  projects: []
+}
+const activeTeam = ref(data.teams[0]!)
+useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
 </script>
 <template>
   <UiSidebarProvider v-slot="{ isMobile }">
@@ -154,31 +170,23 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" });
                 :side="isMobile ? 'bottom' : 'right'"
                 :side-offset="4"
               >
-                <UiDropdownMenuLabel class="text-xs text-muted-foreground">
-                  Teams
-                </UiDropdownMenuLabel>
+                <UiDropdownMenuLabel class="text-xs text-muted-foreground"> Teams </UiDropdownMenuLabel>
                 <template v-for="(team, index) in data.teams" :key="index">
                   <UiDropdownMenuItem
                     class="cursor-pointer gap-2 p-2"
                     :class="[team.name == activeTeam.name && 'bg-muted']"
                     @click="activeTeam = team"
                   >
-                    <div
-                      class="flex size-6 items-center justify-center rounded-sm border"
-                    >
+                    <div class="flex size-6 items-center justify-center rounded-sm border">
                       <component :is="team.logo" class="size-4 shrink-0" />
                     </div>
                     {{ team.name }}
-                    <UiDropdownMenuShortcut
-                      >⌘{{ index + 1 }}</UiDropdownMenuShortcut
-                    >
+                    <UiDropdownMenuShortcut>⌘{{ index + 1 }}</UiDropdownMenuShortcut>
                   </UiDropdownMenuItem>
                 </template>
                 <UiDropdownMenuSeparator />
                 <UiDropdownMenuItem class="gap-2 p-2">
-                  <div
-                    class="flex size-6 items-center justify-center rounded-md border bg-background"
-                  >
+                  <div class="flex size-6 items-center justify-center rounded-md border bg-background">
                     <component :is="Plus" class="size-4" />
                   </div>
                   <div class="font-medium text-muted-foreground">Add team</div>
@@ -195,12 +203,7 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" });
           <UiSidebarMenu>
             <template v-for="(item, index) in data.navMain" :key="index">
               <!-- Items with sub-items -->
-              <UiCollapsible
-                v-if="item.items"
-                v-slot="{ open }"
-                as-child
-                :default-open="item.isActive"
-              >
+              <UiCollapsible v-if="item.items" v-slot="{ open }" as-child :default-open="item.isActive">
                 <UiSidebarMenuItem>
                   <UiCollapsibleTrigger as-child>
                     <UiSidebarMenuButton :tooltip="item.title">
@@ -215,10 +218,7 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" });
                   </UiCollapsibleTrigger>
                   <UiCollapsibleContent>
                     <UiSidebarMenuSub>
-                      <UiSidebarMenuSubItem
-                        v-for="subItem in item.items"
-                        :key="subItem.title"
-                      >
+                      <UiSidebarMenuSubItem v-for="subItem in item.items" :key="subItem.title">
                         <UiSidebarMenuSubButton as-child>
                           <NuxtLink :href="subItem.url">
                             <span>{{ subItem.title }}</span>
@@ -261,11 +261,7 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" });
           <UiSidebarMenu>
             <template v-for="(item, index) in data.navSettings" :key="index">
               <!-- Items with sub-items -->
-              <UiCollapsible
-                v-if="item.items"
-                v-slot="{ open }"
-                as-child
-              >
+              <UiCollapsible v-if="item.items" v-slot="{ open }" as-child>
                 <UiSidebarMenuItem>
                   <UiCollapsibleTrigger as-child>
                     <UiSidebarMenuButton :tooltip="item.title">
@@ -280,10 +276,7 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" });
                   </UiCollapsibleTrigger>
                   <UiCollapsibleContent>
                     <UiSidebarMenuSub>
-                      <UiSidebarMenuSubItem
-                        v-for="subItem in item.items"
-                        :key="subItem.title"
-                      >
+                      <UiSidebarMenuSubItem v-for="subItem in item.items" :key="subItem.title">
                         <UiSidebarMenuSubButton as-child>
                           <NuxtLink :href="subItem.url">
                             <span>{{ subItem.title }}</span>
@@ -319,16 +312,11 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" });
                   class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
                   <UiAvatar class="size-8 rounded-lg">
-                    <UiAvatarImage
-                      :src="data.user.avatar"
-                      :alt="data.user.name"
-                    />
+                    <UiAvatarImage :src="data.user.avatar" :alt="data.user.name" />
                     <UiAvatarFallback class="rounded-lg">BB</UiAvatarFallback>
                   </UiAvatar>
                   <div class="grid flex-1 text-left text-sm leading-tight">
-                    <span class="truncate font-semibold">{{
-                      data.user.name
-                    }}</span>
+                    <span class="truncate font-semibold">{{ data.user.name }}</span>
                     <span class="truncate text-xs">{{ data.user.email }}</span>
                   </div>
                   <component :is="ChevronsUpDown" class="ml-auto size-4" />
@@ -341,23 +329,14 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" });
                 align="end"
               >
                 <UiDropdownMenuLabel class="p-0 font-normal">
-                  <div
-                    class="flex items-center gap-2 px-1 py-1.5 text-left text-sm"
-                  >
+                  <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                     <UiAvatar class="size-8 rounded-lg">
-                      <UiAvatarImage
-                        :src="data.user.avatar"
-                        :alt="data.user.name"
-                      />
+                      <UiAvatarImage :src="data.user.avatar" :alt="data.user.name" />
                       <UiAvatarFallback class="rounded-lg">BB</UiAvatarFallback>
                     </UiAvatar>
                     <div class="grid flex-1 text-left text-sm leading-tight">
-                      <span class="truncate font-semibold">{{
-                        data.user.name
-                      }}</span>
-                      <span class="truncate text-xs">{{
-                        data.user.email
-                      }}</span>
+                      <span class="truncate font-semibold">{{ data.user.name }}</span>
+                      <span class="truncate text-xs">{{ data.user.email }}</span>
                     </div>
                   </div>
                 </UiDropdownMenuLabel>
@@ -367,22 +346,10 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" });
                 </UiDropdownMenuGroup>
                 <UiDropdownMenuSeparator />
                 <UiDropdownMenuGroup>
-                  <UiDropdownMenuItem
-                    icon="lucide:badge-check"
-                    title="Account"
-                  />
-                  <UiDropdownMenuItem
-                    icon="lucide:credit-card"
-                    title="Billing"
-                  />
-                  <UiDropdownMenuItem
-                    icon="lucide:settings-2"
-                    title="Settings"
-                  />
-                  <UiDropdownMenuItem
-                    icon="lucide:bell"
-                    title="Notifications"
-                  />
+                  <UiDropdownMenuItem icon="lucide:badge-check" title="Account" />
+                  <UiDropdownMenuItem icon="lucide:credit-card" title="Billing" />
+                  <UiDropdownMenuItem icon="lucide:settings-2" title="Settings" />
+                  <UiDropdownMenuItem icon="lucide:bell" title="Notifications" />
                 </UiDropdownMenuGroup>
                 <UiDropdownMenuSeparator />
                 <UiDropdownMenuItem icon="lucide:log-out" title="Log out" />
@@ -395,10 +362,7 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" });
     <!-- Sidebar main content -->
     <UiSidebarInset>
       <!-- Navbar -->
-      <UiNavbar
-        sticky
-        class="flex relative h-16 shrink-0 items-center gap-2 border-b px-4"
-      >
+      <UiNavbar sticky class="flex relative h-16 shrink-0 items-center gap-2 border-b px-4">
         <UiSidebarTrigger class="-ml-1" />
         <UiDivider orientation="vertical" class="mr-2 h-4 w-px" />
         <UiBreadcrumbs :items="breadcrumbItems" />

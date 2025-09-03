@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import * as z from "zod";
+import * as z from "zod"
 
-const hellp = () => {};
+const hellp = () => {}
 </script>
 <template>
   <div></div>

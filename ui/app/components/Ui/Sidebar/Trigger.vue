@@ -16,11 +16,11 @@
 </template>
 
 <script lang="ts">
-import type { HTMLAttributes } from "vue";
+import type { HTMLAttributes } from "vue"
 
 export const sideBarTriggerStyles = tv({
-  base: "size-7",
-});
+  base: "size-7"
+})
 </script>
 
 <script setup lang="ts">
@@ -30,22 +30,22 @@ const props = withDefaults(
      * The icon to display in the trigger.
      * @default "lucide:panel-left"
      */
-    icon?: string;
+    icon?: string
     /**
      * Additional classes to apply to the parent element.
      */
-    class?: HTMLAttributes["class"];
+    class?: HTMLAttributes["class"]
     /**
      * The label for the trigger.
      * @default "Toggle Sidebar"
      */
-    label?: string;
+    label?: string
   }>(),
   {
     icon: "lucide:panel-left",
-    label: "Toggle Sidebar",
-  },
-);
+    label: "Toggle Sidebar"
+  }
+)
 
-const { toggleSidebar, state } = useSidebar();
+const { toggleSidebar, state } = useSidebar()
 </script>

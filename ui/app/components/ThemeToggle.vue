@@ -1,9 +1,9 @@
 <script setup lang="ts">
-const colorMode = useColorMode();
+const colorMode = useColorMode()
 
 function toggleTheme() {
-  colorMode.preference = colorMode.value === "light" ? "dark" : "light";
-  document.documentElement.setAttribute("data-theme", colorMode.preference);
+  colorMode.preference = colorMode.value === "light" ? "dark" : "light"
+  document.documentElement.setAttribute("data-theme", colorMode.preference)
 }
 </script>
 
@@ -17,25 +17,12 @@ function toggleTheme() {
     @click="toggleTheme"
     type="button"
   >
-    <svg
-      class="sun-and-moon"
-      aria-hidden="true"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-    >
+    <svg class="sun-and-moon" aria-hidden="true" width="24" height="24" viewBox="0 0 24 24">
       <mask class="moon" id="moon-mask">
         <rect x="0" y="0" width="100%" height="100%" fill="white" />
         <circle cx="24" cy="10" r="6" fill="black" />
       </mask>
-      <circle
-        class="sun"
-        cx="12"
-        cy="12"
-        r="6"
-        mask="url(#moon-mask)"
-        fill="currentColor"
-      />
+      <circle class="sun" cx="12" cy="12" r="6" mask="url(#moon-mask)" fill="currentColor" />
       <g class="sun-beams" stroke="currentColor">
         <line x1="12" y1="1" x2="12" y2="3" />
         <line x1="12" y1="21" x2="12" y2="23" />

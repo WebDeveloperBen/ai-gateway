@@ -8,7 +8,7 @@
         variant: variant,
         size: size,
         class: props.class,
-        effect,
+        effect
       })
     "
     :disabled="disabled || loading"
@@ -40,10 +40,10 @@
 </template>
 
 <script lang="ts">
-import { reactiveOmit } from "@vueuse/core";
-import { useForwardProps } from "reka-ui";
-import type { NuxtLinkProps } from "#app/components";
-import type { HtmlHTMLAttributes } from "vue";
+import { reactiveOmit } from "@vueuse/core"
+import { useForwardProps } from "reka-ui"
+import type { NuxtLinkProps } from "#app/components"
+import type { HtmlHTMLAttributes } from "vue"
 
 /**
  * Exported button styles that can be used by other components
@@ -52,17 +52,14 @@ export const buttonStyles = tv({
   base: "group inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   variants: {
     variant: {
-      default:
-        "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+      default: "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
       destructive:
         "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40",
       outline:
         "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
-      secondary:
-        "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
-      ghost:
-        "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-      link: "text-primary underline-offset-4 hover:underline",
+      secondary: "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
+      ghost: "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+      link: "text-primary underline-offset-4 hover:underline"
     },
     effect: {
       expandIcon: "group relative gap-0",
@@ -80,7 +77,7 @@ export const buttonStyles = tv({
       hoverUnderline:
         "relative !no-underline after:absolute after:bottom-2 after:h-[1px] after:w-2/3 after:origin-bottom-right after:scale-x-0 after:bg-primary after:transition-transform after:duration-300 after:ease-in-out hover:after:origin-bottom-left hover:after:scale-x-100",
       gradientSlideShow:
-        "animate-gradient-flow bg-[linear-gradient(-45deg,var(--gradient-lime),var(--gradient-ocean),var(--gradient-wine),var(--gradient-rust))] bg-[size:400%] text-white",
+        "animate-gradient-flow bg-[linear-gradient(-45deg,var(--gradient-lime),var(--gradient-ocean),var(--gradient-wine),var(--gradient-rust))] bg-[size:400%] text-white"
     },
     size: {
       xs: "h-7 gap-1 px-2.5 text-xs has-[>svg]:px-2",
@@ -89,21 +86,21 @@ export const buttonStyles = tv({
       lg: "h-10 px-6 has-[>svg]:px-4",
       "icon-xs": "size-7",
       "icon-sm": "size-8",
-      icon: "size-9",
+      icon: "size-9"
     },
     disabled: {
-      true: "pointer-events-none opacity-50",
+      true: "pointer-events-none opacity-50"
     },
     hasIcon: {
-      false: "gap-2",
-    },
+      false: "gap-2"
+    }
   },
   defaultVariants: {
     variant: "default",
-    size: "default",
-  },
-});
-export type ButtonProps = VariantProps<typeof buttonStyles>;
+    size: "default"
+  }
+})
+export type ButtonProps = VariantProps<typeof buttonStyles>
 </script>
 
 <script setup lang="ts">
@@ -111,49 +108,48 @@ const props = withDefaults(
   defineProps<
     NuxtLinkProps & {
       /** The type for the button */
-      type?: "button" | "submit" | "reset";
+      type?: "button" | "submit" | "reset"
       /** Whether the button is disabled */
-      disabled?: boolean;
+      disabled?: boolean
       /** Whether the button is loading */
-      loading?: boolean;
+      loading?: boolean
       /** The action to perform when the button is clicked */
-      onClick?: any;
+      onClick?: any
       /** The element to render the button as */
-      as?: string;
+      as?: string
       /** Custom class(es) to add to parent element */
-      class?: HtmlHTMLAttributes["class"];
+      class?: HtmlHTMLAttributes["class"]
       /** The variant of the button */
-      variant?: ButtonProps["variant"];
+      variant?: ButtonProps["variant"]
       /** The size of the button */
-      size?: ButtonProps["size"];
+      size?: ButtonProps["size"]
       /**
        * The effect to apply to the button.
        */
-      effect?: ButtonProps["effect"];
+      effect?: ButtonProps["effect"]
       /** The text to display in the button */
-      text?: string;
+      text?: string
       /** Should the icon be displayed on the `left` or the `right`? */
-      iconPlacement?: "left" | "right";
+      iconPlacement?: "left" | "right"
       /** The icon to display in the button */
-      icon?: string;
+      icon?: string
       /** The icon to display when the button is loading */
-      loadingIcon?: string;
+      loadingIcon?: string
     }
   >(),
   {
     type: "button",
     loadingIcon: "line-md:loading-loop",
     iconPlacement: "left",
-    loading: false,
-  },
-);
+    loading: false
+  }
+)
 
 const elementType = computed(() => {
-  if (props.as) return props.as;
-  if (props.href || props.to || props.target)
-    return resolveComponent("NuxtLink");
-  return "button";
-});
+  if (props.as) return props.as
+  if (props.href || props.to || props.target) return resolveComponent("NuxtLink")
+  return "button"
+})
 
 const forwarded = useForwardProps(
   reactiveOmit(
@@ -168,7 +164,7 @@ const forwarded = useForwardProps(
     "loading",
     "disabled",
     "loadingIcon",
-    "effect",
-  ),
-);
+    "effect"
+  )
+)
 </script>

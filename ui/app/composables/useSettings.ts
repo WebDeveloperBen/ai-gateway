@@ -1,1 +1,1 @@
-export const settings = useState("settings", () => ({ currency: "AUD" }));
+export const settings = useState("settings", () => ({ currency: "AUD" }))

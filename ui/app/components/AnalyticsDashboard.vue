@@ -1,81 +1,81 @@
 <script setup lang="ts">
-import { Key, Layers, Activity, Users, ChartArea, Zap } from "lucide-vue-next";
-import type { FunctionalComponent } from "vue";
-import type { ButtonProps } from "./Ui/Button.vue";
+import { Key, Layers, Activity, Users, ChartArea, Zap } from "lucide-vue-next"
+import type { FunctionalComponent } from "vue"
+import type { ButtonProps } from "./Ui/Button.vue"
 
 const cards: {
-  title: string;
-  icon: FunctionalComponent;
-  value: string;
-  change: string;
-  changeColor: string;
+  title: string
+  icon: FunctionalComponent
+  value: string
+  change: string
+  changeColor: string
 }[] = [
   {
     title: "Active Applications",
     icon: Layers,
     value: "12",
     change: "+2 this week",
-    changeColor: "text-green-600",
+    changeColor: "text-green-600"
   },
   {
     title: "API Keys",
     icon: Key,
     value: "47",
     change: "+5 this month",
-    changeColor: "text-green-600",
+    changeColor: "text-green-600"
   },
   {
     title: "Total Users",
     icon: Users,
     value: "1,234",
     change: "+12% from last month",
-    changeColor: "text-green-600",
+    changeColor: "text-green-600"
   },
   {
     title: "Requests Today",
     icon: ChartArea,
     value: "89.2K",
     change: "-2% from yesterday",
-    changeColor: "text-red-500",
-  },
-];
+    changeColor: "text-red-500"
+  }
+]
 
 const quickActions: {
-  label: string;
-  icon: FunctionalComponent;
-  class: string;
-  variant: ButtonProps["variant"];
+  label: string
+  icon: FunctionalComponent
+  class: string
+  variant: ButtonProps["variant"]
 }[] = [
   {
     label: "Register New Application",
     icon: Layers,
     class: "bg-gradient-to-r from-violet-500 to-purple-400 w-full text-white",
-    variant: "default",
+    variant: "default"
   },
   {
     label: "Generate API Key",
     icon: Key,
     variant: "ghost",
-    class: "justify-start border",
+    class: "justify-start border"
   },
   {
     label: "Invite User",
     icon: Users,
     variant: "ghost",
-    class: "justify-start border",
+    class: "justify-start border"
   },
   {
     label: "View Analytics",
     icon: ChartArea,
     variant: "ghost",
-    class: "justify-start border",
-  },
-];
+    class: "justify-start border"
+  }
+]
 const resourceUsage = {
   status: "Normal",
   cpu: 45,
-  memory: 62,
-};
+  memory: 62
+}
 </script>
 
 <template>
@@ -84,9 +84,7 @@ const resourceUsage = {
     <div>
       <h1 class="text-3xl font-bold text-violet-600">Dashboard</h1>
 
-      <p class="text-lg text-gray-500 mt-1">
-        Overview of your LLM proxy service performance and activity
-      </p>
+      <p class="text-lg text-gray-500 mt-1">Overview of your LLM proxy service performance and activity</p>
     </div>
     <!-- Stats -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -124,9 +122,7 @@ const resourceUsage = {
                 <span class="mt-1 w-3 h-3 rounded-full bg-green-400"></span>
                 <div>
                   <div class="font-semibold">New application registered</div>
-                  <div class="text-gray-600 text-sm">
-                    ChatBot Pro by ACME Corp
-                  </div>
+                  <div class="text-gray-600 text-sm">ChatBot Pro by ACME Corp</div>
                   <div class="text-xs text-gray-400">2 minutes ago</div>
                 </div>
               </div>
@@ -134,9 +130,7 @@ const resourceUsage = {
                 <span class="mt-1 w-3 h-3 rounded-full bg-green-400"></span>
                 <div>
                   <div class="font-semibold">API key generated</div>
-                  <div class="text-gray-600 text-sm">
-                    Production key for WebApp Dashboard
-                  </div>
+                  <div class="text-gray-600 text-sm">Production key for WebApp Dashboard</div>
                   <div class="text-xs text-gray-400">15 minutes ago</div>
                 </div>
               </div>
@@ -144,9 +138,7 @@ const resourceUsage = {
                 <span class="mt-1 w-3 h-3 rounded-full bg-yellow-400"></span>
                 <div>
                   <div class="font-semibold">Rate limit exceeded</div>
-                  <div class="text-gray-600 text-sm">
-                    Application 'DataProcessor' hit rate limits
-                  </div>
+                  <div class="text-gray-600 text-sm">Application 'DataProcessor' hit rate limits</div>
                   <div class="text-xs text-gray-400">1 hour ago</div>
                 </div>
               </div>
@@ -154,9 +146,7 @@ const resourceUsage = {
                 <span class="mt-1 w-3 h-3 rounded-full bg-sky-400"></span>
                 <div>
                   <div class="font-semibold">User invitation sent</div>
-                  <div class="text-gray-600 text-sm">
-                    Invited john@example.com as Developer
-                  </div>
+                  <div class="text-gray-600 text-sm">Invited john@example.com as Developer</div>
                   <div class="text-xs text-gray-400">2 hours ago</div>
                 </div>
               </div>
@@ -165,9 +155,7 @@ const resourceUsage = {
         </template>
         <template #footer>
           <UiCardFooter class="flex mx-6 justify-between mt-6 p-0">
-            <UiButton variant="outline" class="w-full"
-              >View All Activity</UiButton
-            >
+            <UiButton variant="outline" class="w-full">View All Activity</UiButton>
           </UiCardFooter>
         </template>
       </UiCard>
@@ -202,11 +190,7 @@ const resourceUsage = {
                 <span>CPU</span>
                 <span>{{ resourceUsage.cpu }}%</span>
               </div>
-              <UiProgress
-                v-model="resourceUsage.cpu"
-                color="violet"
-                class="mb-3"
-              />
+              <UiProgress v-model="resourceUsage.cpu" color="violet" class="mb-3" />
               <div class="flex justify-between text-xs mb-1">
                 <span>Memory</span>
                 <span>{{ resourceUsage.memory }}%</span>

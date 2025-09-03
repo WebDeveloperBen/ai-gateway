@@ -8,47 +8,37 @@
       <component :is="icon" v-if="icon" class="size-4" />
       <span v-if="title">{{ title }}</span>
     </slot>
-    <component
-      class="ml-auto size-4 text-muted-foreground"
-      :is="trailingIcon || ChevronRight"
-    />
+    <component class="ml-auto size-4 text-muted-foreground" :is="trailingIcon || ChevronRight" />
   </DropdownMenuSubTrigger>
 </template>
 
 <script lang="ts" setup>
-import { ChevronRight } from "lucide-vue-next";
-import { DropdownMenuSubTrigger } from "reka-ui";
-import type { DropdownMenuSubTriggerProps } from "reka-ui";
-import type { HTMLAttributes } from "vue";
+import { ChevronRight } from "lucide-vue-next"
+import { DropdownMenuSubTrigger } from "reka-ui"
+import type { DropdownMenuSubTriggerProps } from "reka-ui"
+import type { HTMLAttributes } from "vue"
 
 const props = defineProps<
   DropdownMenuSubTriggerProps & {
     /**Custom class(es) to add to the element */
-    class?: HTMLAttributes["class"];
+    class?: HTMLAttributes["class"]
     /** Wether an indentation should be added to the item or not */
-    inset?: boolean;
+    inset?: boolean
     /** The icon to display */
-    icon?: string;
+    icon?: string
     /** The title for the item */
-    title?: string;
+    title?: string
     /** The trailing icon to display */
-    trailingIcon?: string;
+    trailingIcon?: string
   }
->();
-const forwarded = reactiveOmit(
-  props,
-  "class",
-  "inset",
-  "icon",
-  "title",
-  "trailingIcon",
-);
+>()
+const forwarded = reactiveOmit(props, "class", "inset", "icon", "title", "trailingIcon")
 const styles = tv({
   base: "flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-[inset=true]:pl-8 data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
   variants: {
     inset: {
-      true: "pl-8",
-    },
-  },
-});
+      true: "pl-8"
+    }
+  }
+})
 </script>

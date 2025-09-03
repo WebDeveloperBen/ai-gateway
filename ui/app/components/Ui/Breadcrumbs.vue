@@ -1,9 +1,5 @@
 <template>
-  <nav
-    data-slot="breadcrumb"
-    aria-label="breadcrumb"
-    :class="styles({ class: props.class })"
-  >
+  <nav data-slot="breadcrumb" aria-label="breadcrumb" :class="styles({ class: props.class })">
     <template v-for="(item, i) in items" :key="i">
       <slot :name="item.slot || 'default'">
         <div data-slot="breadcrumb-item" class="flex items-center gap-3">
@@ -14,30 +10,17 @@
                 data-slot="breadcrumb-icon"
                 :is="item.icon"
                 class="size-3.5 shrink-0"
-                :class="[
-                  isNotLastItem(i)
-                    ? 'text-muted-foreground group-hover:text-foreground'
-                    : 'text-primary',
-                ]"
+                :class="[isNotLastItem(i) ? 'text-muted-foreground group-hover:text-foreground' : 'text-primary']"
               />
             </slot>
-            <slot
-              :item="item"
-              :is-not-last-item="isNotLastItem"
-              :index="i"
-              name="link"
-            >
+            <slot :item="item" :is-not-last-item="isNotLastItem" :index="i" name="link">
               <NuxtLink
                 v-if="item.label"
                 :to="!item?.disabled ? item.link : ''"
                 data-slot="breadcrumb-label"
                 :class="[
-                  item.link &&
-                    !item.disabled &&
-                    'underline-offset-2 group-hover:underline',
-                  isNotLastItem(i)
-                    ? 'text-muted-foreground group-hover:text-foreground'
-                    : 'font-medium text-primary',
+                  item.link && !item.disabled && 'underline-offset-2 group-hover:underline',
+                  isNotLastItem(i) ? 'text-muted-foreground group-hover:text-foreground' : 'font-medium text-primary'
                 ]"
                 class="text-sm text-foreground transition-colors"
                 @click="item?.click?.()"
@@ -62,16 +45,16 @@
 <script lang="ts"></script>
 
 <script setup lang="ts">
-import type { HTMLAttributes } from "vue";
+import type { HTMLAttributes } from "vue"
 
 export interface BreadcrumbItem {
-  label?: string;
-  icon?: string;
-  link?: string;
-  disabled?: boolean;
-  slot?: string;
+  label?: string
+  icon?: string
+  link?: string
+  disabled?: boolean
+  slot?: string
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-  click?: Function;
+  click?: Function
 }
 
 const props = withDefaults(
@@ -79,31 +62,31 @@ const props = withDefaults(
     /**
      * The items to display in the breadcrumbs.
      */
-    items?: BreadcrumbItem[];
+    items?: BreadcrumbItem[]
     /**
      * The separator to use between each breadcrumb.
      */
-    separator?: string;
+    separator?: string
     /**
      * Custom class(es) to add to the parent element.
      */
-    class?: HTMLAttributes["class"];
+    class?: HTMLAttributes["class"]
   }>(),
   {
     separator: "lucide:chevron-right",
-    items: () => [],
-  },
-);
+    items: () => []
+  }
+)
 
 /**
  * Detects if the current item is not the last item in the breadcrumbs.
  * @param index - The index of the current item.
  */
 const isNotLastItem = (index: number) => {
-  return index !== props?.items?.length - 1;
-};
+  return index !== props?.items?.length - 1
+}
 
 const styles = tv({
-  base: "flex w-full flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5",
-});
+  base: "flex w-full flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5"
+})
 </script>

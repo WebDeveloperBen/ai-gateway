@@ -1,4 +1,4 @@
 <script setup lang="ts">
-await navigateTo("/");
+await navigateTo("/")
 </script>
 <template><div></div></template>
