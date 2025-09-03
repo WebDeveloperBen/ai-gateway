@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "strict": true
+    "strict": true,
+    "removeComments": true
   },
   // https://nuxt.com/docs/guide/concepts/typescript
   "files": [],
