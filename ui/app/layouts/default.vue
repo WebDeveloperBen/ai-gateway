@@ -61,11 +61,6 @@ const data = {
       ]
     },
     {
-      title: "Metrics",
-      url: "/metrics",
-      icon: BarChart3
-    },
-    {
       title: "Models",
       url: "/models",
       icon: Bot,
@@ -83,7 +78,21 @@ const data = {
     {
       title: "Users",
       url: "/users",
-      icon: Users
+      icon: Users,
+      items: [
+        {
+          title: "Overview",
+          url: "/users"
+        },
+        {
+          title: "Teams",
+          url: "/users/teams"
+        },
+        {
+          title: "Roles",
+          url: "/users/roles"
+        }
+      ]
     },
     {
       title: "Environments",
@@ -99,6 +108,18 @@ const data = {
           url: "/environments/config"
         }
       ]
+    }
+  ],
+  navObservability: [
+    {
+      title: "Metrics",
+      url: "/metrics",
+      icon: Shield
+    },
+    {
+      title: "Audit Logs",
+      url: "/audit-logs",
+      icon: FileText
     }
   ],
   navGovernance: [
@@ -239,6 +260,21 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
                 </UiSidebarMenuButton>
               </UiSidebarMenuItem>
             </template>
+          </UiSidebarMenu>
+        </UiSidebarGroup>
+
+        <!-- Observability -->
+        <UiSidebarGroup>
+          <UiSidebarGroupLabel label="Observability" />
+          <UiSidebarMenu>
+            <UiSidebarMenuItem v-for="(item, index) in data.navObservability" :key="index">
+              <UiSidebarMenuButton as-child :tooltip="item.title">
+                <NuxtLink :href="item.url">
+                  <component :is="item.icon" />
+                  <span>{{ item.title }}</span>
+                </NuxtLink>
+              </UiSidebarMenuButton>
+            </UiSidebarMenuItem>
           </UiSidebarMenu>
         </UiSidebarGroup>
         <!-- Governance -->
