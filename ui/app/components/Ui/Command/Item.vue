@@ -29,7 +29,7 @@
 import { reactiveOmit, useCurrentElement } from "@vueuse/core"
 import { ListboxItem, useForwardPropsEmits, useId } from "reka-ui"
 import type { ListboxItemEmits, ListboxItemProps } from "reka-ui"
-import type { HTMLAttributes } from "vue"
+import type { FunctionalComponent, HTMLAttributes } from "vue"
 
 import { useCommand, useCommandGroup } from "./Command.vue"
 
@@ -38,7 +38,7 @@ const props = defineProps<
     /** Custom class(es) to add to the element */
     class?: HTMLAttributes["class"]
     /** Icon to render */
-    icon?: string
+    icon?: FunctionalComponent
     /** Text to render */
     text?: string
     /** Shortcut to render */

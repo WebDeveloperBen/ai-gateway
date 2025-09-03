@@ -1,5 +1,5 @@
 <template>
-  <div data-slot="command-input-wrapper" class="flex h-9 items-center gap-2 border-b px-3" cmdk-input-wrapper>
+  <div data-slot="command-input-wrapper" class="flex h-9 w-full items-center gap-2 border-b px-3" cmdk-input-wrapper>
     <Search class="size-4 shrink-0 opacity-50" />
     <ListboxFilter
       v-bind="{ ...forwardedProps, ...$attrs }"

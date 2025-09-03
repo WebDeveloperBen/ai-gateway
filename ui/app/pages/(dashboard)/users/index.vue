@@ -1,5 +1,21 @@
 <script setup lang="ts">
-import { Users, Plus, MoreVertical, Edit, Trash2, UserCheck, UserX, Crown, Shield, X } from "lucide-vue-next"
+import {
+  Users,
+  Plus,
+  MoreVertical,
+  Edit,
+  Trash2,
+  UserCheck,
+  UserX,
+  Crown,
+  Shield,
+  X,
+  Circle,
+  CheckCircle,
+  XCircle,
+  User
+} from "lucide-vue-next"
+import type { FunctionalComponent } from "vue"
 
 useSeoMeta({ title: "Users - LLM Gateway" })
 
@@ -18,6 +34,7 @@ const searchQuery = ref("")
 const selectedRole = ref("all")
 const selectedTeam = ref("all")
 const selectedStatus = ref("all")
+const selectedUser = ref("all")
 const showFilters = ref(false)
 
 // Sample data
@@ -81,12 +98,8 @@ const stats = [
 
 const roles = ["Admin", "Developer", "Viewer"]
 const teams = ["Engineering", "Product", "Marketing", "Sales", "Design", "Operations"]
-const statuses = [
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" }
-]
 
-function getRoleIcon(role: string) {
+function getRoleIcon(role: string): FunctionalComponent {
   switch (role) {
     case "Admin":
       return Crown
@@ -130,8 +143,90 @@ function filterByStatus(status: string) {
   showFilters.value = false
 }
 
+function selectUser(user: User) {
+  selectedUser.value = user.id
+  searchQuery.value = ""
+  showFilters.value = false
+}
+
+function clearSearch() {
+  searchQuery.value = ""
+  selectedRole.value = "all"
+  selectedTeam.value = "all"
+  selectedStatus.value = "all"
+  selectedUser.value = "all"
+  showFilters.value = false
+}
+
 const hasActiveFilters = computed(() => {
-  return selectedRole.value !== "all" || selectedTeam.value !== "all" || selectedStatus.value !== "all"
+  return (
+    selectedRole.value !== "all" ||
+    selectedTeam.value !== "all" ||
+    selectedStatus.value !== "all" ||
+    selectedUser.value !== "all"
+  )
+})
+
+const filteredUsers = computed(() => {
+  let filtered = users
+
+  // Filter by role
+  if (selectedRole.value !== "all") {
+    filtered = filtered.filter((user) => user.role === selectedRole.value)
+  }
+
+  // Filter by team
+  if (selectedTeam.value !== "all") {
+    filtered = filtered.filter((user) => user.team === selectedTeam.value)
+  }
+
+  // Filter by status
+  if (selectedStatus.value !== "all") {
+    filtered = filtered.filter((user) => user.status === selectedStatus.value)
+  }
+
+  // Filter by specific user
+  if (selectedUser.value !== "all") {
+    filtered = filtered.filter((user) => user.id === selectedUser.value)
+  }
+
+  // Apply search query last, but only if no specific user is selected
+  if (searchQuery.value && selectedUser.value === "all") {
+    filtered = filtered.filter(
+      (user) =>
+        user.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.value.toLowerCase())
+    )
+  }
+
+  return filtered
+})
+
+// Separate computed for dropdown search results - searches users, roles, teams, status
+const searchResults = computed(() => {
+  if (!searchQuery.value) return { users: [], roles: [], teams: [], statuses: [] }
+
+  const query = searchQuery.value.toLowerCase()
+
+  const matchingUsers = users
+    .filter((user) => user.name.toLowerCase().includes(query) || user.email.toLowerCase().includes(query))
+    .slice(0, 6)
+
+  const matchingRoles = roles.filter((role) => role.toLowerCase().includes(query))
+
+  const matchingTeams = teams.filter((team) => team.toLowerCase().includes(query))
+
+  const matchingStatuses = [
+    { value: "active", label: "Active" },
+    { value: "inactive", label: "Inactive" }
+  ].filter((status) => status.label.toLowerCase().includes(query))
+
+  return {
+    users: matchingUsers,
+    roles: matchingRoles,
+    teams: matchingTeams,
+    statuses: matchingStatuses
+  }
 })
 </script>
 
@@ -169,7 +264,22 @@ const hasActiveFilters = computed(() => {
 
     <!-- Search & Filter Command -->
     <UiCommand class="rounded-lg border shadow-sm">
-      <UiCommandInput v-model="searchQuery" placeholder="Search users, filter by role, team or status..." />
+      <div class="flex w-full items-center px-3" cmdk-input-wrapper="">
+        <UiCommandInput
+          v-model="searchQuery"
+          placeholder="Search users, filter by role, team or status..."
+          class="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+        />
+        <UiButton
+          v-if="searchQuery"
+          variant="ghost"
+          size="sm"
+          class="h-auto p-1 hover:bg-transparent"
+          @click="searchQuery = ''"
+        >
+          <X class="size-4 text-muted-foreground hover:text-foreground" />
+        </UiButton>
+      </div>
       <UiCommandList v-if="searchQuery || showFilters">
         <UiCommandEmpty>No users found.</UiCommandEmpty>
 
@@ -183,7 +293,7 @@ const hasActiveFilters = computed(() => {
               :icon="getRoleIcon(role)"
               @select="filterByRole(role)"
             />
-            <UiCommandItem value="role:all" text="All Roles" icon="lucide:users" @select="filterByRole('all')" />
+            <UiCommandItem value="role:all" text="All Roles" :icon="Users" @select="filterByRole('all')" />
           </UiCommandGroup>
           <UiCommandSeparator />
 
@@ -193,38 +303,67 @@ const hasActiveFilters = computed(() => {
               :key="team"
               :value="`team:${team}`"
               :text="team"
-              icon="lucide:users"
+              :icon="Users"
               @select="filterByTeam(team)"
             />
-            <UiCommandItem value="team:all" text="All Teams" icon="lucide:users" @select="filterByTeam('all')" />
+            <UiCommandItem value="team:all" text="All Teams" :icon="Users" @select="filterByTeam('all')" />
           </UiCommandGroup>
           <UiCommandSeparator />
 
           <UiCommandGroup heading="Filter by Status">
-            <UiCommandItem
-              value="status:active"
-              text="Active"
-              icon="lucide:check-circle"
-              @select="filterByStatus('active')"
-            />
+            <UiCommandItem value="status:active" text="Active" :icon="CheckCircle" @select="filterByStatus('active')" />
             <UiCommandItem
               value="status:inactive"
               text="Inactive"
-              icon="lucide:x-circle"
+              :icon="XCircle"
               @select="filterByStatus('inactive')"
             />
-            <UiCommandItem value="status:all" text="All Status" icon="lucide:circle" @select="filterByStatus('all')" />
+            <UiCommandItem value="status:all" text="All Status" :icon="Circle" @select="filterByStatus('all')" />
           </UiCommandGroup>
         </template>
 
         <template v-else>
-          <UiCommandGroup heading="Users">
+          <UiCommandGroup v-if="searchResults.users.length" heading="Users">
             <UiCommandItem
-              v-for="user in users.slice(0, 8)"
+              v-for="user in searchResults.users"
               :key="user.id"
               :value="user.name"
               :text="`${user.name} - ${user.email}`"
-              icon="lucide:user"
+              :icon="User"
+              @select="selectUser(user)"
+            />
+          </UiCommandGroup>
+
+          <UiCommandGroup v-if="searchResults.roles.length" heading="Roles">
+            <UiCommandItem
+              v-for="role in searchResults.roles"
+              :key="role"
+              :value="`role:${role}`"
+              :text="role"
+              :icon="getRoleIcon(role)"
+              @select="filterByRole(role)"
+            />
+          </UiCommandGroup>
+
+          <UiCommandGroup v-if="searchResults.teams.length" heading="Teams">
+            <UiCommandItem
+              v-for="team in searchResults.teams"
+              :key="team"
+              :value="`team:${team}`"
+              :text="team"
+              :icon="Users"
+              @select="filterByTeam(team)"
+            />
+          </UiCommandGroup>
+
+          <UiCommandGroup v-if="searchResults.statuses.length" heading="Status">
+            <UiCommandItem
+              v-for="status in searchResults.statuses"
+              :key="status.value"
+              :value="`status:${status.value}`"
+              :text="status.label"
+              :icon="status.value === 'active' ? CheckCircle : XCircle"
+              @select="filterByStatus(status.value)"
             />
           </UiCommandGroup>
         </template>
@@ -232,26 +371,35 @@ const hasActiveFilters = computed(() => {
     </UiCommand>
 
     <!-- Active Filters -->
-    <div v-if="hasActiveFilters" class="flex items-center gap-2">
-      <span class="text-sm text-muted-foreground">Active filters:</span>
-      <UiBadge v-if="selectedRole !== 'all'" variant="secondary" class="gap-1">
-        {{ selectedRole }}
-        <button @click="selectedRole = 'all'" class="ml-1 hover:bg-muted-foreground/20 rounded-sm">
-          <X class="h-3 w-3" />
-        </button>
-      </UiBadge>
-      <UiBadge v-if="selectedTeam !== 'all'" variant="secondary" class="gap-1">
-        {{ selectedTeam }}
-        <button @click="selectedTeam = 'all'" class="ml-1 hover:bg-muted-foreground/20 rounded-sm">
-          <X class="h-3 w-3" />
-        </button>
-      </UiBadge>
-      <UiBadge v-if="selectedStatus !== 'all'" variant="secondary" class="gap-1">
-        {{ selectedStatus === "active" ? "Active" : "Inactive" }}
-        <button @click="selectedStatus = 'all'" class="ml-1 hover:bg-muted-foreground/20 rounded-sm">
-          <X class="h-3 w-3" />
-        </button>
-      </UiBadge>
+    <div v-if="hasActiveFilters" class="flex items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <span class="text-sm text-muted-foreground">Active filters:</span>
+        <UiBadge v-if="selectedUser !== 'all'" variant="secondary" class="gap-1">
+          User: {{ users.find((u) => u.id === selectedUser)?.name }}
+          <button @click="selectedUser = 'all'" class="ml-1 hover:bg-muted-foreground/20 rounded-sm">
+            <X class="h-3 w-3" />
+          </button>
+        </UiBadge>
+        <UiBadge v-if="selectedRole !== 'all'" variant="secondary" class="gap-1">
+          Role: {{ selectedRole }}
+          <button @click="selectedRole = 'all'" class="ml-1 hover:bg-muted-foreground/20 rounded-sm">
+            <X class="h-3 w-3" />
+          </button>
+        </UiBadge>
+        <UiBadge v-if="selectedTeam !== 'all'" variant="secondary" class="gap-1">
+          Team: {{ selectedTeam }}
+          <button @click="selectedTeam = 'all'" class="ml-1 hover:bg-muted-foreground/20 rounded-sm">
+            <X class="h-3 w-3" />
+          </button>
+        </UiBadge>
+        <UiBadge v-if="selectedStatus !== 'all'" variant="secondary" class="gap-1">
+          Status: {{ selectedStatus === "active" ? "Active" : "Inactive" }}
+          <button @click="selectedStatus = 'all'" class="ml-1 hover:bg-muted-foreground/20 rounded-sm">
+            <X class="h-3 w-3" />
+          </button>
+        </UiBadge>
+      </div>
+      <UiButton variant="outline" size="sm" @click="clearSearch">Clear All</UiButton>
     </div>
 
     <!-- Users Table -->
@@ -259,7 +407,7 @@ const hasActiveFilters = computed(() => {
       <div class="p-6">
         <div class="space-y-4">
           <div
-            v-for="user in users"
+            v-for="user in filteredUsers"
             :key="user.id"
             class="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50"
           >
@@ -333,4 +481,3 @@ const hasActiveFilters = computed(() => {
     </UiCard>
   </div>
 </template>
-
