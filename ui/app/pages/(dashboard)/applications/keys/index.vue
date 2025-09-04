@@ -106,11 +106,11 @@ const getStatusBadgeClass = (status: string) => {
 }
 
 const navigateToKey = async (keyId: string) => {
-  console.log('Navigating to key:', keyId)
+  console.log("Navigating to key:", keyId)
   try {
     await navigateTo(`/applications/keys/${keyId}`, { replace: false })
   } catch (error) {
-    console.error('Navigation error:', error)
+    console.error("Navigation error:", error)
   }
 }
 
@@ -294,9 +294,7 @@ const onApiKeyCreated = (apiKeyData: any) => {
                   </UiButton>
                 </UiDropdownMenuTrigger>
                 <UiDropdownMenuContent align="end">
-                  <UiDropdownMenuItem @click="navigateToKey(key.id)">
-                    View Details
-                  </UiDropdownMenuItem>
+                  <UiDropdownMenuItem @click="navigateToKey(key.id)"> View Details </UiDropdownMenuItem>
                   <UiDropdownMenuItem> Regenerate </UiDropdownMenuItem>
                   <UiDropdownMenuSeparator />
                   <UiDropdownMenuItem class="text-red-600"> Delete Key </UiDropdownMenuItem>

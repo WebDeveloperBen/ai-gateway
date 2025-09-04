@@ -1,17 +1,19 @@
 <script setup lang="ts">
-import { Eye, EyeOff, Copy, Check } from "lucide-vue-next"
+import { Eye, EyeOff, Copy, Check, Loader2 } from "lucide-vue-next"
 import { toast } from "vue-sonner"
 
 interface Props {
   keyId: string
   keyPrefix: string
-  size?: 'sm' | 'md' | 'lg'
+  size?: "sm" | "md" | "lg"
   showCopyButton?: boolean
+  showCopyText?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  size: 'md',
-  showCopyButton: true
+  size: "md",
+  showCopyButton: true,
+  showCopyText: false
 })
 
 // State management
@@ -22,20 +24,20 @@ const justCopied = ref(false)
 
 const fetchKey = async () => {
   if (fetched.value || loading.value) return
-  
+
   try {
     loading.value = true
-    
+
     // TODO: Implement actual API call to fetch the key
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
     // Simulate fetched key - in real app this would come from API
     const fullKey = `sk-proj-${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 10)}`
-    
+
     fetched.value = fullKey
   } catch (error) {
-    console.error('Failed to fetch API key:', error)
+    console.error("Failed to fetch API key:", error)
     toast({
       title: "Error",
       description: "Failed to fetch API key. Please try again.",
@@ -66,21 +68,21 @@ const copyToClipboard = async () => {
     if (!fetched.value) {
       await fetchKey()
     }
-    
+
     if (!fetched.value) {
-      throw new Error('Failed to retrieve API key')
+      throw new Error("Failed to retrieve API key")
     }
-    
+
     await navigator.clipboard.writeText(fetched.value)
     justCopied.value = true
-    
+
     toast({
       title: "Copied to clipboard",
       description: "API key has been copied to your clipboard.",
       duration: 3000,
       icon: "lucide:check"
     })
-    
+
     setTimeout(() => {
       justCopied.value = false
     }, 2000)
@@ -112,23 +114,23 @@ const displayText = computed(() => {
 
 const sizeClasses = computed(() => {
   switch (props.size) {
-    case 'sm':
+    case "sm":
       return {
-        container: 'p-2',
-        text: 'text-xs',
-        button: 'h-6 w-6'
+        container: "p-2",
+        text: "text-xs",
+        button: "h-6 w-6"
       }
-    case 'lg':
+    case "lg":
       return {
-        container: 'p-4',
-        text: 'text-base',
-        button: 'h-8 w-8'
+        container: "p-4",
+        text: "text-base",
+        button: "h-8 w-8"
       }
     default: // md
       return {
-        container: 'p-3',
-        text: 'text-sm',
-        button: 'h-7 w-7'
+        container: "p-3",
+        text: "text-sm",
+        button: "h-7 w-7"
       }
   }
 })
@@ -139,34 +141,24 @@ const sizeClasses = computed(() => {
     <code class="font-mono flex-1 break-all" :class="sizeClasses.text">
       {{ displayText }}
     </code>
-    
-    <UiButton 
-      variant="ghost" 
-      size="sm" 
-      @click="toggleVisibility"
-      :disabled="loading"
-      :class="sizeClasses.button"
-    >
-      <div 
-        v-if="loading" 
-        class="border-2 border-current border-t-transparent rounded-full animate-spin"
-        :class="props.size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'"
-      ></div>
+
+    <UiButton variant="ghost" size="sm" @click="toggleVisibility" :disabled="loading" :class="sizeClasses.button">
+      <Loader2 v-if="loading" class="animate-spin" :class="props.size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'" />
       <Eye v-else-if="!visible" :class="props.size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'" />
       <EyeOff v-else :class="props.size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'" />
     </UiButton>
-    
-    <UiButton 
+
+    <UiButton
       v-if="showCopyButton"
-      variant="outline" 
-      size="sm" 
+      :variant="props.size === 'sm' ? 'ghost' : 'outline'"
+      size="sm"
       @click="copyToClipboard"
       :disabled="justCopied"
-      :class="[sizeClasses.button, 'gap-1']"
+      :class="props.showCopyText ? 'gap-2' : ''"
     >
-      <Check v-if="justCopied" class="text-green-600" :class="props.size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'" />
-      <Copy v-else :class="props.size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'" />
-      <span v-if="props.size !== 'sm'" class="text-xs">{{ justCopied ? 'Copied!' : 'Copy' }}</span>
+      <Check v-if="justCopied" class="text-green-600" :class="props.size === 'sm' ? 'h-4 w-4' : 'h-4 w-4'" />
+      <Copy v-else :class="props.size === 'sm' ? 'h-4 w-4' : 'h-4 w-4'" />
+      <span v-if="props.showCopyText">{{ justCopied ? "Copied!" : "Copy" }}</span>
     </UiButton>
   </div>
 </template>

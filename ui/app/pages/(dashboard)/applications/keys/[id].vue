@@ -7,7 +7,6 @@ import {
   Trash2,
   Activity,
   Calendar,
-  Shield,
   Zap,
   AlertTriangle,
   Clock,
@@ -89,7 +88,7 @@ const getStatusColor = (status: number) => {
 }
 
 // Code examples for integration
-type CodeExampleKey = 'curl' | 'javascript' | 'python'
+type CodeExampleKey = "curl" | "javascript" | "python"
 
 const codeExamples: Record<CodeExampleKey, string> = {
   curl: `curl -X POST "https://api.yourdomain.com/v1/chat/completions" \\
@@ -218,12 +217,12 @@ const copyCodeExample = async (example: CodeExampleKey) => {
         <div>
           <label class="text-sm font-medium text-muted-foreground">API Key</label>
           <div class="mt-2">
-            <ApiKeyDisplay :key-id="apiKey.id" :key-prefix="apiKey.keyPrefix" size="lg" />
+            <ApiKeyDisplay :key-id="apiKey.id" :key-prefix="apiKey.keyPrefix" size="lg" show-copy-text />
           </div>
         </div>
 
         <!-- Key Details Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <label class="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Calendar class="h-4 w-4" />
@@ -238,14 +237,6 @@ const copyCodeExample = async (example: CodeExampleKey) => {
               Last Used
             </label>
             <p class="text-sm font-medium mt-1">{{ new Date(apiKey.lastUsed).toLocaleDateString() }}</p>
-          </div>
-
-          <div>
-            <label class="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Shield class="h-4 w-4" />
-              Permissions
-            </label>
-            <p class="text-sm font-medium mt-1">{{ apiKey.permissions.join(", ") }}</p>
           </div>
 
           <div>
@@ -395,7 +386,7 @@ const copyCodeExample = async (example: CodeExampleKey) => {
         <!-- Language Tabs -->
         <div class="flex items-center gap-2 mb-4">
           <UiButton
-            v-for="lang in (['curl', 'javascript', 'python'] as CodeExampleKey[])"
+            v-for="lang in ['curl', 'javascript', 'python'] as CodeExampleKey[]"
             :key="lang"
             variant="outline"
             size="sm"
