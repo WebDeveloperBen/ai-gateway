@@ -1,5 +1,16 @@
 <script setup lang="ts">
-import { Plus, Search, Filter, MoreVertical, Key, Activity, AlertCircle, X } from "lucide-vue-next"
+import {
+  Plus,
+  MoreVertical,
+  Key,
+  Activity,
+  AlertCircle,
+  X,
+  CheckCircle,
+  XCircle,
+  Circle,
+  Layers
+} from "lucide-vue-next"
 
 // Sample data - replace with actual API calls
 const applications = ref([
@@ -40,8 +51,11 @@ const applications = ref([
 
 const searchQuery = ref("")
 const selectedStatus = ref("all")
-const showCreateModal = ref(false)
 const showFilters = ref(false)
+const showCreateModal = ref(false)
+
+// Get app config
+const appConfig = useAppConfig()
 
 // Command interface methods
 const filterByStatus = (status: string) => {
@@ -59,6 +73,12 @@ const selectApplication = (app: any) => {
 const clearAllFilters = () => {
   selectedStatus.value = "all"
   searchQuery.value = ""
+}
+
+const onApplicationCreated = (applicationId: string) => {
+  console.log("Application created:", applicationId)
+  // Here you could refresh the applications list or add the new app to the existing list
+  // For now, we'll just close the modal (handled by the modal component)
 }
 
 const hasActiveFilters = computed(() => {
@@ -92,7 +112,9 @@ const getStatusBadgeClass = (status: string) => {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">Applications</h1>
-        <p class="text-muted-foreground">Manage your AI-powered applications and their API access</p>
+        <p class="text-muted-foreground">
+          Manage your AI-powered applications and their {{ appConfig.app.name }} access
+        </p>
       </div>
       <UiButton @click="showCreateModal = true" class="gap-2">
         <Plus class="h-4 w-4" />
@@ -160,21 +182,16 @@ const getStatusBadgeClass = (status: string) => {
             <UiCommandItem
               value="status:active"
               text="Active Applications"
-              icon="lucide:check-circle"
+              :icon="CheckCircle"
               @select="filterByStatus('active')"
             />
             <UiCommandItem
               value="status:inactive"
               text="Inactive Applications"
-              icon="lucide:x-circle"
+              :icon="XCircle"
               @select="filterByStatus('inactive')"
             />
-            <UiCommandItem
-              value="status:all"
-              text="All Applications"
-              icon="lucide:circle"
-              @select="filterByStatus('all')"
-            />
+            <UiCommandItem value="status:all" text="All Applications" :icon="Circle" @select="filterByStatus('all')" />
           </UiCommandGroup>
           <UiCommandSeparator />
 
@@ -182,7 +199,7 @@ const getStatusBadgeClass = (status: string) => {
             <UiCommandItem
               value="action:create"
               text="Create New Application"
-              icon="lucide:plus"
+              :icon="Plus"
               @select="showCreateModal = true"
             />
           </UiCommandGroup>
@@ -195,7 +212,7 @@ const getStatusBadgeClass = (status: string) => {
               :key="app.id"
               :value="app.name"
               :text="app.name"
-              icon="lucide:layers"
+              :icon="Layers"
               @select="selectApplication(app)"
             />
           </UiCommandGroup>
@@ -285,5 +302,8 @@ const getStatusBadgeClass = (status: string) => {
         </UiCardContent>
       </UiCard>
     </div>
+
+    <!-- Create Application Modal -->
+    <ModalsCreateApplication v-model:open="showCreateModal" @created="onApplicationCreated" />
   </div>
 </template>

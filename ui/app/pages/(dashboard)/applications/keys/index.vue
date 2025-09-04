@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { Plus, Search, Copy, Eye, EyeOff, MoreVertical, Key, Calendar, Activity, X } from "lucide-vue-next"
+import { Plus, MoreVertical, Key, Activity, X, CheckCircle, XCircle, Circle, Layers } from "lucide-vue-next"
 
 // Sample API Keys data
 const apiKeys = ref([
   {
     id: "key_1",
     name: "Production Key",
-    key: "sk-proj-abc123...def456",
+    keyPrefix: "sk-",
     applicationId: "app_1",
     applicationName: "Customer Service Bot",
     created: "2024-12-15T10:00:00Z",
@@ -19,7 +19,7 @@ const apiKeys = ref([
   {
     id: "key_2",
     name: "Development Key",
-    key: "sk-proj-xyz789...uvw012",
+    keyPrefix: "sk-",
     applicationId: "app_1",
     applicationName: "Customer Service Bot",
     created: "2024-11-20T09:15:00Z",
@@ -32,7 +32,7 @@ const apiKeys = ref([
   {
     id: "key_3",
     name: "Testing Key",
-    key: "sk-proj-mno345...rst678",
+    keyPrefix: "sk-",
     applicationId: "app_2",
     applicationName: "Content Generator",
     created: "2024-10-10T16:20:00Z",
@@ -49,7 +49,6 @@ const selectedApp = ref("all")
 const selectedStatus = ref("all")
 const showCreateModal = ref(false)
 const showFilters = ref(false)
-const visibleKeys = ref<Set<string>>(new Set())
 
 // Command interface methods
 const filterByApp = (appId: string) => {
@@ -96,23 +95,6 @@ const filteredKeys = computed(() => {
   })
 })
 
-const toggleKeyVisibility = (keyId: string) => {
-  if (visibleKeys.value.has(keyId)) {
-    visibleKeys.value.delete(keyId)
-  } else {
-    visibleKeys.value.add(keyId)
-  }
-}
-
-const copyToClipboard = async (text: string) => {
-  try {
-    await navigator.clipboard.writeText(text)
-    // You could add a toast notification here
-  } catch (err) {
-    console.error("Failed to copy text: ", err)
-  }
-}
-
 const formatNumber = (num: number) => {
   return new Intl.NumberFormat().format(num)
 }
@@ -123,8 +105,31 @@ const getStatusBadgeClass = (status: string) => {
     : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
 }
 
-const maskKey = (key: string) => {
-  return key.substring(0, 12) + "..." + key.substring(key.length - 6)
+const navigateToKey = async (keyId: string) => {
+  console.log('Navigating to key:', keyId)
+  try {
+    await navigateTo(`/applications/keys/${keyId}`, { replace: false })
+  } catch (error) {
+    console.error('Navigation error:', error)
+  }
+}
+
+const onApiKeyCreated = (apiKeyData: any) => {
+  console.log("API key created:", apiKeyData)
+
+  // Add missing fields that the keys page expects
+  const enrichedApiKey = {
+    ...apiKeyData,
+    applicationName:
+      applications.value.find((app) => app.id === apiKeyData.applicationId)?.name || "Unknown Application",
+    lastUsed: apiKeyData.created, // Use creation date as last used for new keys
+    permissions: apiKeyData.permissions || ["read"], // Default permissions
+    requestCount: 0, // New keys start with 0 requests
+    rateLimit: apiKeyData.rateLimit || "1000/hour" // Default rate limit
+  }
+
+  // Add the new key to the existing list
+  apiKeys.value.unshift(enrichedApiKey)
 }
 </script>
 
@@ -200,26 +205,21 @@ const maskKey = (key: string) => {
               :key="app.id"
               :value="`app:${app.name}`"
               :text="app.name"
-              icon="lucide:layers"
+              :icon="Layers"
               @select="filterByApp(app.id)"
             />
           </UiCommandGroup>
           <UiCommandSeparator />
 
           <UiCommandGroup heading="Filter by Status">
-            <UiCommandItem
-              value="status:active"
-              text="Active"
-              icon="lucide:check-circle"
-              @select="filterByStatus('active')"
-            />
+            <UiCommandItem value="status:active" text="Active" :icon="CheckCircle" @select="filterByStatus('active')" />
             <UiCommandItem
               value="status:inactive"
               text="Inactive"
-              icon="lucide:x-circle"
+              :icon="XCircle"
               @select="filterByStatus('inactive')"
             />
-            <UiCommandItem value="status:all" text="All Status" icon="lucide:circle" @select="filterByStatus('all')" />
+            <UiCommandItem value="status:all" text="All Status" :icon="Circle" @select="filterByStatus('all')" />
           </UiCommandGroup>
         </template>
 
@@ -230,7 +230,7 @@ const maskKey = (key: string) => {
               :key="key.id"
               :value="key.name"
               :text="key.name"
-              icon="lucide:key"
+              :icon="Key"
               @select="selectKey(key)"
             />
           </UiCommandGroup>
@@ -271,7 +271,12 @@ const maskKey = (key: string) => {
             <p class="text-muted-foreground">Try adjusting your search or create a new API key.</p>
           </div>
 
-          <div v-for="key in filteredKeys" :key="key.id" class="border rounded-lg p-4 space-y-3">
+          <div
+            v-for="key in filteredKeys"
+            :key="key.id"
+            class="border rounded-lg p-4 space-y-3 hover:shadow-md hover:border-primary/20 transition-all cursor-pointer"
+            @click="navigateToKey(key.id)"
+          >
             <div class="flex items-start justify-between">
               <div class="space-y-1">
                 <div class="flex items-center gap-3">
@@ -284,13 +289,14 @@ const maskKey = (key: string) => {
               </div>
               <UiDropdownMenu>
                 <UiDropdownMenuTrigger as-child>
-                  <UiButton variant="ghost" size="sm">
+                  <UiButton variant="ghost" size="sm" @click.stop>
                     <MoreVertical class="h-4 w-4" />
                   </UiButton>
                 </UiDropdownMenuTrigger>
                 <UiDropdownMenuContent align="end">
-                  <UiDropdownMenuItem> Edit Key </UiDropdownMenuItem>
-                  <UiDropdownMenuItem> View Usage </UiDropdownMenuItem>
+                  <UiDropdownMenuItem @click="navigateToKey(key.id)">
+                    View Details
+                  </UiDropdownMenuItem>
                   <UiDropdownMenuItem> Regenerate </UiDropdownMenuItem>
                   <UiDropdownMenuSeparator />
                   <UiDropdownMenuItem class="text-red-600"> Delete Key </UiDropdownMenuItem>
@@ -298,17 +304,8 @@ const maskKey = (key: string) => {
               </UiDropdownMenu>
             </div>
 
-            <div class="flex items-center gap-2 bg-muted/50 rounded p-2">
-              <code class="text-sm font-mono flex-1">
-                {{ visibleKeys.has(key.id) ? key.key : maskKey(key.key) }}
-              </code>
-              <UiButton variant="ghost" size="sm" @click="toggleKeyVisibility(key.id)">
-                <Eye v-if="!visibleKeys.has(key.id)" class="h-4 w-4" />
-                <EyeOff v-else class="h-4 w-4" />
-              </UiButton>
-              <UiButton variant="ghost" size="sm" @click="copyToClipboard(key.key)">
-                <Copy class="h-4 w-4" />
-              </UiButton>
+            <div @click.stop>
+              <ApiKeyDisplay :key-id="key.id" :key-prefix="key.keyPrefix" size="sm" />
             </div>
 
             <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
@@ -330,12 +327,15 @@ const maskKey = (key: string) => {
               </div>
               <div>
                 <p class="text-muted-foreground">Permissions</p>
-                <p class="font-medium">{{ key.permissions.join(", ") }}</p>
+                <p class="font-medium">{{ key.permissions?.join(", ") || "Default" }}</p>
               </div>
             </div>
           </div>
         </div>
       </UiCardContent>
     </UiCard>
+
+    <!-- Create API Key Modal -->
+    <ModalsCreateApiKey v-model:open="showCreateModal" @created="onApiKeyCreated" />
   </div>
 </template>

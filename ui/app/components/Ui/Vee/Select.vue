@@ -6,7 +6,7 @@
     <div class="relative">
       <slot name="icon">
         <span v-if="hasIcon" lass="absolute inset-y-0 left-3 flex items-center justify-center">
-          <component v-if="icon" :name="icon" class="size-4 text-muted-foreground" />
+          <component v-if="icon" :is="icon" class="size-4 text-muted-foreground" />
         </span>
       </slot>
       <UiNativeSelect

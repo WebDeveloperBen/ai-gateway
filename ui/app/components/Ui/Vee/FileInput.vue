@@ -18,14 +18,14 @@
         :multiple="multiple"
         :class="[hasIcon && 'pl-9']"
         :accept="accept"
-        @change="
-          handleChange($event)
-          emits('change', $event.target.files)
-        "
-        @blur="
-          handleBlur($event)
-          emits('blur', $event)
-        "
+        @change="(e) => {
+          handleChange(e);
+          emits('change', e.target.files);
+        }"
+        @blur="(e) => {
+          handleBlur(e);
+          emits('blur', e);
+        }"
       />
     </div>
     <AnimatePresence multiple as="div" mode="wait">

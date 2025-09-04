@@ -25,7 +25,7 @@
         v-if="!hideClose"
         class="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
       >
-        <X class="size-4" />
+        <component :is="X" class="size-4" />
         <span class="sr-only">Close</span>
       </UiDialogClose>
     </DialogContent>
@@ -33,9 +33,9 @@
 </template>
 
 <script lang="ts" setup>
+import { X } from "lucide-vue-next"
 import { DialogContent, useForwardPropsEmits } from "reka-ui"
 import type { DialogContentEmits, DialogContentProps } from "reka-ui"
-import { X } from "lucide-vue-next"
 import type { HTMLAttributes } from "vue"
 
 defineOptions({ inheritAttrs: false })

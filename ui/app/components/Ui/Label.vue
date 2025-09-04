@@ -10,21 +10,21 @@
 </template>
 
 <script lang="ts" setup>
-import { Label } from "reka-ui"
-import type { LabelProps } from "reka-ui"
-import type { HTMLAttributes } from "vue"
+  import { Label } from "reka-ui";
+  import type { LabelProps } from "reka-ui";
+  import type { HTMLAttributes } from "vue";
 
-const props = defineProps<
-  LabelProps & {
-    /** Custom class(es) to add to the label */
-    class?: HTMLAttributes["class"]
-    hint?: string
-  }
->()
+  const props = defineProps<
+    LabelProps & {
+      /** Custom class(es) to add to the label */
+      class?: HTMLAttributes["class"];
+      hint?: string;
+    }
+  >();
 
-const forwarded = reactiveOmit(props, "class", "hint")
+  const forwarded = reactiveOmit(props, "class", "hint");
 
-const styles = tv({
-  base: "flex items-center justify-between gap-2 text-sm leading-none font-medium select-none not-peer-disabled:cursor-pointer group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
-})
+  const styles = tv({
+    base: "flex items-center justify-between gap-2 text-sm leading-none font-medium select-none not-peer-disabled:cursor-pointer group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+  });
 </script>

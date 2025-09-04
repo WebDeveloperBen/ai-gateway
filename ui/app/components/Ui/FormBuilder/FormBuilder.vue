@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="space-y-6">
     <template v-for="(field, index) in fields" :key="index">
       <template v-if="field.variant === 'Checkbox'">
         <slot

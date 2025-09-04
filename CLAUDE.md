@@ -18,11 +18,17 @@ The system consists of:
 # Run with hot reload (requires Docker for dependencies)
 task run
 
-# Build binary
+# Build binary (outputs to ./bin/api)
 task build
 
-# Run tests
+# Run all tests
 task tests
+
+# Run specific test
+go test -v ./internal/api/auth/...
+
+# Run tests in a single package
+go test -v ./internal/gateway/
 
 # Database migrations
 task db:up          # Apply all migrations
@@ -53,6 +59,9 @@ pnpm generate
 
 # Preview production build
 pnpm preview
+
+# Format code
+pnpm format
 ```
 
 ## Architecture
