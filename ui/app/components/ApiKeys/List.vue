@@ -129,7 +129,6 @@ const getExpiryStatus = (expiryDate: string) => {
             <UiDropdownMenuContent align="end">
               <UiDropdownMenuItem @click="handleApiKeyClick(key)"> View Details </UiDropdownMenuItem>
               <UiDropdownMenuItem @click="handleRegenerateKey(key)"> Regenerate Key </UiDropdownMenuItem>
-              <UiDropdownMenuItem> Copy Key </UiDropdownMenuItem>
               <UiDropdownMenuSeparator />
               <UiDropdownMenuItem class="text-red-600" @click="handleDeleteKey(key)"> Delete Key </UiDropdownMenuItem>
             </UiDropdownMenuContent>
@@ -139,7 +138,7 @@ const getExpiryStatus = (expiryDate: string) => {
       <UiCardContent>
         <!-- API Key Display -->
         <div class="mb-4">
-          <ApiKeysReveal @click.stop :key-id="key.id" :key-prefix="key.keyPrefix" size="sm" />
+          <ApiKeysReveal @click.stop :key-id="key.id" :key-prefix="key.keyPrefix" size="lg" />
         </div>
 
         <!-- Stats Grid -->
