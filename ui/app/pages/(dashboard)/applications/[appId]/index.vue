@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Key, Activity, Calendar, Users, Settings, Layers, Globe } from "lucide-vue-next"
+import type { StatsCardProps } from "~/components/Cards/Stats.vue"
 
 // Get the app ID from route params
 const route = useRoute()
@@ -50,89 +51,80 @@ const application = ref({
   ]
 })
 
-const formatNumber = (num: number) => {
-  return new Intl.NumberFormat().format(num)
-}
-
 const getStatusBadgeClass = (status: string) => {
   return status === "active"
     ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
     : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
 }
+
+// Icon and variant arrays for index matching with API data
+const statsIcons = [Key, Activity, Layers, Users]
+const statsVariants: StatsCardProps["variant"][] = ["chart-3", "chart-1", "default", "chart-2"]
+
+// Stats configuration - ready for API replacement
+const statsCards = computed(() => {
+  // This can be replaced with: const { data: statsData } = await useFetch(`/api/applications/${appId}/stats`)
+  // Then: statsData.map((stat, index) => ({ ...stat, icon: statsIcons[index], variant: statsVariants[index] }))
+
+  return [
+    {
+      title: "API Keys",
+      value: application.value.apiKeyCount,
+      description: "Active keys"
+    },
+    {
+      title: "Monthly Requests",
+      value: application.value.monthlyRequests,
+      description: "This month"
+    },
+    {
+      title: "Models",
+      value: application.value.models.length,
+      description: application.value.models.join(", ")
+    },
+    {
+      title: "Team",
+      value: application.value.team,
+      description: "Responsible team"
+    }
+  ].map((stat, index) => ({
+    ...stat,
+    icon: statsIcons[index],
+    variant: statsVariants[index]
+  }))
+})
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
     <!-- Header -->
-    <div class="flex items-start justify-between">
-      <div>
-        <div class="flex items-center gap-3 mb-2">
-          <h1 class="text-3xl font-bold tracking-tight">{{ application.name }}</h1>
-          <UiBadge :class="getStatusBadgeClass(application.status)">
-            {{ application.status }}
-          </UiBadge>
-        </div>
-        <p class="text-muted-foreground">{{ application.description }}</p>
-      </div>
 
+    <PageBadgeHeader :badge-status="application.status" :title="application.name" :subtext="application.description">
       <!-- Action Buttons -->
+
       <div class="flex items-center gap-2">
-        <UiButton variant="default" size="sm" class="gap-2" @click="navigateTo(`/applications/${appId}/keys`)">
+        <UiButton variant="default" class="gap-2" @click="navigateTo(`/applications/${appId}/keys`)">
           <Key class="h-4 w-4" />
           Manage Keys
         </UiButton>
-        <UiButton variant="outline" size="sm" class="gap-2">
+        <UiButton variant="outline" class="gap-2">
           <Settings class="h-4 w-4" />
           Settings
         </UiButton>
       </div>
-    </div>
+    </PageBadgeHeader>
 
     <!-- Application Overview Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <UiCard>
-        <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <UiCardTitle class="text-sm font-medium">API Keys</UiCardTitle>
-          <Key class="h-4 w-4 text-muted-foreground" />
-        </UiCardHeader>
-        <UiCardContent>
-          <div class="text-2xl font-bold">{{ application.apiKeyCount }}</div>
-          <p class="text-xs text-muted-foreground">Active keys</p>
-        </UiCardContent>
-      </UiCard>
-
-      <UiCard>
-        <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <UiCardTitle class="text-sm font-medium">Monthly Requests</UiCardTitle>
-          <Activity class="h-4 w-4 text-muted-foreground" />
-        </UiCardHeader>
-        <UiCardContent>
-          <div class="text-2xl font-bold">{{ formatNumber(application.monthlyRequests) }}</div>
-          <p class="text-xs text-muted-foreground">This month</p>
-        </UiCardContent>
-      </UiCard>
-
-      <UiCard>
-        <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <UiCardTitle class="text-sm font-medium">Models</UiCardTitle>
-          <Layers class="h-4 w-4 text-muted-foreground" />
-        </UiCardHeader>
-        <UiCardContent>
-          <div class="text-2xl font-bold">{{ application.models.length }}</div>
-          <p class="text-xs text-muted-foreground">{{ application.models.join(", ") }}</p>
-        </UiCardContent>
-      </UiCard>
-
-      <UiCard>
-        <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <UiCardTitle class="text-sm font-medium">Team</UiCardTitle>
-          <Users class="h-4 w-4 text-muted-foreground" />
-        </UiCardHeader>
-        <UiCardContent>
-          <div class="text-2xl font-bold">{{ application.team }}</div>
-          <p class="text-xs text-muted-foreground">Responsible team</p>
-        </UiCardContent>
-      </UiCard>
+      <CardsStats
+        v-for="card in statsCards"
+        :key="card.title"
+        :title="card.title"
+        :value="card.value"
+        :icon="card.icon"
+        :description="card.description"
+        :variant="card.variant"
+      />
     </div>
 
     <!-- Application Details -->

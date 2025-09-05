@@ -1,0 +1,1 @@
+- [ ] on /Applications/<app_id> give the settings button something to do (maybe open the modal to edit the page)

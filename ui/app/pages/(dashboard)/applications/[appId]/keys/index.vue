@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Plus, Key, X, CheckCircle, XCircle, Circle, Layers, Activity } from "lucide-vue-next"
+import type { StatsCardProps } from "~/components/Cards/Stats.vue"
 
 // Get the app ID from route params
 const route = useRoute()
@@ -103,37 +104,41 @@ const filteredKeys = computed(() => {
   })
 })
 
+// Icon and variant arrays for index matching with API data
+const statsIcons = [Key, CheckCircle, Activity, Layers]
+const statsVariants: StatsCardProps["variant"][] = ["chart-3", "chart-2", "chart-1", "default"]
+
 // Stats card configuration - easily replaceable with API call
 const statsCards = computed(() => {
-  // This computed property can easily be replaced with:
-  // const { data: statsCards } = await useFetch(`/api/applications/${appId}/stats`)
+  // This can be replaced with: const { data: statsData } = await useFetch(`/api/applications/${appId}/stats`)
+  // Then: statsData.map((stat, index) => ({ ...stat, icon: statsIcons[index] }))
 
   return [
     {
       title: "Total Keys",
       value: filteredKeys.value.length,
-      icon: Key,
       description: "All API keys for this application"
     },
     {
       title: "Active Keys",
       value: filteredKeys.value.filter((key) => key.status === "active").length,
-      icon: CheckCircle,
       description: "Currently active and usable"
     },
     {
       title: "Total Requests",
       value: filteredKeys.value.reduce((sum, key) => sum + key.requestCount, 0),
-      icon: Activity,
       description: "API calls made this month"
     },
     {
-      title: "Applications",
+      title: "Connected Apps",
       value: 1,
-      icon: Layers,
-      description: "Connected applications"
+      description: "Applications using these keys"
     }
-  ]
+  ].map((stat, index) => ({
+    ...stat,
+    icon: statsIcons[index],
+    variant: statsVariants[index]
+  }))
 })
 
 const navigateToKey = async (key: any) => {
@@ -177,19 +182,15 @@ const onApiKeyCreated = (apiKeyData: any) => {
 
 <template>
   <div class="flex flex-col gap-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight text-primary">
-          {{ apiKeys.find((k) => k.applicationId === appId)?.applicationName || "Application" }}
-        </h1>
-        <p class="text-muted-foreground">Manage API keys for this specific application</p>
-      </div>
+    <PageHeader
+      :title="apiKeys.find((k) => k.applicationId === appId)?.applicationName || 'Application'"
+      subtext="Manage API keys for this specific application"
+    >
       <UiButton @click="showCreateModal = true" class="gap-2">
         <Plus class="h-4 w-4" />
         Create API Key
       </UiButton>
-    </div>
+    </PageHeader>
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -200,6 +201,7 @@ const onApiKeyCreated = (apiKeyData: any) => {
         :value="card.value"
         :icon="card.icon"
         :description="card.description"
+        :variant="card.variant"
       />
     </div>
 

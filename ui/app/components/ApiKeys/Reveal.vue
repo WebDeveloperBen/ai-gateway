@@ -1,79 +1,61 @@
 <script setup lang="ts">
-import { Eye, EyeOff, Copy, Check, Loader2 } from "lucide-vue-next"
+import { Eye, EyeOff, RotateCcw, Loader2, Check, Copy } from "lucide-vue-next"
 import { toast } from "vue-sonner"
 
 interface Props {
   keyId: string
   keyPrefix: string
   size?: "sm" | "md" | "lg"
-  showCopyButton?: boolean
-  showCopyText?: boolean
+  showRegenerateButton?: boolean
+  showRegenerateText?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   size: "md",
-  showCopyButton: true,
-  showCopyText: false
+  showRegenerateButton: true,
+  showRegenerateText: false
 })
 
+const emit = defineEmits<{
+  regenerate: [keyId: string]
+}>()
+
 // State management
-const visible = ref(false)
-const fetched = ref<string | null>(null)
-const loading = ref(false)
-const justCopied = ref(false)
+const revealed = ref(false)
+const regenerating = ref(false)
 
-const fetchKey = async () => {
-  if (fetched.value || loading.value) return
+const regeneratedKey = ref<string | null>(null)
+const copied = ref(false)
 
+const fakeRegenerateApiCall = async (): Promise<string> => {
+  // Stub: Replace with real backend logic
+  await new Promise((resolve) => setTimeout(resolve, 700))
+  return `${props.keyPrefix}${generateUniqueId(props.keyId)}${Math.random().toString(36).slice(2, 8)}`
+}
+
+const regenerateKey = async () => {
   try {
-    loading.value = true
+    regenerating.value = true
+    toast("Regenerating...", { description: "Please wait while we generate a new API key.", duration: 2000 })
 
-    // TODO: Implement actual API call to fetch the key
     // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    // Simulate fetched key - in real app this would come from API
-    const fullKey = `sk-proj-${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 10)}`
-
-    fetched.value = fullKey
-  } catch (error) {
-    console.error("Failed to fetch API key:", error)
-    toast({
-      title: "Error",
-      description: "Failed to fetch API key. Please try again.",
-      duration: 3000,
-      icon: "lucide:x",
-      variant: "destructive"
-    })
+    const newKey = await fakeRegenerateApiCall()
+    regeneratedKey.value = newKey
+    revealed.value = true
+    toast("Key regenerated", { description: "A new API key has been generated.", duration: 3000 })
+  } catch (err) {
+    toast("Regeneration failed", { description: "Please try again.", duration: 3000 })
   } finally {
-    loading.value = false
+    regenerating.value = false
   }
 }
 
-const toggleVisibility = async () => {
-  if (visible.value) {
-    visible.value = false
-  } else {
-    if (!fetched.value) {
-      await fetchKey()
-    }
-    if (fetched.value) {
-      visible.value = true
-    }
-  }
-}
+const justCopied = shallowRef(false)
 
-const copyToClipboard = async () => {
+const copyToClipboard = async (text: string | null) => {
+  if (!text) return
   try {
-    if (!fetched.value) {
-      await fetchKey()
-    }
-
-    if (!fetched.value) {
-      throw new Error("Failed to retrieve API key")
-    }
-
-    await navigator.clipboard.writeText(fetched.value)
+    await navigator.clipboard.writeText(text)
     justCopied.value = true
 
     toast({
@@ -83,6 +65,7 @@ const copyToClipboard = async () => {
       icon: "lucide:check"
     })
 
+    // Reset the copied state after 2 seconds
     setTimeout(() => {
       justCopied.value = false
     }, 2000)
@@ -98,26 +81,22 @@ const copyToClipboard = async () => {
   }
 }
 
-const maskKey = (keyPrefix: string, keyId: string) => {
-  // Show first part (sk-), then 2-3 unique chars based on keyId, then dots, like Azure does
-  // For example: sk-abc...xyz or sk-ab1...9z2
-  const hash = keyId.split('').reduce((a, b) => {
-    a = ((a << 5) - a) + b.charCodeAt(0)
+const generateUniqueId = (keyId: string) => {
+  const hash = keyId.split("").reduce((a, b) => {
+    a = (a << 5) - a + b.charCodeAt(0)
     return a & a
   }, 0)
-  const uniquePart = Math.abs(hash).toString(36).substring(0, 3) // 3 consistent chars
-  const endPart = Math.abs(hash * 7).toString(36).substring(0, 2) // 2 consistent chars
-  return keyPrefix + uniquePart + "..." + endPart
+  return Math.abs(hash).toString(36).substring(0, 3)
 }
 
 const displayText = computed(() => {
-  if (visible.value && fetched.value) {
-    return fetched.value
+  if (regeneratedKey.value) {
+    return regeneratedKey.value
   }
-  if (loading.value && visible.value) {
-    return "Loading..."
+  if (revealed.value) {
+    return `${props.keyPrefix}${generateUniqueId(props.keyId)}`
   }
-  return maskKey(props.keyPrefix, props.keyId)
+  return "sk-" + "*".repeat(48)
 })
 
 const sizeClasses = computed(() => {
@@ -150,23 +129,34 @@ const sizeClasses = computed(() => {
       {{ displayText }}
     </code>
 
-    <UiButton variant="ghost" size="sm" @click="toggleVisibility" :disabled="loading" :class="sizeClasses.button">
-      <Loader2 v-if="loading" class="animate-spin" :class="props.size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'" />
-      <Eye v-else-if="!visible" :class="props.size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'" />
-      <EyeOff v-else :class="props.size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'" />
+    <UiButton
+      v-if="regeneratedKey"
+      variant="outline"
+      size="sm"
+      @click="copyToClipboard(regeneratedKey)"
+      class="gap-2"
+      :disabled="justCopied"
+    >
+      <Check v-if="justCopied" class="h-4 w-4 text-green-600" />
+      <Copy v-else class="h-4 w-4" />
+      {{ justCopied ? "Copied!" : "Copy" }}
     </UiButton>
 
     <UiButton
-      v-if="showCopyButton"
+      v-if="showRegenerateButton"
       :variant="props.size === 'sm' ? 'ghost' : 'outline'"
       size="sm"
-      @click="copyToClipboard"
-      :disabled="justCopied"
-      :class="props.showCopyText ? 'gap-2' : ''"
+      @click="regenerateKey"
+      :disabled="regenerating"
+      :class="props.showRegenerateText ? 'gap-2' : ''"
     >
-      <Check v-if="justCopied" class="text-green-600" :class="props.size === 'sm' ? 'h-4 w-4' : 'h-4 w-4'" />
-      <Copy v-else :class="props.size === 'sm' ? 'h-4 w-4' : 'h-4 w-4'" />
-      <span v-if="props.showCopyText">{{ justCopied ? "Copied!" : "Copy" }}</span>
+      <Loader2
+        v-if="regenerating"
+        class="animate-spin text-blue-600"
+        :class="props.size === 'sm' ? 'h-4 w-4' : 'h-4 w-4'"
+      />
+      <RotateCcw v-else :class="props.size === 'sm' ? 'h-4 w-4' : 'h-4 w-4'" />
+      <span v-if="props.showRegenerateText">{{ regenerating ? "Regenerating..." : "Regenerate" }}</span>
     </UiButton>
   </div>
 </template>

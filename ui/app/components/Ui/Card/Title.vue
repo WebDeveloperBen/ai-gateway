@@ -26,6 +26,6 @@ const props = withDefaults(
 )
 
 const styles = tv({
-  base: "leading-none px-6 font-semibold tracking-tight"
+  base: "leading-none px-0 font-semibold tracking-tight"
 })
 </script>

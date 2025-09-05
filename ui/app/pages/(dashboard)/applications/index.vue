@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Plus, Key, Activity, X, CheckCircle, XCircle, Circle, Layers } from "lucide-vue-next"
+import type { StatsCardProps } from "~/components/Cards/Stats.vue"
 
 // Sample data - replace with actual API calls
 const applications = ref([
@@ -97,74 +98,68 @@ const filteredApplications = computed(() => {
   })
 })
 
-const formatNumber = (num: number) => {
-  return new Intl.NumberFormat().format(num)
-}
+// Icon and variant arrays for index matching with API data
+const statsIcons = [Layers, CheckCircle, Key, Activity]
+const statsVariants: StatsCardProps["variant"][] = ["default", "chart-2", "chart-3", "chart-1"]
+
+// Stats configuration - ready for API replacement
+const statsCards = computed(() => {
+  // This can be replaced with: const { data: statsData } = await useFetch('/api/applications/stats')
+  // Then: statsData.map((stat, index) => ({ ...stat, icon: statsIcons[index], variant: statsVariants[index] }))
+
+  return [
+    {
+      title: "Total Applications",
+      value: applications.value.length,
+      description: "All registered applications"
+    },
+    {
+      title: "Active Applications",
+      value: applications.value.filter((app) => app.status === "active").length,
+      description: "Currently running applications"
+    },
+    {
+      title: "Total API Keys",
+      value: applications.value.reduce((sum, app) => sum + app.apiKeyCount, 0),
+      description: "Across all applications"
+    },
+    {
+      title: "Monthly Requests",
+      value: applications.value.reduce((sum, app) => sum + app.monthlyRequests, 0),
+      description: "Total API calls this month"
+    }
+  ].map((stat, index) => ({
+    ...stat,
+    icon: statsIcons[index],
+    variant: statsVariants[index]
+  }))
+})
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight text-primary">Applications</h1>
-        <p class="text-muted-foreground">
-          Manage your AI-powered applications and their {{ appConfig.app.name }} access
-        </p>
-      </div>
+    <PageHeader
+      title="Applications"
+      :subtext="`Manage your AI-powered applications and their ${appConfig.app.name} access`"
+    >
       <UiButton @click="showCreateModal = true" class="gap-2">
         <Plus class="h-4 w-4" />
         New Application
       </UiButton>
-    </div>
+    </PageHeader>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <UiCard>
-        <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <UiCardTitle class="text-sm font-medium">Total Applications</UiCardTitle>
-          <Layers class="h-4 w-4 text-primary" />
-        </UiCardHeader>
-        <UiCardContent>
-          <div class="text-2xl font-bold">{{ applications.length }}</div>
-        </UiCardContent>
-      </UiCard>
-
-      <UiCard>
-        <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <UiCardTitle class="text-sm font-medium">Active Applications</UiCardTitle>
-          <CheckCircle class="h-4 w-4 text-chart-2" />
-        </UiCardHeader>
-        <UiCardContent>
-          <div class="text-2xl font-bold text-chart-2">
-            {{ applications.filter((app) => app.status === "active").length }}
-          </div>
-        </UiCardContent>
-      </UiCard>
-
-      <UiCard>
-        <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <UiCardTitle class="text-sm font-medium">Total API Keys</UiCardTitle>
-          <Key class="h-4 w-4 text-chart-3" />
-        </UiCardHeader>
-        <UiCardContent>
-          <div class="text-2xl font-bold text-chart-3">
-            {{ applications.reduce((sum, app) => sum + app.apiKeyCount, 0) }}
-          </div>
-        </UiCardContent>
-      </UiCard>
-
-      <UiCard>
-        <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <UiCardTitle class="text-sm font-medium">Monthly Requests</UiCardTitle>
-          <Activity class="h-4 w-4 text-chart-1" />
-        </UiCardHeader>
-        <UiCardContent>
-          <div class="text-2xl font-bold text-chart-1">
-            {{ formatNumber(applications.reduce((sum, app) => sum + app.monthlyRequests, 0)) }}
-          </div>
-        </UiCardContent>
-      </UiCard>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <CardsStats
+        v-for="card in statsCards"
+        :key="card.title"
+        :title="card.title"
+        :value="card.value"
+        :icon="card.icon"
+        :description="card.description"
+        :variant="card.variant"
+      />
     </div>
 
     <!-- Search & Filter Command -->
