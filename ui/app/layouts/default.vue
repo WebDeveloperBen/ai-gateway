@@ -17,7 +17,6 @@ import {
 // Dynamic breadcrumbs
 const { breadcrumbItems } = useBreadcrumbs()
 
-
 // This is sample data.
 const data = {
   user: {
@@ -47,10 +46,6 @@ const data = {
         {
           title: "Overview",
           url: "/applications"
-        },
-        {
-          title: "API Keys",
-          url: "/applications/keys"
         }
       ]
     },

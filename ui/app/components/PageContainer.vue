@@ -1,7 +1,8 @@
 <template>
-  <div
-    class="p-10 h-full bg-gradient-to-br dark:bg-gradient-to-br from-white via-zinc-50 to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-black"
-  >
+  <div class="p-10 h-full bg-gradient-to-br from-background via-muted/30 to-muted/60 relative overflow-hidden">
+    <div
+      class="absolute inset-0 bg-gradient-to-tr from-primary/[0.03] via-transparent to-accent/[0.03] pointer-events-none"
+    ></div>
     <slot />
   </div>
 </template>

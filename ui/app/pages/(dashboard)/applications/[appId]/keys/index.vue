@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Plus, MoreVertical, Key, Activity, X, CheckCircle, XCircle, Circle, Layers } from "lucide-vue-next"
+import { Plus, Key, X, CheckCircle, XCircle, Circle, Layers, Activity } from "lucide-vue-next"
 
 // Get the app ID from route params
 const route = useRoute()
@@ -15,6 +15,7 @@ const apiKeys = ref([
     applicationName: "Customer Service Bot",
     created: "2024-12-15T10:00:00Z",
     lastUsed: "2025-01-15T14:30:00Z",
+    expires: "2025-12-15T10:00:00Z",
     status: "active",
     permissions: ["read", "write"],
     requestCount: 25400,
@@ -28,6 +29,7 @@ const apiKeys = ref([
     applicationName: "Customer Service Bot",
     created: "2024-11-20T09:15:00Z",
     lastUsed: "2025-01-14T11:45:00Z",
+    expires: "2025-11-20T09:15:00Z",
     status: "active",
     permissions: ["read"],
     requestCount: 8900,
@@ -41,6 +43,7 @@ const apiKeys = ref([
     applicationName: "Content Generator",
     created: "2024-10-10T16:20:00Z",
     lastUsed: "2024-12-30T08:00:00Z",
+    expires: "2025-10-10T16:20:00Z",
     status: "inactive",
     permissions: ["read", "write"],
     requestCount: 450,
@@ -100,23 +103,57 @@ const filteredKeys = computed(() => {
   })
 })
 
-const formatNumber = (num: number) => {
-  return new Intl.NumberFormat().format(num)
-}
+// Stats card configuration - easily replaceable with API call
+const statsCards = computed(() => {
+  // This computed property can easily be replaced with:
+  // const { data: statsCards } = await useFetch(`/api/applications/${appId}/stats`)
 
-const getStatusBadgeClass = (status: string) => {
-  return status === "active"
-    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-    : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-}
+  return [
+    {
+      title: "Total Keys",
+      value: filteredKeys.value.length,
+      icon: Key,
+      description: "All API keys for this application"
+    },
+    {
+      title: "Active Keys",
+      value: filteredKeys.value.filter((key) => key.status === "active").length,
+      icon: CheckCircle,
+      description: "Currently active and usable"
+    },
+    {
+      title: "Total Requests",
+      value: filteredKeys.value.reduce((sum, key) => sum + key.requestCount, 0),
+      icon: Activity,
+      description: "API calls made this month"
+    },
+    {
+      title: "Applications",
+      value: 1,
+      icon: Layers,
+      description: "Connected applications"
+    }
+  ]
+})
 
-const navigateToKey = async (keyId: string) => {
+const navigateToKey = async (key: any) => {
+  const keyId = typeof key === "string" ? key : key.id
   console.log("Navigating to key:", keyId)
   try {
     await navigateTo(`/applications/${appId}/keys/${keyId}`, { replace: false })
   } catch (error) {
     console.error("Navigation error:", error)
   }
+}
+
+const handleRegenerateKey = (key: any) => {
+  console.log("Regenerating key:", key.id)
+  // TODO: Implement key regeneration
+}
+
+const handleDeleteKey = (key: any) => {
+  console.log("Deleting key:", key.id)
+  // TODO: Implement key deletion
 }
 
 const onApiKeyCreated = (apiKeyData: any) => {
@@ -143,7 +180,9 @@ const onApiKeyCreated = (apiKeyData: any) => {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-3xl font-bold tracking-tight">API Keys for {{ apiKeys.find(k => k.applicationId === appId)?.applicationName || 'Application' }}</h1>
+        <h1 class="text-3xl font-bold tracking-tight text-primary">
+          {{ apiKeys.find((k) => k.applicationId === appId)?.applicationName || "Application" }}
+        </h1>
         <p class="text-muted-foreground">Manage API keys for this specific application</p>
       </div>
       <UiButton @click="showCreateModal = true" class="gap-2">
@@ -153,52 +192,19 @@ const onApiKeyCreated = (apiKeyData: any) => {
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <UiCard>
-        <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <UiCardTitle class="text-sm font-medium">Total Keys</UiCardTitle>
-          <Key class="h-4 w-4 text-muted-foreground" />
-        </UiCardHeader>
-        <UiCardContent>
-          <div class="text-2xl font-bold">{{ filteredKeys.length }}</div>
-        </UiCardContent>
-      </UiCard>
-
-      <UiCard>
-        <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <UiCardTitle class="text-sm font-medium">Active Keys</UiCardTitle>
-          <Activity class="h-4 w-4 text-muted-foreground" />
-        </UiCardHeader>
-        <UiCardContent>
-          <div class="text-2xl font-bold">{{ filteredKeys.filter((key) => key.status === "active").length }}</div>
-        </UiCardContent>
-      </UiCard>
-
-      <UiCard>
-        <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <UiCardTitle class="text-sm font-medium">Total Requests</UiCardTitle>
-          <Activity class="h-4 w-4 text-muted-foreground" />
-        </UiCardHeader>
-        <UiCardContent>
-          <div class="text-2xl font-bold">
-            {{ formatNumber(filteredKeys.reduce((sum, key) => sum + key.requestCount, 0)) }}
-          </div>
-        </UiCardContent>
-      </UiCard>
-
-      <UiCard>
-        <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <UiCardTitle class="text-sm font-medium">Applications</UiCardTitle>
-          <Activity class="h-4 w-4 text-muted-foreground" />
-        </UiCardHeader>
-        <UiCardContent>
-          <div class="text-2xl font-bold">1</div>
-        </UiCardContent>
-      </UiCard>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <CardsStats
+        v-for="card in statsCards"
+        :key="card.title"
+        :title="card.title"
+        :value="card.value"
+        :icon="card.icon"
+        :description="card.description"
+      />
     </div>
 
     <!-- Search & Filter Command -->
-    <UiCommand class="rounded-lg border shadow-sm">
+    <UiCommand class="rounded-lg border">
       <UiCommandInput v-model="searchQuery" placeholder="Search API keys, filter by application or status..." />
       <UiCommandList v-if="searchQuery || showFilters">
         <UiCommandEmpty>No API keys found.</UiCommandEmpty>
@@ -263,81 +269,13 @@ const onApiKeyCreated = (apiKeyData: any) => {
       </UiButton>
     </div>
 
-    <!-- API Keys Table -->
-    <UiCard>
-      <UiCardHeader>
-        <UiCardTitle>API Keys</UiCardTitle>
-      </UiCardHeader>
-      <UiCardContent>
-        <div class="flex flex-col gap-4">
-          <div v-if="filteredKeys.length === 0" class="text-center py-8">
-            <Key class="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 class="mt-4 text-lg font-medium">No API keys found</h3>
-            <p class="text-muted-foreground">Try adjusting your search or create a new API key.</p>
-          </div>
-
-          <UiCard
-            v-for="key in filteredKeys"
-            :key="key.id"
-            interactive
-            padding="compact"
-            @click="navigateToKey(key.id)"
-          >
-            <div class="flex items-start justify-between">
-              <div class="space-y-1">
-                <div class="flex items-center gap-3">
-                  <h4 class="font-medium">{{ key.name }}</h4>
-                  <UiBadge :class="getStatusBadgeClass(key.status)">
-                    {{ key.status }}
-                  </UiBadge>
-                </div>
-                <p class="text-sm text-muted-foreground">{{ key.applicationName }}</p>
-              </div>
-              <UiDropdownMenu>
-                <UiDropdownMenuTrigger as-child>
-                  <UiButton variant="ghost" size="sm" @click.stop>
-                    <MoreVertical class="h-4 w-4" />
-                  </UiButton>
-                </UiDropdownMenuTrigger>
-                <UiDropdownMenuContent align="end">
-                  <UiDropdownMenuItem @click="navigateToKey(key.id)"> View Details </UiDropdownMenuItem>
-                  <UiDropdownMenuItem> Regenerate </UiDropdownMenuItem>
-                  <UiDropdownMenuSeparator />
-                  <UiDropdownMenuItem class="text-red-600"> Delete Key </UiDropdownMenuItem>
-                </UiDropdownMenuContent>
-              </UiDropdownMenu>
-            </div>
-
-            <div @click.stop>
-              <ApiKeyDisplay :key-id="key.id" :key-prefix="key.keyPrefix" size="sm" />
-            </div>
-
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-              <div>
-                <p class="text-muted-foreground">Created</p>
-                <p class="font-medium">{{ new Date(key.created).toLocaleDateString() }}</p>
-              </div>
-              <div>
-                <p class="text-muted-foreground">Last Used</p>
-                <p class="font-medium">{{ new Date(key.lastUsed).toLocaleDateString() }}</p>
-              </div>
-              <div>
-                <p class="text-muted-foreground">Requests</p>
-                <p class="font-medium">{{ formatNumber(key.requestCount) }}</p>
-              </div>
-              <div>
-                <p class="text-muted-foreground">Rate Limit</p>
-                <p class="font-medium">{{ key.rateLimit }}</p>
-              </div>
-              <div>
-                <p class="text-muted-foreground">Permissions</p>
-                <p class="font-medium">{{ key.permissions?.join(", ") || "Default" }}</p>
-              </div>
-            </div>
-          </UiCard>
-        </div>
-      </UiCardContent>
-    </UiCard>
+    <!-- API Keys List -->
+    <ApiKeysList
+      :keys="filteredKeys"
+      @select-api-key="navigateToKey"
+      @regenerate-key="handleRegenerateKey"
+      @delete-key="handleDeleteKey"
+    />
 
     <!-- Create API Key Modal -->
     <ModalsCreateApiKey v-model:open="showCreateModal" @created="onApiKeyCreated" />

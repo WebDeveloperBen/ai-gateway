@@ -1,16 +1,5 @@
 <script setup lang="ts">
-import {
-  Plus,
-  MoreVertical,
-  Key,
-  Activity,
-  AlertCircle,
-  X,
-  CheckCircle,
-  XCircle,
-  Circle,
-  Layers
-} from "lucide-vue-next"
+import { Plus, Key, Activity, X, CheckCircle, XCircle, Circle, Layers } from "lucide-vue-next"
 
 // Sample data - replace with actual API calls
 const applications = ref([
@@ -70,6 +59,10 @@ const selectApplication = (app: any) => {
   searchQuery.value = ""
 }
 
+const handleApplicationSelect = (app: any) => {
+  navigateTo(`/applications/${app.id}`)
+}
+
 const clearAllFilters = () => {
   selectedStatus.value = "all"
   searchQuery.value = ""
@@ -85,7 +78,7 @@ const onApplicationCreated = (applicationId: string) => {
 // Check query parameter to auto-open modal
 const route = useRoute()
 onMounted(() => {
-  if (route.query.create === 'application') {
+  if (route.query.create === "application") {
     showCreateModal.value = true
   }
 })
@@ -107,12 +100,6 @@ const filteredApplications = computed(() => {
 const formatNumber = (num: number) => {
   return new Intl.NumberFormat().format(num)
 }
-
-const getStatusBadgeClass = (status: string) => {
-  return status === "active"
-    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-    : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-}
 </script>
 
 <template>
@@ -120,7 +107,7 @@ const getStatusBadgeClass = (status: string) => {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-3xl font-bold tracking-tight">Applications</h1>
+        <h1 class="text-3xl font-bold tracking-tight text-primary">Applications</h1>
         <p class="text-muted-foreground">
           Manage your AI-powered applications and their {{ appConfig.app.name }} access
         </p>
@@ -136,7 +123,7 @@ const getStatusBadgeClass = (status: string) => {
       <UiCard>
         <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <UiCardTitle class="text-sm font-medium">Total Applications</UiCardTitle>
-          <Activity class="h-4 w-4 text-muted-foreground" />
+          <Layers class="h-4 w-4 text-primary" />
         </UiCardHeader>
         <UiCardContent>
           <div class="text-2xl font-bold">{{ applications.length }}</div>
@@ -146,10 +133,10 @@ const getStatusBadgeClass = (status: string) => {
       <UiCard>
         <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <UiCardTitle class="text-sm font-medium">Active Applications</UiCardTitle>
-          <Activity class="h-4 w-4 text-muted-foreground" />
+          <CheckCircle class="h-4 w-4 text-chart-2" />
         </UiCardHeader>
         <UiCardContent>
-          <div class="text-2xl font-bold">
+          <div class="text-2xl font-bold text-chart-2">
             {{ applications.filter((app) => app.status === "active").length }}
           </div>
         </UiCardContent>
@@ -158,10 +145,10 @@ const getStatusBadgeClass = (status: string) => {
       <UiCard>
         <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <UiCardTitle class="text-sm font-medium">Total API Keys</UiCardTitle>
-          <Key class="h-4 w-4 text-muted-foreground" />
+          <Key class="h-4 w-4 text-chart-3" />
         </UiCardHeader>
         <UiCardContent>
-          <div class="text-2xl font-bold">
+          <div class="text-2xl font-bold text-chart-3">
             {{ applications.reduce((sum, app) => sum + app.apiKeyCount, 0) }}
           </div>
         </UiCardContent>
@@ -170,10 +157,10 @@ const getStatusBadgeClass = (status: string) => {
       <UiCard>
         <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <UiCardTitle class="text-sm font-medium">Monthly Requests</UiCardTitle>
-          <Activity class="h-4 w-4 text-muted-foreground" />
+          <Activity class="h-4 w-4 text-chart-1" />
         </UiCardHeader>
         <UiCardContent>
-          <div class="text-2xl font-bold">
+          <div class="text-2xl font-bold text-chart-1">
             {{ formatNumber(applications.reduce((sum, app) => sum + app.monthlyRequests, 0)) }}
           </div>
         </UiCardContent>
@@ -243,78 +230,7 @@ const getStatusBadgeClass = (status: string) => {
       </UiButton>
     </div>
 
-    <!-- Applications List -->
-    <div class="flex flex-col gap-4">
-      <div v-if="filteredApplications.length === 0" class="text-center py-12">
-        <AlertCircle class="mx-auto h-12 w-12 text-muted-foreground" />
-        <h3 class="mt-4 text-lg font-medium">No applications found</h3>
-        <p class="text-muted-foreground">Try adjusting your search or create a new application.</p>
-      </div>
-
-      <UiCard 
-        v-for="app in filteredApplications" 
-        :key="app.id" 
-        interactive
-        @click="navigateTo(`/applications/${app.id}`)"
-      >
-        <UiCardHeader>
-          <div class="flex items-start justify-between">
-            <div class="space-y-1 flex-1">
-              <div class="flex items-center gap-3">
-                <UiCardTitle class="text-lg">{{ app.name }}</UiCardTitle>
-                <UiBadge :class="getStatusBadgeClass(app.status)">
-                  {{ app.status }}
-                </UiBadge>
-              </div>
-              <UiCardDescription class="text-sm">
-                {{ app.description }}
-              </UiCardDescription>
-              <div class="flex items-center gap-4 text-xs text-muted-foreground">
-                <span>Team: {{ app.team }}</span>
-                <span>•</span>
-                <span>Models: {{ app.models.join(", ") }}</span>
-              </div>
-            </div>
-            <UiDropdownMenu>
-              <UiDropdownMenuTrigger as-child>
-                <UiButton variant="ghost" size="sm" @click.stop>
-                  <MoreVertical class="h-4 w-4" />
-                </UiButton>
-              </UiDropdownMenuTrigger>
-              <UiDropdownMenuContent align="end">
-                <UiDropdownMenuItem as-child>
-                  <NuxtLink :to="`/applications/${app.id}`"> View Details </NuxtLink>
-                </UiDropdownMenuItem>
-                <UiDropdownMenuItem as-child>
-                  <NuxtLink :to="`/applications/${app.id}/keys`"> Manage API Keys </NuxtLink>
-                </UiDropdownMenuItem>
-                <UiDropdownMenuItem> View Analytics </UiDropdownMenuItem>
-                <UiDropdownMenuSeparator />
-                <UiDropdownMenuItem class="text-red-600"> Delete Application </UiDropdownMenuItem>
-              </UiDropdownMenuContent>
-            </UiDropdownMenu>
-          </div>
-        </UiCardHeader>
-        <UiCardContent>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div>
-              <p class="text-muted-foreground">API Keys</p>
-              <p class="font-medium">{{ app.apiKeyCount }}</p>
-            </div>
-            <div>
-              <p class="text-muted-foreground">Monthly Requests</p>
-              <p class="font-medium">{{ formatNumber(app.monthlyRequests) }}</p>
-            </div>
-            <div>
-              <p class="text-muted-foreground">Last Used</p>
-              <p class="font-medium">
-                {{ new Date(app.lastUsed).toLocaleDateString() }}
-              </p>
-            </div>
-          </div>
-        </UiCardContent>
-      </UiCard>
-    </div>
+    <ApplicationsList :applications="filteredApplications" @select-application="handleApplicationSelect" />
 
     <!-- Create Application Modal -->
     <ModalsCreateApplication v-model:open="showCreateModal" @created="onApplicationCreated" />
