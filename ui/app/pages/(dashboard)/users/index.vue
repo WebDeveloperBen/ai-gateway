@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script lang="ts">
 import {
   Users,
   Plus,
@@ -16,8 +16,7 @@ import {
 import type { FunctionalComponent } from "vue"
 import SearchFilter from "~/components/SearchFilter.vue"
 import type { FilterConfig, SearchConfig, DisplayConfig } from "~/components/SearchFilter.vue"
-
-useSeoMeta({ title: "Users - LLM Gateway" })
+import type { StatsCardProps } from "~/components/Cards/Stats.vue"
 
 interface User {
   id: string
@@ -29,9 +28,6 @@ interface User {
   lastActive: string
   avatar?: string
 }
-
-// Filter state
-const activeFilters = ref<Record<string, string>>({})
 
 // Sample data
 const users: User[] = [
@@ -85,11 +81,11 @@ const users: User[] = [
   }
 ]
 
-const stats = [
-  { label: "Total Users", value: "24", icon: Users, change: "+2 this month" },
-  { label: "Active Users", value: "18", icon: UserCheck, change: "+5% from last month" },
-  { label: "Admin Users", value: "3", icon: Crown, change: "No change" },
-  { label: "Teams", value: "6", icon: Shield, change: "+1 this month" }
+const stats: StatsCardProps[] = [
+  { title: "Total Users", value: "24", icon: Users, description: "+2 this month", variant: "chart-1" },
+  { title: "Active Users", value: "18", icon: UserCheck, description: "+5% from last month", variant: "chart-2" },
+  { title: "Admin Users", value: "3", icon: Crown, description: "No change", variant: "chart-3" },
+  { title: "Teams", value: "6", icon: Shield, description: "+1 this month", variant: "chart-4" }
 ]
 
 const roles = ["Admin", "Developer", "Viewer"]
@@ -162,6 +158,12 @@ const searchConfig: SearchConfig<User> = {
   fields: ["name", "email"],
   placeholder: "Search users, filter by role, team or status..."
 }
+</script>
+<script setup lang="ts">
+useSeoMeta({ title: "Users - LLM Gateway" })
+
+// Filter state
+const activeFilters = ref<Record<string, string>>({})
 
 const displayConfig: DisplayConfig<User> = {
   getItemText: (user) => `${user.name} - ${user.email}`,
@@ -199,11 +201,24 @@ const filteredUsers = computed(() => {
 
 // Modal state
 const showInviteModal = ref(false)
+const showEditModal = ref(false)
+const editingUser = ref<User | null>(null)
+const editLoading = ref(false)
+
+// Deactivate modal state
+const showDeactivateModal = ref(false)
+const deactivatingUser = ref<User | null>(null)
+const deactivateLoading = ref(false)
+
+// Delete modal state
+const showDeleteModal = ref(false)
+const deletingUser = ref<User | null>(null)
+const deleteLoading = ref(false)
 
 // Check query parameter to auto-open modal
 const route = useRoute()
 onMounted(() => {
-  if (route.query.create === 'user') {
+  if (route.query.create === "user") {
     showInviteModal.value = true
   }
 })
@@ -213,6 +228,129 @@ const onUserInvited = (inviteData: any) => {
   // Clear the query parameter after invitation
   navigateTo("/users", { replace: true })
   // Could refresh the users list or add pending invite to list
+}
+
+const openEditModal = (user: User) => {
+  editingUser.value = user
+  showEditModal.value = true
+}
+
+const handleUserSave = async (updatedUser: User) => {
+  editLoading.value = true
+  try {
+    // TODO: Replace with actual API call
+    // await $fetch(`/api/users/${updatedUser.id}`, { method: 'PUT', body: updatedUser })
+
+    // Update local state
+    const index = users.findIndex((u) => u.id === updatedUser.id)
+    if (index !== -1) {
+      users[index] = updatedUser
+    }
+
+    showEditModal.value = false
+    editingUser.value = null
+
+    // TODO: Show success toast
+    console.log("User updated:", updatedUser)
+  } catch (error) {
+    console.error("Failed to update user:", error)
+    // TODO: Show error toast
+  } finally {
+    editLoading.value = false
+  }
+}
+
+const handleEditCancel = () => {
+  showEditModal.value = false
+  // Delay clearing the user to avoid flash during modal close animation
+  setTimeout(() => {
+    editingUser.value = null
+  }, 150)
+}
+
+const openDeactivateModal = (user: User) => {
+  deactivatingUser.value = user
+  showDeactivateModal.value = true
+}
+
+const handleUserDeactivate = async () => {
+  if (!deactivatingUser.value) return
+
+  deactivateLoading.value = true
+  try {
+    const newStatus = deactivatingUser.value.status === "active" ? "inactive" : "active"
+
+    // TODO: Replace with actual API call
+    // await $fetch(`/api/users/${deactivatingUser.value.id}/status`, {
+    //   method: 'PATCH',
+    //   body: { status: newStatus }
+    // })
+
+    // Update local state
+    const index = users.findIndex((u) => u.id === deactivatingUser.value!.id)
+    if (index !== -1) {
+      if (users[index]) users[index].status = newStatus
+    }
+
+    showDeactivateModal.value = false
+    deactivatingUser.value = null
+
+    // TODO: Show success toast
+    console.log("User status updated:", newStatus)
+  } catch (error) {
+    console.error("Failed to update user status:", error)
+    // TODO: Show error toast
+  } finally {
+    deactivateLoading.value = false
+  }
+}
+
+const handleDeactivateCancel = () => {
+  showDeactivateModal.value = false
+  // Delay clearing the user to avoid flash during modal close animation
+  setTimeout(() => {
+    deactivatingUser.value = null
+  }, 150)
+}
+
+const openDeleteModal = (user: User) => {
+  deletingUser.value = user
+  showDeleteModal.value = true
+}
+
+const handleUserDelete = async () => {
+  if (!deletingUser.value) return
+
+  deleteLoading.value = true
+  try {
+    // TODO: Replace with actual API call
+    // await $fetch(`/api/users/${deletingUser.value.id}`, { method: 'DELETE' })
+
+    // Update local state - remove user from array
+    const index = users.findIndex((u) => u.id === deletingUser.value!.id)
+    if (index !== -1) {
+      users.splice(index, 1)
+    }
+
+    showDeleteModal.value = false
+    deletingUser.value = null
+
+    // TODO: Show success toast
+    console.log("User deleted successfully")
+  } catch (error) {
+    console.error("Failed to delete user:", error)
+    // TODO: Show error toast
+  } finally {
+    deleteLoading.value = false
+  }
+}
+
+const handleDeleteCancel = () => {
+  showDeleteModal.value = false
+  // Delay clearing the user to avoid flash during modal close animation
+  setTimeout(() => {
+    deletingUser.value = null
+  }, 150)
 }
 </script>
 
@@ -232,20 +370,15 @@ const onUserInvited = (inviteData: any) => {
 
     <!-- Stats Cards -->
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <UiCard v-for="stat in stats" :key="stat.label" class="p-6">
-        <div class="flex items-center gap-4">
-          <div class="rounded-lg bg-primary/10 p-3">
-            <component :is="stat.icon" class="size-5 text-primary" />
-          </div>
-          <div class="flex-1">
-            <p class="text-2xl font-semibold">{{ stat.value }}</p>
-            <p class="text-sm text-muted-foreground">{{ stat.label }}</p>
-          </div>
-        </div>
-        <div class="mt-4">
-          <p class="text-xs text-muted-foreground">{{ stat.change }}</p>
-        </div>
-      </UiCard>
+      <CardsStats
+        v-for="stat in stats"
+        :key="stat.title"
+        :title="stat.title"
+        :value="stat.value"
+        :icon="stat.icon"
+        :description="stat.description"
+        :variant="stat.variant"
+      />
     </div>
 
     <!-- Search & Filter Component -->
@@ -259,84 +392,117 @@ const onUserInvited = (inviteData: any) => {
     />
 
     <!-- Users Table -->
-    <UiCard>
-      <div class="p-6">
-        <div class="space-y-4">
-          <div
-            v-for="user in filteredUsers"
-            :key="user.id"
-            class="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50"
-          >
-            <div class="flex items-center gap-4">
-              <UiAvatar class="size-10">
-                <UiAvatarImage v-if="user.avatar" :src="user.avatar" :alt="user.name" />
-                <UiAvatarFallback>{{
-                  user.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                }}</UiAvatarFallback>
-              </UiAvatar>
+    <div class="space-y-4">
+      <div
+        v-for="user in filteredUsers"
+        :key="user.id"
+        class="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50"
+      >
+        <div class="flex items-center gap-4">
+          <UiAvatar class="size-10">
+            <UiAvatarImage v-if="user.avatar" :src="user.avatar" :alt="user.name" />
+            <UiAvatarFallback>{{
+              user.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+            }}</UiAvatarFallback>
+          </UiAvatar>
 
-              <div class="space-y-1">
-                <div class="flex items-center gap-2">
-                  <p class="font-medium">{{ user.name }}</p>
-                  <div
-                    class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border"
-                    :class="getRoleColor(user.role)"
-                  >
-                    <component :is="getRoleIcon(user.role)" class="size-3" />
-                    {{ user.role }}
-                  </div>
-                </div>
-                <div class="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>{{ user.email }}</span>
-                  <span>•</span>
-                  <span>{{ user.team }}</span>
-                  <span>•</span>
-                  <span>Last active {{ user.lastActive }}</span>
-                </div>
-              </div>
-            </div>
-
+          <div class="space-y-1">
             <div class="flex items-center gap-2">
+              <p class="font-medium">{{ user.name }}</p>
               <div
                 class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border"
-                :class="getStatusColor(user.status)"
+                :class="getRoleColor(user.role)"
               >
-                <div class="size-1.5 rounded-full" :class="user.status === 'active' ? 'bg-green-500' : 'bg-gray-400'" />
-                {{ user.status === "active" ? "Active" : "Inactive" }}
+                <component :is="getRoleIcon(user.role)" class="size-3" />
+                {{ user.role }}
               </div>
-
-              <UiDropdownMenu>
-                <UiDropdownMenuTrigger as-child>
-                  <UiButton variant="ghost" size="sm">
-                    <MoreVertical class="size-4" />
-                  </UiButton>
-                </UiDropdownMenuTrigger>
-                <UiDropdownMenuContent align="end" class="w-48">
-                  <UiDropdownMenuItem>
-                    <Edit class="mr-2 size-4" />
-                    Edit User
-                  </UiDropdownMenuItem>
-                  <UiDropdownMenuItem>
-                    <component :is="user.status === 'active' ? UserX : UserCheck" class="mr-2 size-4" />
-                    {{ user.status === "active" ? "Deactivate" : "Activate" }}
-                  </UiDropdownMenuItem>
-                  <UiDropdownMenuSeparator />
-                  <UiDropdownMenuItem class="text-destructive">
-                    <Trash2 class="mr-2 size-4" />
-                    Delete User
-                  </UiDropdownMenuItem>
-                </UiDropdownMenuContent>
-              </UiDropdownMenu>
+            </div>
+            <div class="flex items-center gap-4 text-sm text-muted-foreground">
+              <span>{{ user.email }}</span>
+              <span>•</span>
+              <span>{{ user.team }}</span>
+              <span>•</span>
+              <span>Last active {{ user.lastActive }}</span>
             </div>
           </div>
         </div>
+
+        <div class="flex items-center gap-2">
+          <div
+            class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border"
+            :class="getStatusColor(user.status)"
+          >
+            <div class="size-1.5 rounded-full" :class="user.status === 'active' ? 'bg-green-500' : 'bg-gray-400'" />
+            {{ user.status === "active" ? "Active" : "Inactive" }}
+          </div>
+
+          <UiDropdownMenu>
+            <UiDropdownMenuTrigger as-child>
+              <UiButton variant="ghost" size="sm">
+                <MoreVertical class="size-4" />
+              </UiButton>
+            </UiDropdownMenuTrigger>
+            <UiDropdownMenuContent align="end" class="w-48">
+              <UiDropdownMenuItem @click="openEditModal(user)">
+                <Edit class="mr-2 size-4" />
+                Edit User
+              </UiDropdownMenuItem>
+              <UiDropdownMenuItem @click="openDeactivateModal(user)">
+                <component :is="user.status === 'active' ? UserX : UserCheck" class="mr-2 size-4" />
+                {{ user.status === "active" ? "Deactivate" : "Activate" }}
+              </UiDropdownMenuItem>
+              <UiDropdownMenuSeparator />
+              <UiDropdownMenuItem class="text-destructive" @click="openDeleteModal(user)">
+                <Trash2 class="mr-2 size-4" />
+                Delete User
+              </UiDropdownMenuItem>
+            </UiDropdownMenuContent>
+          </UiDropdownMenu>
+        </div>
       </div>
-    </UiCard>
+    </div>
 
     <!-- Invite User Modal -->
     <ModalsInviteUser v-model:open="showInviteModal" @invited="onUserInvited" />
+
+    <!-- Edit User Modal -->
+    <UserEditModal
+      v-model:open="showEditModal"
+      :user="editingUser"
+      :loading="editLoading"
+      @save="handleUserSave"
+      @cancel="handleEditCancel"
+    />
+
+    <!-- Deactivate User Modal -->
+    <ConfirmationModal
+      v-model:open="showDeactivateModal"
+      :title="deactivatingUser?.status === 'active' ? 'Deactivate User' : 'Activate User'"
+      :description="
+        deactivatingUser?.status === 'active'
+          ? `Are you sure you want to deactivate ${deactivatingUser?.name}? They will lose access to the system.`
+          : `Are you sure you want to activate ${deactivatingUser?.name}? They will regain access to the system.`
+      "
+      :confirm-text="deactivatingUser?.status === 'active' ? 'Deactivate' : 'Activate'"
+      :variant="deactivatingUser?.status === 'active' ? 'destructive' : 'default'"
+      :loading="deactivateLoading"
+      @confirm="handleUserDeactivate"
+      @cancel="handleDeactivateCancel"
+    />
+
+    <!-- Delete User Modal -->
+    <ConfirmationModal
+      v-model:open="showDeleteModal"
+      title="Delete User"
+      :description="`Are you sure you want to delete ${deletingUser?.name}? This action cannot be undone and will permanently remove their account and all associated data.`"
+      confirm-text="Delete User"
+      variant="destructive"
+      :loading="deleteLoading"
+      @confirm="handleUserDelete"
+      @cancel="handleDeleteCancel"
+    />
   </div>
 </template>

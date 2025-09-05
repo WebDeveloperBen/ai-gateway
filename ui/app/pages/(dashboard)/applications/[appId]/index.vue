@@ -57,6 +57,38 @@ const getStatusBadgeClass = (status: string) => {
     : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
 }
 
+// Settings modal state
+const isSettingsModalOpen = ref(false)
+const isSettingsLoading = ref(false)
+
+const openSettingsModal = () => {
+  isSettingsModalOpen.value = true
+}
+
+const handleSettingsSave = async (updatedApp: typeof application.value) => {
+  isSettingsLoading.value = true
+  try {
+    // TODO: Replace with actual API call
+    // await $fetch(`/api/applications/${appId}`, { method: 'PUT', body: updatedApp })
+    
+    // Update local state
+    application.value = { ...application.value, ...updatedApp }
+    isSettingsModalOpen.value = false
+    
+    // TODO: Show success toast
+    console.log('Application updated:', updatedApp)
+  } catch (error) {
+    console.error('Failed to update application:', error)
+    // TODO: Show error toast
+  } finally {
+    isSettingsLoading.value = false
+  }
+}
+
+const handleSettingsCancel = () => {
+  isSettingsModalOpen.value = false
+}
+
 // Icon and variant arrays for index matching with API data
 const statsIcons = [Key, Activity, Layers, Users]
 const statsVariants: StatsCardProps["variant"][] = ["chart-3", "chart-1", "default", "chart-2"]
@@ -107,7 +139,7 @@ const statsCards = computed(() => {
           <Key class="h-4 w-4" />
           Manage Keys
         </UiButton>
-        <UiButton variant="outline" class="gap-2">
+        <UiButton variant="outline" class="gap-2" @click="openSettingsModal">
           <Settings class="h-4 w-4" />
           Settings
         </UiButton>
@@ -196,5 +228,14 @@ const statsCards = computed(() => {
         <RecentActivity :activities="application.recentActivity" />
       </UiCardContent>
     </UiCard>
+
+    <!-- Settings Modal -->
+    <ApplicationSettingsModal
+      v-model:open="isSettingsModalOpen"
+      :application="application"
+      :loading="isSettingsLoading"
+      @save="handleSettingsSave"
+      @cancel="handleSettingsCancel"
+    />
   </div>
 </template>

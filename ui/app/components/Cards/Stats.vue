@@ -54,8 +54,8 @@ const getVariantClasses = (variant: string) => {
   <UiCard>
     <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
       <UiCardTitle class="text-sm px-0 font-medium">{{ title }}</UiCardTitle>
-      <div class="p-2 rounded-lg border" :class="getVariantClasses(variant).background">
-        <component :is="icon" class="h-4 w-4" :class="getVariantClasses(variant).icon" />
+      <div class="rounded-lg bg-primary/10 p-3">
+        <component :is="icon" class="size-5 text-primary" />
       </div>
     </UiCardHeader>
     <UiCardContent>

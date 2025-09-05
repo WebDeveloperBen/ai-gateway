@@ -1,16 +1,5 @@
 <script setup lang="ts">
-import {
-  Key,
-  RotateCw,
-  Trash2,
-  Activity,
-  Calendar,
-  Clock,
-  MoreVertical,
-  Users,
-  Ban,
-  TestTubeDiagonal
-} from "lucide-vue-next"
+import { Key, RotateCw, Trash2, Calendar, Clock, MoreVertical, Users, Ban, TestTubeDiagonal } from "lucide-vue-next"
 
 // Get the app ID and key ID from route params
 const route = useRoute()

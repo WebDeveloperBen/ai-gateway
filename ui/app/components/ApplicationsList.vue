@@ -4,7 +4,7 @@ interface Application {
   id: string
   name: string
   description: string
-  status: string
+  status: "active" | "inactive"
   apiKeyCount: number
   monthlyRequests: number
   lastUsed: string

@@ -19,7 +19,7 @@ export interface DisplayConfig<TItem> {
 
 <script setup lang="ts" generic="TItem extends Record<string, any>">
 import { onClickOutside } from "@vueuse/core"
-import { X, Search, User, CheckCircle, XCircle, Circle } from "lucide-vue-next"
+import { X, User, CheckCircle, XCircle, Circle } from "lucide-vue-next"
 import type { FunctionalComponent } from "vue"
 
 const containerRef = ref(null)
@@ -142,8 +142,7 @@ function getActiveFilterLabel(filterKey: string) {
   <div class="space-y-4" ref="containerRef">
     <!-- Search & Filter Command -->
     <UiCommand class="rounded-lg border shadow-sm">
-      <div class="flex items-center px-3" cmdk-input-wrapper @click="showFilters = true">
-        <Search class="mr-2 size-4 shrink-0 opacity-50" />
+      <div class="flex items-center px-2" cmdk-input-wrapper @click="showFilters = true">
         <UiCommandInput
           v-model="searchQuery"
           :placeholder="searchConfig.placeholder"
