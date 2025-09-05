@@ -196,6 +196,24 @@ const filteredUsers = computed(() => {
   }
   return filtered
 })
+
+// Modal state
+const showInviteModal = ref(false)
+
+// Check query parameter to auto-open modal
+const route = useRoute()
+onMounted(() => {
+  if (route.query.create === 'user') {
+    showInviteModal.value = true
+  }
+})
+
+const onUserInvited = (inviteData: any) => {
+  console.log("User invited:", inviteData)
+  // Clear the query parameter after invitation
+  navigateTo("/users", { replace: true })
+  // Could refresh the users list or add pending invite to list
+}
 </script>
 
 <template>
@@ -206,7 +224,7 @@ const filteredUsers = computed(() => {
         <h1 class="text-2xl font-semibold tracking-tight">Users</h1>
         <p class="text-muted-foreground">Manage users, roles and team access</p>
       </div>
-      <UiButton>
+      <UiButton @click="showInviteModal = true">
         <Plus class="mr-2 size-4" />
         Invite User
       </UiButton>
@@ -317,5 +335,8 @@ const filteredUsers = computed(() => {
         </div>
       </div>
     </UiCard>
+
+    <!-- Invite User Modal -->
+    <ModalsInviteUser v-model:open="showInviteModal" @invited="onUserInvited" />
   </div>
 </template>

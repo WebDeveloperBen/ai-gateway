@@ -76,6 +76,24 @@ const resourceUsage = {
   cpu: 45,
   memory: 62
 }
+
+// Quick action handlers
+const handleQuickAction = (actionLabel: string) => {
+  switch (actionLabel) {
+    case "Register New Application":
+      navigateTo("/applications?create=application")
+      break
+    case "Generate API Key":
+      navigateTo("/applications/keys?create=apikey")
+      break
+    case "Invite User":
+      navigateTo("/users?create=user")
+      break
+    case "View Analytics":
+      navigateTo("/metrics")
+      break
+  }
+}
 </script>
 
 <template>
@@ -175,6 +193,7 @@ const resourceUsage = {
                 :key="action.label"
                 :variant="action.variant"
                 :class="action.class"
+                @click="handleQuickAction(action.label)"
               >
                 <component :is="action.icon" class="mr-2" />{{ action.label }}
               </UiButton>

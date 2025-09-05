@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import {
   Key,
-  Edit,
   RotateCw,
   Trash2,
   Activity,
   Calendar,
   AlertTriangle,
   Clock,
-  Globe,
   MoreVertical,
   Code,
   TestTube,
@@ -16,6 +14,7 @@ import {
   Users,
   Ban
 } from "lucide-vue-next"
+import { toast } from "vue-sonner"
 
 // Get the app ID and key ID from route params
 const route = useRoute()
@@ -179,6 +178,7 @@ const selectedCodeExample = ref<CodeExampleKey>("curl")
 const copyCodeExample = async (example: CodeExampleKey) => {
   try {
     await navigator.clipboard.writeText(codeExamples[example])
+    toast.success("Code copied successfully!", {})
     // Could add toast notification here
   } catch (err) {
     console.error("Failed to copy code example: ", err)
@@ -188,7 +188,6 @@ const copyCodeExample = async (example: CodeExampleKey) => {
 
 <template>
   <div class="flex flex-col gap-6">
-
     <!-- Header -->
     <div class="flex items-start justify-between">
       <div>
@@ -431,4 +430,3 @@ const copyCodeExample = async (example: CodeExampleKey) => {
     />
   </div>
 </template>
-

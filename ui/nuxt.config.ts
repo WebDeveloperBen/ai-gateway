@@ -23,7 +23,15 @@ export default defineNuxtConfig({
       }
     }
   },
-  modules: ["@nuxtjs/color-mode", "@vueuse/nuxt", "@nuxt/fonts", "@vee-validate/nuxt", "reka-ui/nuxt", "motion-v/nuxt"],
+  modules: [
+    "@nuxtjs/color-mode",
+    "@vueuse/nuxt",
+    "@nuxt/fonts",
+    "@vee-validate/nuxt",
+    "reka-ui/nuxt",
+    "motion-v/nuxt",
+    "vue-sonner/nuxt"
+  ],
   imports: {
     dirs: ["./tpes"],
     imports: [
@@ -43,3 +51,4 @@ export default defineNuxtConfig({
     classSuffix: ""
   }
 })
+

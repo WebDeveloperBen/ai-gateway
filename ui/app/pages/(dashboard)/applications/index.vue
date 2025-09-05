@@ -77,9 +77,18 @@ const clearAllFilters = () => {
 
 const onApplicationCreated = (applicationId: string) => {
   console.log("Application created:", applicationId)
+  // Clear the query parameter after creation
+  navigateTo("/applications", { replace: true })
   // Here you could refresh the applications list or add the new app to the existing list
-  // For now, we'll just close the modal (handled by the modal component)
 }
+
+// Check query parameter to auto-open modal
+const route = useRoute()
+onMounted(() => {
+  if (route.query.create === 'application') {
+    showCreateModal.value = true
+  }
+})
 
 const hasActiveFilters = computed(() => {
   return selectedStatus.value !== "all"

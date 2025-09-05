@@ -134,7 +134,18 @@ const onApiKeyCreated = (apiKeyData: any) => {
 
   // Add the new key to the existing list
   apiKeys.value.unshift(enrichedApiKey)
+  
+  // Clear the query parameter after creation
+  navigateTo("/applications/keys", { replace: true })
 }
+
+// Check query parameter to auto-open modal
+const route = useRoute()
+onMounted(() => {
+  if (route.query.create === 'apikey') {
+    showCreateModal.value = true
+  }
+})
 </script>
 
 <template>
