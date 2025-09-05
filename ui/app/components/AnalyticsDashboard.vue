@@ -49,26 +49,26 @@ const quickActions: {
   {
     label: "Register New Application",
     icon: Layers,
-    class: "bg-gradient-to-r from-violet-500 to-purple-400 w-full text-white",
+    class: "w-full justify-start",
     variant: "default"
   },
   {
     label: "Generate API Key",
     icon: Key,
-    variant: "ghost",
-    class: "justify-start border"
+    variant: "outline",
+    class: "justify-start w-full"
   },
   {
     label: "Invite User",
     icon: Users,
-    variant: "ghost",
-    class: "justify-start border"
+    variant: "outline",
+    class: "justify-start w-full"
   },
   {
     label: "View Analytics",
     icon: ChartArea,
-    variant: "ghost",
-    class: "justify-start border"
+    variant: "outline",
+    class: "justify-start w-full"
   }
 ]
 const resourceUsage = {
@@ -100,124 +100,109 @@ const handleQuickAction = (actionLabel: string) => {
   <section class="flex flex-col gap-8">
     <!-- Header -->
     <div>
-      <h1 class="text-3xl font-bold text-violet-600">Dashboard</h1>
-
-      <p class="text-lg text-gray-500 mt-1">Overview of your LLM proxy service performance and activity</p>
+      <h1 class="text-3xl font-bold tracking-tight text-primary">Dashboard</h1>
+      <p class="text-muted-foreground">Overview of your LLM proxy service performance and activity</p>
     </div>
     <!-- Stats -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <UiCard v-for="card in cards" :key="card.title">
-        <template #header>
-          <div class="flex items-center gap-2 justify-between px-5">
-            <span class="font-semibold">{{ card.title }}</span>
-            <component :is="card.icon" class="text-violet-500" />
-          </div>
-        </template>
-        <template #content>
-          <UiCardContent>
-            <div class="text-2xl font-bold mt-2">{{ card.value }}</div>
-            <div :class="card.changeColor + ' text-xs mt-1'">
-              {{ card.change }}
-            </div>
-          </UiCardContent>
-        </template>
-      </UiCard>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <CardsStats
+        v-for="card in cards"
+        :key="card.title"
+        :title="card.title"
+        :value="card.value"
+        :icon="card.icon"
+        :description="card.change"
+      />
     </div>
     <!-- Main Content -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- Recent Activity -->
       <UiCard>
-        <template #header>
-          <div class="flex items-center px-5 gap-2 mb-4">
-            <Activity class="text-violet-500" />
-            <h2 class="font-semibold text-lg">Recent Activity</h2>
+        <UiCardHeader>
+          <div class="flex items-center gap-2">
+            <Activity class="h-5 w-5 text-primary" />
+            <UiCardTitle>Recent Activity</UiCardTitle>
           </div>
-        </template>
-        <template #content>
-          <UiCardContent>
-            <div class="flex flex-col gap-4">
-              <div class="flex gap-3 items-start">
-                <span class="mt-1 w-3 h-3 rounded-full bg-green-400"></span>
-                <div>
-                  <div class="font-semibold">New application registered</div>
-                  <div class="text-gray-600 text-sm">ChatBot Pro by ACME Corp</div>
-                  <div class="text-xs text-gray-400">2 minutes ago</div>
-                </div>
-              </div>
-              <div class="flex gap-3 items-start">
-                <span class="mt-1 w-3 h-3 rounded-full bg-green-400"></span>
-                <div>
-                  <div class="font-semibold">API key generated</div>
-                  <div class="text-gray-600 text-sm">Production key for WebApp Dashboard</div>
-                  <div class="text-xs text-gray-400">15 minutes ago</div>
-                </div>
-              </div>
-              <div class="flex gap-3 items-start">
-                <span class="mt-1 w-3 h-3 rounded-full bg-yellow-400"></span>
-                <div>
-                  <div class="font-semibold">Rate limit exceeded</div>
-                  <div class="text-gray-600 text-sm">Application 'DataProcessor' hit rate limits</div>
-                  <div class="text-xs text-gray-400">1 hour ago</div>
-                </div>
-              </div>
-              <div class="flex gap-3 items-start">
-                <span class="mt-1 w-3 h-3 rounded-full bg-sky-400"></span>
-                <div>
-                  <div class="font-semibold">User invitation sent</div>
-                  <div class="text-gray-600 text-sm">Invited john@example.com as Developer</div>
-                  <div class="text-xs text-gray-400">2 hours ago</div>
-                </div>
+        </UiCardHeader>
+        <UiCardContent>
+          <div class="flex flex-col gap-4">
+            <div class="flex gap-3 items-start">
+              <span class="mt-1 w-3 h-3 rounded-full bg-chart-2"></span>
+              <div>
+                <div class="font-semibold text-foreground">New application registered</div>
+                <div class="text-muted-foreground text-sm">ChatBot Pro by ACME Corp</div>
+                <div class="text-xs text-muted-foreground">2 minutes ago</div>
               </div>
             </div>
-          </UiCardContent>
-        </template>
-        <template #footer>
-          <UiCardFooter class="flex mx-6 justify-between mt-6 p-0">
-            <UiButton variant="outline" class="w-full">View All Activity</UiButton>
-          </UiCardFooter>
-        </template>
+            <div class="flex gap-3 items-start">
+              <span class="mt-1 w-3 h-3 rounded-full bg-chart-2"></span>
+              <div>
+                <div class="font-semibold text-foreground">API key generated</div>
+                <div class="text-muted-foreground text-sm">Production key for WebApp Dashboard</div>
+                <div class="text-xs text-muted-foreground">15 minutes ago</div>
+              </div>
+            </div>
+            <div class="flex gap-3 items-start">
+              <span class="mt-1 w-3 h-3 rounded-full bg-chart-1"></span>
+              <div>
+                <div class="font-semibold text-foreground">Rate limit exceeded</div>
+                <div class="text-muted-foreground text-sm">Application 'DataProcessor' hit rate limits</div>
+                <div class="text-xs text-muted-foreground">1 hour ago</div>
+              </div>
+            </div>
+            <div class="flex gap-3 items-start">
+              <span class="mt-1 w-3 h-3 rounded-full bg-chart-3"></span>
+              <div>
+                <div class="font-semibold text-foreground">User invitation sent</div>
+                <div class="text-muted-foreground text-sm">Invited john@example.com as Developer</div>
+                <div class="text-xs text-muted-foreground">2 hours ago</div>
+              </div>
+            </div>
+          </div>
+        </UiCardContent>
+        <UiCardFooter>
+          <UiButton variant="outline" class="w-full">View All Activity</UiButton>
+        </UiCardFooter>
       </UiCard>
       <!-- Quick Actions -->
       <UiCard>
-        <template #header>
-          <div class="flex items-center gap-2 px-5 mb-4">
-            <component :is="Zap" class="text-violet-500" />
-            <h2 class="font-semibold text-lg">Quick Actions</h2>
+        <UiCardHeader>
+          <div class="flex items-center gap-2">
+            <Zap class="h-5 w-5 text-primary" />
+            <UiCardTitle>Quick Actions</UiCardTitle>
           </div>
-        </template>
-        <template #content>
-          <UiCardContent>
-            <div class="flex flex-col gap-3 mb-8">
-              <UiButton
-                v-for="action in quickActions"
-                :key="action.label"
-                :variant="action.variant"
-                :class="action.class"
-                @click="handleQuickAction(action.label)"
-              >
-                <component :is="action.icon" class="mr-2" />{{ action.label }}
-              </UiButton>
+        </UiCardHeader>
+        <UiCardContent>
+          <div class="flex flex-col gap-3 mb-8">
+            <UiButton
+              v-for="action in quickActions"
+              :key="action.label"
+              :variant="action.variant"
+              :class="action.class"
+              @click="handleQuickAction(action.label)"
+            >
+              <component :is="action.icon" class="mr-2 h-4 w-4" />{{ action.label }}
+            </UiButton>
+          </div>
+          <div class="mb-2 flex items-center justify-between">
+            <span class="text-muted-foreground text-sm">Resource Usage</span>
+            <UiBadge variant="secondary" class="text-xs">
+              {{ resourceUsage.status }}
+            </UiBadge>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1 text-foreground">
+              <span>CPU</span>
+              <span>{{ resourceUsage.cpu }}%</span>
             </div>
-            <div class="mb-2 flex items-center justify-between">
-              <span class="text-gray-600 text-sm">Resource Usage</span>
-              <span class="text-xs text-gray-500 bg-gray-100 px-2 rounded">
-                {{ resourceUsage.status }}
-              </span>
+            <UiProgress v-model="resourceUsage.cpu" class="mb-3" />
+            <div class="flex justify-between text-xs mb-1 text-foreground">
+              <span>Memory</span>
+              <span>{{ resourceUsage.memory }}%</span>
             </div>
-            <div>
-              <div class="flex justify-between text-xs mb-1">
-                <span>CPU</span>
-                <span>{{ resourceUsage.cpu }}%</span>
-              </div>
-              <UiProgress v-model="resourceUsage.cpu" color="violet" class="mb-3" />
-              <div class="flex justify-between text-xs mb-1">
-                <span>Memory</span>
-                <span>{{ resourceUsage.memory }}%</span>
-              </div>
-              <UiProgress v-model="resourceUsage.memory" color="sky" />
-            </div>
-          </UiCardContent>
-        </template>
+            <UiProgress v-model="resourceUsage.memory" />
+          </div>
+        </UiCardContent>
       </UiCard>
     </div>
   </section>

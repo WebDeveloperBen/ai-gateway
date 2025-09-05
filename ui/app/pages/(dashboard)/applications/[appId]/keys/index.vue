@@ -26,7 +26,7 @@ const apiKeys = ref([
     name: "Development Key",
     keyPrefix: "sk-",
     applicationId: "app_1",
-    applicationName: "Customer Service Bot",
+    applicationName: "App 2",
     created: "2024-11-20T09:15:00Z",
     lastUsed: "2025-01-14T11:45:00Z",
     expires: "2025-11-20T09:15:00Z",

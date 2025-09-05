@@ -8,7 +8,7 @@ const appId = route.params.appId as string
 // Sample application data - this would come from an API call
 const application = ref({
   id: appId,
-  name: "Customer Service Bot",
+  name: "Customer22 Service Bot",
   description: "AI-powered customer support assistant for handling common inquiries",
   status: "active",
   apiKeyCount: 3,
@@ -63,7 +63,6 @@ const getStatusBadgeClass = (status: string) => {
 
 <template>
   <div class="flex flex-col gap-6">
-
     <!-- Header -->
     <div class="flex items-start justify-between">
       <div>

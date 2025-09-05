@@ -24,9 +24,9 @@ export type KeyProps = {
 </script>
 
 <script setup lang="ts">
-import { MoreVertical, Key, Activity, Circle, CheckCircle, Clock } from "lucide-vue-next"
+import { MoreVertical, Key, Activity, Circle, Clock } from "lucide-vue-next"
 
-const props = withDefaults(defineProps<KeyProps>(), {
+withDefaults(defineProps<KeyProps>(), {
   showEmpty: true,
   emptyTitle: "No API keys found",
   emptyDescription: "Try adjusting your search or create a new API key.",
@@ -41,10 +41,6 @@ const emit = defineEmits<{
 
 const formatNumber = (num: number) => {
   return new Intl.NumberFormat().format(num)
-}
-
-const getKeyAccent = (status: string) => {
-  return status === "active" ? "chart-2" : "none"
 }
 
 const handleApiKeyClick = (key: ApiKey) => {
@@ -87,31 +83,19 @@ const getExpiryStatus = (expiryDate: string) => {
       <p class="text-muted-foreground">{{ emptyDescription }}</p>
     </div>
 
-    <UiCard
-      v-for="key in keys"
-      :key="key.id"
-      interactive
-      padding="compact"
-      :accent="getKeyAccent(key.status)"
-      class="transition-all duration-200 hover:shadow-md"
-      @click="handleApiKeyClick(key)"
-    >
-      <div class="p-6">
-        <div class="flex items-start justify-between mb-4">
-          <div class="flex-1">
-            <div class="flex items-center gap-3 mb-2">
-              <div class="p-2 rounded-lg bg-primary/10">
-                <Key class="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <h3 class="font-semibold text-lg text-foreground">{{ key.name }}</h3>
-                <p class="text-sm text-muted-foreground">{{ key.applicationName }}</p>
-              </div>
+    <UiCard v-for="key in keys" :key="key.id" interactive @click="handleApiKeyClick(key)">
+      <UiCardHeader>
+        <div class="flex items-start justify-between">
+          <div class="space-y-1 flex-1">
+            <div class="flex items-center gap-3">
+              <Key class="h-5 w-5 text-primary" />
+              <UiCardTitle class="text-lg">{{ key.name }}</UiCardTitle>
               <UiStatusBadge :status="key.status" />
             </div>
-
-            <!-- Metadata row -->
-            <div class="flex items-center gap-4 text-xs text-muted-foreground">
+            <UiCardDescription class="text-sm">
+              {{ key.applicationName }}
+            </UiCardDescription>
+            <div class="flex items-center gap-4 text-xs">
               <template v-if="key.expires">
                 <div class="flex items-center gap-1">
                   <Clock
@@ -136,7 +120,6 @@ const getExpiryStatus = (expiryDate: string) => {
               </template>
             </div>
           </div>
-
           <UiDropdownMenu v-if="showDropdownActions">
             <UiDropdownMenuTrigger as-child>
               <UiButton variant="ghost" size="sm" @click.stop>
@@ -152,41 +135,41 @@ const getExpiryStatus = (expiryDate: string) => {
             </UiDropdownMenuContent>
           </UiDropdownMenu>
         </div>
-
+      </UiCardHeader>
+      <UiCardContent>
         <!-- API Key Display -->
-        <ApiKeysReveal @click.stop :key-id="key.id" :key-prefix="key.keyPrefix" size="sm" />
+        <div class="mb-4">
+          <ApiKeysReveal @click.stop :key-id="key.id" :key-prefix="key.keyPrefix" size="sm" />
+        </div>
 
         <!-- Stats Grid -->
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t">
-          <div class="text-center">
-            <div class="flex items-center justify-center gap-1 mb-1">
-              <Circle class="h-3 w-3 text-muted-foreground" />
-              <span class="text-xs text-muted-foreground">Created</span>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div class="flex items-center gap-2 justify-center">
+            <Circle class="h-4 w-4 text-chart-2" />
+            <div>
+              <p class="text-muted-foreground">Created</p>
+              <p class="font-medium">{{ new Date(key.created).toLocaleDateString() }}</p>
             </div>
-            <p class="text-sm font-medium">{{ new Date(key.created).toLocaleDateString() }}</p>
           </div>
-
-          <div class="text-center">
-            <div class="flex items-center justify-center gap-1 mb-1">
-              <Activity class="h-3 w-3 text-muted-foreground" />
-              <span class="text-xs text-muted-foreground">Last Used</span>
+          <div class="flex items-center gap-2 justify-center">
+            <Activity class="h-4 w-4 text-chart-1" />
+            <div>
+              <p class="text-muted-foreground">Last Used</p>
+              <p class="font-medium">{{ new Date(key.lastUsed).toLocaleDateString() }}</p>
             </div>
-            <p class="text-sm font-medium">{{ new Date(key.lastUsed).toLocaleDateString() }}</p>
           </div>
-
-          <div class="text-center">
-            <div class="flex items-center justify-center gap-1 mb-1">
-              <Activity class="h-3 w-3 text-blue-500" />
-              <span class="text-xs text-muted-foreground">Requests</span>
-            </div>
-            <div class="flex items-center justify-center gap-1">
-              <p class="text-sm font-medium">{{ formatNumber(key.requestCount) }}</p>
-              <UiActivityIndicator :value="key.requestCount" />
+          <div class="flex items-center gap-2 justify-center">
+            <Activity class="h-4 w-4 text-chart-3" />
+            <div>
+              <p class="text-muted-foreground">Requests</p>
+              <div class="flex items-center gap-2">
+                <p class="font-medium">{{ formatNumber(key.requestCount) }}</p>
+                <UiActivityIndicator :value="key.requestCount" />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </UiCardContent>
     </UiCard>
   </div>
 </template>
-

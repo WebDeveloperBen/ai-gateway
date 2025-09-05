@@ -56,10 +56,10 @@ const props = withDefaults(
 )
 
 const styles = tv({
-  base: "flex flex-col rounded-xl border border-border/40 bg-card/95 backdrop-blur-[2px] text-card-foreground shadow-sm ring-1 ring-border/20 transition-all duration-200",
+  base: "flex flex-col rounded-xl border border-border bg-muted/20 text-card-foreground shadow-sm transition-all duration-200",
   variants: {
     interactive: {
-      true: "hover:shadow-md hover:ring-primary/30 hover:border-primary/30 hover:-translate-y-0.5 cursor-pointer hover:bg-card"
+      true: "hover:shadow-md hover:shadow-primary/5 hover:border-primary/30 hover:-translate-y-0.5 cursor-pointer"
     },
     padding: {
       default: "gap-6 py-6",

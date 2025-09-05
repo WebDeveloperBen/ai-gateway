@@ -36,19 +36,6 @@ const formatNumber = (num: number) => {
   return new Intl.NumberFormat().format(num)
 }
 
-const getTeamAccent = (team: string) => {
-  switch (team) {
-    case "Customer Success":
-      return "chart-2"
-    case "Marketing":
-      return "chart-1"
-    case "Engineering":
-      return "chart-3"
-    default:
-      return "primary"
-  }
-}
-
 const handleApplicationClick = (app: Application) => {
   emit("selectApplication", app)
 }
@@ -62,19 +49,13 @@ const handleApplicationClick = (app: Application) => {
       <p class="text-muted-foreground">{{ emptyDescription }}</p>
     </div>
 
-    <UiCard
-      v-for="app in applications"
-      :key="app.id"
-      interactive
-      :accent="getTeamAccent(app.team)"
-      @click="handleApplicationClick(app)"
-    >
+    <UiCard v-for="app in applications" :key="app.id" interactive @click="handleApplicationClick(app)">
       <UiCardHeader>
         <div class="flex items-start justify-between">
           <div class="space-y-1 flex-1">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center">
               <Layers class="h-5 w-5 text-primary" />
-              <UiCardTitle class="text-lg">{{ app.name }}</UiCardTitle>
+              <UiCardTitle class="text-lg px-2.5">{{ app.name }}</UiCardTitle>
               <UiStatusBadge :status="app.status" />
             </div>
             <UiCardDescription class="text-sm">
