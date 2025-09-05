@@ -1,25 +1,61 @@
 <script setup lang="ts">
 import {
-  ArrowLeft,
   Key,
   Edit,
   RotateCw,
   Trash2,
   Activity,
   Calendar,
-  Zap,
   AlertTriangle,
   Clock,
   Globe,
   MoreVertical,
   Code,
   TestTube,
-  Copy
+  Copy,
+  Users,
+  Ban
 } from "lucide-vue-next"
 
-// Get the key ID from route params
+// Get the app ID and key ID from route params
 const route = useRoute()
-const keyId = route.params.id as string
+const appId = route.params.appId as string
+const keyId = route.params.keyId as string
+
+// Modal state management
+const showDisableModal = ref(false)
+const showDeleteModal = ref(false)
+const actionLoading = ref(false)
+
+// Actions
+const handleDisableKey = async () => {
+  actionLoading.value = true
+  try {
+    // TODO: Implement API call to disable key
+    await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulate API call
+    apiKey.value.status = "inactive"
+    showDisableModal.value = false
+  } catch (error) {
+    console.error("Failed to disable key:", error)
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+const handleDeleteKey = async () => {
+  actionLoading.value = true
+  try {
+    // TODO: Implement API call to delete key
+    await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulate API call
+    // In real app, this would redirect to keys list after deletion
+    showDeleteModal.value = false
+    await navigateTo(`/applications/${appId}/keys`)
+  } catch (error) {
+    console.error("Failed to delete key:", error)
+  } finally {
+    actionLoading.value = false
+  }
+}
 
 // Sample API key data - this would come from an API call
 const apiKey = ref({
@@ -27,15 +63,28 @@ const apiKey = ref({
   key: "",
   name: "Production API Key",
   keyPrefix: "sk-",
-  applicationId: "app_1",
+  applicationId: appId,
   applicationName: "Customer Service Bot",
   description: "Main production key for customer service bot integration",
   status: "active",
   permissions: ["read", "write"],
-  rateLimit: "1000/hour",
   created: "2024-12-15T10:00:00Z",
   lastUsed: "2025-01-15T14:30:00Z",
   expiresAt: null,
+  owners: [
+    {
+      id: "user_1",
+      name: "John Smith",
+      email: "john.smith@company.com",
+      role: "Admin"
+    },
+    {
+      id: "user_2",
+      name: "Sarah Johnson",
+      email: "sarah.johnson@company.com",
+      role: "Developer"
+    }
+  ],
   requestCount: {
     total: 25400,
     today: 240,
@@ -67,8 +116,6 @@ const apiKey = ref({
     }
   ]
 })
-
-// Actions
 
 const formatNumber = (num: number) => {
   return new Intl.NumberFormat().format(num)
@@ -141,47 +188,33 @@ const copyCodeExample = async (example: CodeExampleKey) => {
 
 <template>
   <div class="flex flex-col gap-6">
-    <!-- Breadcrumb Navigation -->
-    <div class="flex items-center gap-2 text-sm text-muted-foreground">
-      <NuxtLink to="/applications" class="hover:text-foreground">Applications</NuxtLink>
-      <span>/</span>
-      <NuxtLink to="/applications/keys" class="hover:text-foreground">API Keys</NuxtLink>
-      <span>/</span>
-      <span class="text-foreground">{{ apiKey.name }}</span>
-    </div>
 
     <!-- Header -->
     <div class="flex items-start justify-between">
-      <div class="flex items-start gap-4">
-        <UiButton variant="ghost" size="sm" as-child class="gap-2">
-          <NuxtLink to="/applications/keys">
-            <ArrowLeft class="h-4 w-4" />
-            Back to Keys
-          </NuxtLink>
-        </UiButton>
-
-        <div>
-          <div class="flex items-center gap-3 mb-2">
-            <h1 class="text-3xl font-bold tracking-tight">{{ apiKey.name }}</h1>
-            <UiBadge :class="getStatusBadgeClass(apiKey.status)">
-              {{ apiKey.status }}
-            </UiBadge>
-          </div>
-          <p class="text-muted-foreground">
-            Used by <strong>{{ apiKey.applicationName }}</strong>
-          </p>
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <h1 class="text-3xl font-bold tracking-tight">{{ apiKey.name }}</h1>
+          <UiBadge :class="getStatusBadgeClass(apiKey.status)">
+            {{ apiKey.status }}
+          </UiBadge>
         </div>
+        <p class="text-muted-foreground">
+          Used by
+          <NuxtLink :to="`/applications/${apiKey.applicationId}`" class="font-medium text-foreground hover:underline">{{
+            apiKey.applicationName
+          }}</NuxtLink>
+        </p>
       </div>
 
       <!-- Action Buttons -->
       <div class="flex items-center gap-2">
-        <UiButton variant="outline" size="sm" class="gap-2">
-          <Edit class="h-4 w-4" />
-          Edit Settings
+        <UiButton variant="default" size="sm" class="gap-2" @click="$router.push('/playground/prompts')">
+          <TestTube class="h-4 w-4" />
+          Test API Key
         </UiButton>
-        <UiButton variant="outline" size="sm" class="gap-2">
-          <RotateCw class="h-4 w-4" />
-          Regenerate
+        <UiButton variant="outline" size="sm" class="gap-2 text-orange-600" @click="showDisableModal = true">
+          <Ban class="h-4 w-4" />
+          Disable Key
         </UiButton>
         <UiDropdownMenu>
           <UiDropdownMenuTrigger as-child>
@@ -191,11 +224,11 @@ const copyCodeExample = async (example: CodeExampleKey) => {
           </UiDropdownMenuTrigger>
           <UiDropdownMenuContent align="end">
             <UiDropdownMenuItem>
-              <TestTube class="h-4 w-4 mr-2" />
-              Test API Key
+              <RotateCw class="h-4 w-4 mr-2" />
+              Regenerate Key
             </UiDropdownMenuItem>
             <UiDropdownMenuSeparator />
-            <UiDropdownMenuItem class="text-red-600">
+            <UiDropdownMenuItem class="text-red-600" @click="showDeleteModal = true">
               <Trash2 class="h-4 w-4 mr-2" />
               Delete Key
             </UiDropdownMenuItem>
@@ -241,10 +274,22 @@ const copyCodeExample = async (example: CodeExampleKey) => {
 
           <div>
             <label class="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Zap class="h-4 w-4" />
-              Rate Limit
+              <Users class="h-4 w-4" />
+              Owners
             </label>
-            <p class="text-sm font-medium mt-1">{{ apiKey.rateLimit }}</p>
+            <div class="mt-1 flex flex-wrap gap-1">
+              <div v-for="owner in apiKey.owners" :key="owner.id" class="flex items-center gap-1 text-xs">
+                <div class="w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center">
+                  <span class="text-[10px] font-medium text-primary">{{
+                    owner.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                  }}</span>
+                </div>
+                <span class="text-sm font-medium">{{ owner.name }}</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -304,72 +349,21 @@ const copyCodeExample = async (example: CodeExampleKey) => {
       </UiCard>
     </div>
 
-    <!-- Charts Placeholder -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <UiCard>
-        <UiCardHeader>
-          <UiCardTitle>Usage Over Time</UiCardTitle>
-          <UiCardDescription>API requests in the last 30 days</UiCardDescription>
-        </UiCardHeader>
-        <UiCardContent>
-          <div class="h-[300px] flex items-center justify-center border-2 border-dashed border-muted rounded-lg">
-            <div class="text-center text-muted-foreground">
-              <Activity class="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Usage Chart Coming Soon</p>
-            </div>
-          </div>
-        </UiCardContent>
-      </UiCard>
-
-      <UiCard>
-        <UiCardHeader>
-          <UiCardTitle>Status Code Breakdown</UiCardTitle>
-          <UiCardDescription>Response status distribution</UiCardDescription>
-        </UiCardHeader>
-        <UiCardContent>
-          <div class="h-[300px] flex items-center justify-center border-2 border-dashed border-muted rounded-lg">
-            <div class="text-center text-muted-foreground">
-              <Activity class="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Status Chart Coming Soon</p>
-            </div>
-          </div>
-        </UiCardContent>
-      </UiCard>
-    </div>
-
-    <!-- Recent Activity -->
+    <!-- Usage Analytics Chart -->
     <UiCard>
       <UiCardHeader>
         <UiCardTitle class="flex items-center gap-2">
-          <Globe class="h-5 w-5" />
-          Recent Activity
+          <Activity class="h-5 w-5" />
+          Usage Analytics
         </UiCardTitle>
-        <UiCardDescription>Latest API requests using this key</UiCardDescription>
+        <UiCardDescription>Request volume and performance metrics over time</UiCardDescription>
       </UiCardHeader>
       <UiCardContent>
-        <div class="space-y-4">
-          <div
-            v-for="activity in apiKey.recentActivity"
-            :key="activity.timestamp"
-            class="flex items-center justify-between p-3 border rounded-lg"
-          >
-            <div class="flex items-center gap-3">
-              <div class="w-2 h-2 rounded-full bg-green-500"></div>
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="font-medium text-sm">{{ activity.method }}</span>
-                  <code class="text-sm text-muted-foreground">{{ activity.endpoint }}</code>
-                </div>
-                <div class="text-xs text-muted-foreground">
-                  {{ new Date(activity.timestamp).toLocaleString() }} • {{ activity.ip }}
-                </div>
-              </div>
-            </div>
-            <UiBadge variant="outline" :class="getStatusColor(activity.status)">
-              {{ activity.status }}
-            </UiBadge>
-          </div>
-        </div>
+        <ChartPlaceholder
+          :icon="Activity"
+          title="Charts Coming Soon"
+          description="Interactive usage analytics and performance charts will be available here"
+        />
       </UiCardContent>
     </UiCard>
 
@@ -414,5 +408,27 @@ const copyCodeExample = async (example: CodeExampleKey) => {
         </div>
       </UiCardContent>
     </UiCard>
+
+    <!-- Confirmation Modals -->
+    <ConfirmationModal
+      v-model:open="showDisableModal"
+      title="Disable API Key?"
+      :description="`Are you sure you want to disable '${apiKey.name}'? This will prevent it from being used for API requests.`"
+      confirm-text="Disable Key"
+      variant="default"
+      :loading="actionLoading"
+      @confirm="handleDisableKey"
+    />
+
+    <ConfirmationModal
+      v-model:open="showDeleteModal"
+      title="Delete API Key?"
+      :description="`Are you sure you want to permanently delete '${apiKey.name}'? This action cannot be undone and will break any applications currently using this key.`"
+      confirm-text="Delete Key"
+      variant="destructive"
+      :loading="actionLoading"
+      @confirm="handleDeleteKey"
+    />
   </div>
 </template>
+

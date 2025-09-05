@@ -98,8 +98,16 @@ const copyToClipboard = async () => {
   }
 }
 
-const maskKey = (keyPrefix: string) => {
-  return keyPrefix + "************************"
+const maskKey = (keyPrefix: string, keyId: string) => {
+  // Show first part (sk-), then 2-3 unique chars based on keyId, then dots, like Azure does
+  // For example: sk-abc...xyz or sk-ab1...9z2
+  const hash = keyId.split('').reduce((a, b) => {
+    a = ((a << 5) - a) + b.charCodeAt(0)
+    return a & a
+  }, 0)
+  const uniquePart = Math.abs(hash).toString(36).substring(0, 3) // 3 consistent chars
+  const endPart = Math.abs(hash * 7).toString(36).substring(0, 2) // 2 consistent chars
+  return keyPrefix + uniquePart + "..." + endPart
 }
 
 const displayText = computed(() => {
@@ -109,7 +117,7 @@ const displayText = computed(() => {
   if (loading.value && visible.value) {
     return "Loading..."
   }
-  return maskKey(props.keyPrefix)
+  return maskKey(props.keyPrefix, props.keyId)
 })
 
 const sizeClasses = computed(() => {

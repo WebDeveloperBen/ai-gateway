@@ -158,3 +158,19 @@ Set in `.env` file (see existing `.env` for reference):
 3. UI development: `cd ui && pnpm dev`
 4. Generate code: `task generate` (after schema/query changes)
 5. Tests: `task tests`
+
+## Vue/Nuxt Component Conventions
+
+### Component Structure
+- **Script tag placement**: Always place `<script setup>` tag BEFORE `<template>` tag in Vue components
+- **Component order**: Use the following structure:
+  1. `<script setup lang="ts">` 
+  2. `<template>`
+  3. `<style>` (if needed)
+
+### Code Style
+- **Component naming**: Use PascalCase for component files and imports
+- **Prop definitions**: Use TypeScript interfaces for component props with JSDoc documentation
+- **Template simplicity**: Prefer direct property access in templates over helper functions when possible
+- **DRY Components**: Create reusable components for common patterns (e.g., `ChartPlaceholder`, `RecentActivity`)
+- **DO NOT ADD COMMENTS** unless explicitly requested

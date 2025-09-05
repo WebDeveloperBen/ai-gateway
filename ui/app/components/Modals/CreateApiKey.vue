@@ -5,6 +5,7 @@ import type { FormBuilder } from "@/components/Ui/FormBuilder/FormBuilder.vue"
 
 const props = defineProps<{
   open: boolean
+  appId?: string
 }>()
 
 const emit = defineEmits<{
@@ -22,7 +23,6 @@ const applications = [
   { value: "app_2", label: "Content Generator" },
   { value: "app_3", label: "Code Assistant" }
 ]
-
 
 // Essential form fields for API key creation
 const formFields: FormBuilder[] = [
@@ -85,13 +85,17 @@ const justCopied = ref(false)
 const onSubmit = handleSubmit(async (values) => {
   try {
     isCreating.value = true
-    
+
     // TODO: Implement API call to create API key
     console.log("Creating API key:", values)
 
     // Simulate API response - generate a full API key
-    const generatedKey = "sk-proj-" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 10)
-    
+    const generatedKey =
+      "sk-proj-" +
+      Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 10)
+
     const apiKeyData = {
       id: "key_new",
       name: values.name,
@@ -142,13 +146,14 @@ const closeDialog = (save: boolean) => {
       icon: "lucide:x"
     })
   }
-  
+
   // Navigate to key detail page if a key was created
   if (createdApiKey.value && save && createdApiKeyId.value) {
     // Navigate to the specific key detail page
-    navigateTo(`/applications/keys/${createdApiKeyId.value}`)
+    const appIdToUse = props.appId || "app_1" // fallback to default app
+    navigateTo(`/applications/${appIdToUse}/keys/${createdApiKeyId.value}`)
   }
-  
+
   dialogOpen.value = false
   resetForm()
   createdApiKey.value = null
@@ -164,14 +169,14 @@ const copyToClipboard = async (text: string) => {
   try {
     await navigator.clipboard.writeText(text)
     justCopied.value = true
-    
+
     toast({
       title: "Copied to clipboard",
       description: "API key has been copied to your clipboard.",
       duration: 3000,
       icon: "lucide:check"
     })
-    
+
     // Reset the copied state after 2 seconds
     setTimeout(() => {
       justCopied.value = false
@@ -200,7 +205,7 @@ watch(dialogOpen, (isOpen) => {
   <UiDialog v-model:open="dialogOpen">
     <UiDialogContent class="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
       <template #header>
-        <UiDialogTitle class="sr-only">{{ createdApiKey ? 'API Key Created' : 'Create New API Key' }}</UiDialogTitle>
+        <UiDialogTitle class="sr-only">{{ createdApiKey ? "API Key Created" : "Create New API Key" }}</UiDialogTitle>
         <div class="flex items-center gap-3 pb-4">
           <div
             class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm"
@@ -208,11 +213,12 @@ watch(dialogOpen, (isOpen) => {
             <Key class="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 class="text-lg font-semibold">{{ createdApiKey ? 'API Key Created' : 'Create New API Key' }}</h2>
+            <h2 class="text-lg font-semibold">{{ createdApiKey ? "API Key Created" : "Create New API Key" }}</h2>
             <p class="text-sm text-muted-foreground">
-              {{ createdApiKey 
-                ? 'Your API key has been generated successfully' 
-                : `Generate a new API key for your ${appName} applications` 
+              {{
+                createdApiKey
+                  ? "Your API key has been generated successfully"
+                  : `Generate a new API key for your ${appName} applications`
               }}
             </p>
           </div>
@@ -223,7 +229,9 @@ watch(dialogOpen, (isOpen) => {
         <!-- Show created API key -->
         <div v-if="createdApiKey" class="space-y-6">
           <div class="text-center">
-            <div class="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div
+              class="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4"
+            >
               <Key class="w-8 h-8 text-green-600 dark:text-green-400" />
             </div>
             <h3 class="text-lg font-semibold text-green-900 dark:text-green-100">API Key Created Successfully!</h3>
@@ -235,10 +243,16 @@ watch(dialogOpen, (isOpen) => {
           <div class="bg-muted/50 rounded-lg p-4 border-2 border-dashed">
             <div class="flex items-center gap-3">
               <code class="text-sm font-mono flex-1 break-all">{{ createdApiKey }}</code>
-              <UiButton variant="outline" size="sm" @click="copyToClipboard(createdApiKey)" class="gap-2" :disabled="justCopied">
+              <UiButton
+                variant="outline"
+                size="sm"
+                @click="copyToClipboard(createdApiKey)"
+                class="gap-2"
+                :disabled="justCopied"
+              >
                 <Check v-if="justCopied" class="h-4 w-4 text-green-600" />
                 <Copy v-else class="h-4 w-4" />
-                {{ justCopied ? 'Copied!' : 'Copy' }}
+                {{ justCopied ? "Copied!" : "Copy" }}
               </UiButton>
             </div>
           </div>
@@ -249,7 +263,8 @@ watch(dialogOpen, (isOpen) => {
               <div class="text-sm">
                 <p class="font-medium text-red-900 dark:text-red-100 mb-1">⚠️ Security Warning</p>
                 <p class="text-red-700 dark:text-red-300">
-                  This API key will never be shown again after you close this dialog. Make sure to copy and store it in a secure location.
+                  This API key will never be shown again after you close this dialog. Make sure to copy and store it in
+                  a secure location.
                 </p>
               </div>
             </div>
@@ -262,7 +277,9 @@ watch(dialogOpen, (isOpen) => {
             <UiFormBuilder :fields="formFields" />
 
             <!-- Security Warning -->
-            <div class="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+            <div
+              class="mt-6 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4"
+            >
               <div class="flex gap-3">
                 <Settings class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                 <div class="text-sm">
@@ -282,18 +299,16 @@ watch(dialogOpen, (isOpen) => {
         <UiDialogFooter>
           <!-- Show different buttons based on state -->
           <template v-if="createdApiKey">
-            <UiButton variant="outline" type="button" @click="closeDialog(false)">
-              Close
-            </UiButton>
-            <UiButton type="button" class="gap-2" @click="closeDialog(true)">
-              Continue to Key Management
-            </UiButton>
+            <UiButton variant="outline" type="button" @click="closeDialog(false)"> Close </UiButton>
+            <UiButton type="button" class="gap-2" @click="closeDialog(true)"> Continue to Key Management </UiButton>
           </template>
           <template v-else>
-            <UiButton variant="outline" type="button" class="mt-2 sm:mt-0" @click="closeDialog(false)"> Cancel </UiButton>
+            <UiButton variant="outline" type="button" class="mt-2 sm:mt-0" @click="closeDialog(false)">
+              Cancel
+            </UiButton>
             <UiButton type="button" class="gap-2" @click="handleFormSubmit" :disabled="isCreating">
               <Plus class="w-4 h-4" />
-              {{ isCreating ? 'Creating...' : 'Create API Key' }}
+              {{ isCreating ? "Creating..." : "Create API Key" }}
             </UiButton>
           </template>
         </UiDialogFooter>
@@ -301,4 +316,3 @@ watch(dialogOpen, (isOpen) => {
     </UiDialogContent>
   </UiDialog>
 </template>
-

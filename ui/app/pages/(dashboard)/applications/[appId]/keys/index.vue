@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { Plus, MoreVertical, Key, Activity, X, CheckCircle, XCircle, Circle, Layers } from "lucide-vue-next"
 
+// Get the app ID from route params
+const route = useRoute()
+const appId = route.params.appId as string
+
 // Sample API Keys data
 const apiKeys = ref([
   {
@@ -65,7 +69,7 @@ const filterByStatus = (status: string) => {
 
 const selectKey = (key: any) => {
   // Navigate to key details
-  navigateTo(`/applications/${key.applicationId}/keys/${key.id}`)
+  navigateTo(`/applications/${appId}/keys/${key.id}`)
   searchQuery.value = ""
 }
 
@@ -86,12 +90,13 @@ const applications = computed(() => {
 
 const filteredKeys = computed(() => {
   return apiKeys.value.filter((key) => {
+    // Always filter by the current appId for app-specific pages
+    const matchesApp = key.applicationId === appId
     const matchesSearch =
       key.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       key.applicationName.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchesApp = selectedApp.value === "all" || key.applicationId === selectedApp.value
     const matchesStatus = selectedStatus.value === "all" || key.status === selectedStatus.value
-    return matchesSearch && matchesApp && matchesStatus
+    return matchesApp && matchesSearch && matchesStatus
   })
 })
 
@@ -108,11 +113,7 @@ const getStatusBadgeClass = (status: string) => {
 const navigateToKey = async (keyId: string) => {
   console.log("Navigating to key:", keyId)
   try {
-    // Find the key to get its applicationId
-    const key = apiKeys.value.find(k => k.id === keyId)
-    if (key) {
-      await navigateTo(`/applications/${key.applicationId}/keys/${key.id}`, { replace: false })
-    }
+    await navigateTo(`/applications/${appId}/keys/${keyId}`, { replace: false })
   } catch (error) {
     console.error("Navigation error:", error)
   }
@@ -142,8 +143,8 @@ const onApiKeyCreated = (apiKeyData: any) => {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-3xl font-bold tracking-tight">API Keys</h1>
-        <p class="text-muted-foreground">View all API keys for your applications</p>
+        <h1 class="text-3xl font-bold tracking-tight">API Keys for {{ apiKeys.find(k => k.applicationId === appId)?.applicationName || 'Application' }}</h1>
+        <p class="text-muted-foreground">Manage API keys for this specific application</p>
       </div>
       <UiButton @click="showCreateModal = true" class="gap-2">
         <Plus class="h-4 w-4" />
@@ -159,7 +160,7 @@ const onApiKeyCreated = (apiKeyData: any) => {
           <Key class="h-4 w-4 text-muted-foreground" />
         </UiCardHeader>
         <UiCardContent>
-          <div class="text-2xl font-bold">{{ apiKeys.length }}</div>
+          <div class="text-2xl font-bold">{{ filteredKeys.length }}</div>
         </UiCardContent>
       </UiCard>
 
@@ -169,7 +170,7 @@ const onApiKeyCreated = (apiKeyData: any) => {
           <Activity class="h-4 w-4 text-muted-foreground" />
         </UiCardHeader>
         <UiCardContent>
-          <div class="text-2xl font-bold">{{ apiKeys.filter((key) => key.status === "active").length }}</div>
+          <div class="text-2xl font-bold">{{ filteredKeys.filter((key) => key.status === "active").length }}</div>
         </UiCardContent>
       </UiCard>
 
@@ -180,7 +181,7 @@ const onApiKeyCreated = (apiKeyData: any) => {
         </UiCardHeader>
         <UiCardContent>
           <div class="text-2xl font-bold">
-            {{ formatNumber(apiKeys.reduce((sum, key) => sum + key.requestCount, 0)) }}
+            {{ formatNumber(filteredKeys.reduce((sum, key) => sum + key.requestCount, 0)) }}
           </div>
         </UiCardContent>
       </UiCard>
@@ -191,7 +192,7 @@ const onApiKeyCreated = (apiKeyData: any) => {
           <Activity class="h-4 w-4 text-muted-foreground" />
         </UiCardHeader>
         <UiCardContent>
-          <div class="text-2xl font-bold">{{ applications.length }}</div>
+          <div class="text-2xl font-bold">1</div>
         </UiCardContent>
       </UiCard>
     </div>

@@ -1,5 +1,5 @@
 <template>
-  <Primitive data-slot="card" :as="as" :as-child="asChild" :class="styles({ class: props.class })">
+  <Primitive data-slot="card" :as="as" :as-child="asChild" :class="styles({ interactive: props.interactive, padding: props.padding, class: props.class })">
     <slot>
       <slot name="header">
         <UiCardHeader>
@@ -37,12 +37,28 @@ const props = withDefaults(
       content?: string
       /** Custom class(es) to add to the element */
       class?: HTMLAttributes["class"]
+      /** Whether the card should have hover effects */
+      interactive?: boolean
+      /** Padding variant */
+      padding?: "default" | "compact"
     }
   >(),
-  { as: "div" }
+  { as: "div", interactive: false, padding: "default" }
 )
 
 const styles = tv({
-  base: "flex flex-col hover:scale-[101%] transition-transform gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm"
+  base: "flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm transition-all duration-200",
+  variants: {
+    interactive: {
+      true: "hover:shadow-md hover:border-primary/20 hover:-translate-y-0.5 cursor-pointer"
+    },
+    padding: {
+      default: "gap-6 py-6",
+      compact: "gap-3 p-4"
+    }
+  },
+  defaultVariants: {
+    padding: "default"
+  }
 })
 </script>

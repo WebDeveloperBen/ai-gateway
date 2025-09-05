@@ -66,7 +66,7 @@ const filterByStatus = (status: string) => {
 
 const selectApplication = (app: any) => {
   // Navigate to application details
-  console.log("Selected app:", app)
+  navigateTo(`/applications/${app.id}`)
   searchQuery.value = ""
 }
 
@@ -242,7 +242,12 @@ const getStatusBadgeClass = (status: string) => {
         <p class="text-muted-foreground">Try adjusting your search or create a new application.</p>
       </div>
 
-      <UiCard v-for="app in filteredApplications" :key="app.id" class="hover:shadow-md transition-shadow">
+      <UiCard 
+        v-for="app in filteredApplications" 
+        :key="app.id" 
+        interactive
+        @click="navigateTo(`/applications/${app.id}`)"
+      >
         <UiCardHeader>
           <div class="flex items-start justify-between">
             <div class="space-y-1 flex-1">
@@ -263,13 +268,17 @@ const getStatusBadgeClass = (status: string) => {
             </div>
             <UiDropdownMenu>
               <UiDropdownMenuTrigger as-child>
-                <UiButton variant="ghost" size="sm">
+                <UiButton variant="ghost" size="sm" @click.stop>
                   <MoreVertical class="h-4 w-4" />
                 </UiButton>
               </UiDropdownMenuTrigger>
               <UiDropdownMenuContent align="end">
-                <UiDropdownMenuItem> View Details </UiDropdownMenuItem>
-                <UiDropdownMenuItem> Manage API Keys </UiDropdownMenuItem>
+                <UiDropdownMenuItem as-child>
+                  <NuxtLink :to="`/applications/${app.id}`"> View Details </NuxtLink>
+                </UiDropdownMenuItem>
+                <UiDropdownMenuItem as-child>
+                  <NuxtLink :to="`/applications/${app.id}/keys`"> Manage API Keys </NuxtLink>
+                </UiDropdownMenuItem>
                 <UiDropdownMenuItem> View Analytics </UiDropdownMenuItem>
                 <UiDropdownMenuSeparator />
                 <UiDropdownMenuItem class="text-red-600"> Delete Application </UiDropdownMenuItem>
@@ -278,7 +287,7 @@ const getStatusBadgeClass = (status: string) => {
           </div>
         </UiCardHeader>
         <UiCardContent>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
               <p class="text-muted-foreground">API Keys</p>
               <p class="font-medium">{{ app.apiKeyCount }}</p>
@@ -292,11 +301,6 @@ const getStatusBadgeClass = (status: string) => {
               <p class="font-medium">
                 {{ new Date(app.lastUsed).toLocaleDateString() }}
               </p>
-            </div>
-            <div class="flex gap-2">
-              <UiButton size="sm" variant="outline" as-child>
-                <NuxtLink :to="`/applications/${app.id}`"> View Details </NuxtLink>
-              </UiButton>
             </div>
           </div>
         </UiCardContent>

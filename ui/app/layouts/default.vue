@@ -7,22 +7,16 @@ import {
   ChevronRight,
   ChevronsUpDown,
   Plus,
-  BarChart3,
   Users,
   Layers,
   Shield,
   FileText,
-  Lock,
-  Globe,
-  Bell,
   Server
 } from "lucide-vue-next"
 
-// Breadcrumb items
-const breadcrumbItems = [
-  { label: "LLM Gateway", link: "#" },
-  { label: "Dashboard", link: "#" }
-]
+// Dynamic breadcrumbs
+const { breadcrumbItems } = useBreadcrumbs()
+
 
 // This is sample data.
 const data = {
@@ -402,7 +396,9 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
         <UiSidebarTrigger class="-ml-1" />
         <UiDivider orientation="vertical" class="mr-2 h-4 w-px" />
         <UiBreadcrumbs :items="breadcrumbItems" />
-        <ThemeToggle />
+        <div class="ml-auto">
+          <ThemeToggle />
+        </div>
       </UiNavbar>
       <PageContainer>
         <slot />
