@@ -86,7 +86,7 @@ const { handleSubmit, resetForm, setFieldValue } = useForm<{
 const selectedMembers = ref<Array<{ user: User; role: "Admin" | "Developer" | "Viewer" }>>([])
 const showUserSelector = ref(false)
 
-const isLoading = ref(false)
+const isLoading = shallowRef(false)
 
 function addMember(user: User) {
   if (selectedMembers.value.find((m) => m.user.id === user.id)) return

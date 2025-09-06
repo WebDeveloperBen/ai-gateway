@@ -219,22 +219,22 @@ const omit = (obj: FormBuilder, keys: Array<keyof FormBuilder>) =>
 
 const removeFields = (field: FormBuilder) => {
   const cleanedField = omit(field, ["wrapperClass", "renderIf", "variant", "slot"])
-  
+
   // Add validation rules for required fields if not already provided
-  if (field.required && !cleanedField.rules) {
+  if (field.required && (!("rules" in field) || !cleanedField.rules)) {
     cleanedField.rules = (value: any) => {
-      if (!value || (typeof value === 'string' && value.trim() === '')) {
+      if (!value || (typeof value === "string" && value.trim() === "")) {
         return `${field.label || field.name} is required`
       }
       return true
     }
   }
-  
+
   // Enable validation on blur for better UX
   if (field.required && !cleanedField.validateOnMount) {
     cleanedField.validateOnMount = false // Don't validate immediately on mount
   }
-  
+
   return cleanedField
 }
 </script>

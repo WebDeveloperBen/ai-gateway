@@ -5,7 +5,7 @@
     </UiLabel>
     <div class="relative">
       <slot name="icon">
-        <span v-if="hasIcon" lass="absolute inset-y-0 left-3 flex items-center justify-center">
+        <span v-if="hasIcon" class="absolute inset-y-0 left-3 flex items-center justify-center">
           <component v-if="icon" :is="icon" class="size-4 text-muted-foreground" />
         </span>
       </slot>

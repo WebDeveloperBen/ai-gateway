@@ -81,7 +81,6 @@ const teams = ref<TeamData[]>([
 <script setup lang="ts">
 import {
   Users,
-  Plus,
   MoreVertical,
   Edit,
   Trash2,
@@ -93,7 +92,6 @@ import {
   Eye,
   Building,
   FileText,
-  Users2,
   UsersIcon
 } from "lucide-vue-next"
 import SearchFilter from "~/components/SearchFilter.vue"
