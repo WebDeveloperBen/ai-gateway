@@ -85,7 +85,30 @@
           v-bind="field"
         >
           <div :class="field.wrapperClass">
-            <UiVeeMultiSelect v-bind="removeFields(field)" />
+            <UiVeeMultiSelect v-bind="removeFields(field)">
+              <template #option="{ option, isSelected }">
+                <div class="flex items-center gap-2 w-full">
+                  <div class="flex items-center justify-center w-4 h-4 border border-border rounded transition-colors" :class="isSelected(option) ? 'bg-primary border-primary' : 'bg-background'">
+                    <svg v-if="isSelected(option)" class="w-3 h-3 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                  <span>{{ option.label || option }}</span>
+                </div>
+              </template>
+              <template #clear="{ clear }">
+                <button 
+                  class="mr-2 flex items-center justify-center hover:bg-muted/50 rounded p-1.5 transition-colors cursor-pointer z-10 relative" 
+                  @click.stop="clear" 
+                  type="button"
+                  title="Clear all selections"
+                >
+                  <svg class="text-muted-foreground hover:text-foreground size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </template>
+            </UiVeeMultiSelect>
           </div>
         </slot>
       </template>
@@ -219,6 +242,12 @@ const omit = (obj: FormBuilder, keys: Array<keyof FormBuilder>) =>
 
 const removeFields = (field: FormBuilder) => {
   const cleanedField = omit(field, ["wrapperClass", "renderIf", "variant", "slot"])
+
+  // Transform label to formLabel only for MultiSelect (other components use label directly)
+  if (field.label && field.variant === "MultiSelect") {
+    cleanedField.formLabel = field.label
+    delete cleanedField.label
+  }
 
   // Add validation rules for required fields if not already provided
   if (field.required && (!("rules" in field) || !cleanedField.rules)) {
