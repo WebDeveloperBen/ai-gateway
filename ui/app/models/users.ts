@@ -4,3 +4,5 @@ export type User = {
   email: string
   role: string
 }
+
+export type Status = "active" | "inactive"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Plus, Key, X, CheckCircle, XCircle, Circle, Layers, Activity } from "lucide-vue-next"
-import type { StatsCardProps } from "~/components/Cards/Stats.vue"
+import type { StatsCardProps } from "@/components/Cards/Stats.vue"
 
 // Get the app ID from route params
 const route = useRoute()
@@ -280,6 +280,6 @@ const onApiKeyCreated = (apiKeyData: any) => {
     />
 
     <!-- Create API Key Modal -->
-    <ModalsCreateApiKey v-model:open="showCreateModal" @created="onApiKeyCreated" />
+    <LazyModalsKeysCreate v-model:open="showCreateModal" @created="onApiKeyCreated" />
   </div>
 </template>

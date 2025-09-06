@@ -13,10 +13,9 @@ import {
   XCircle,
   User
 } from "lucide-vue-next"
-import type { FunctionalComponent } from "vue"
-import SearchFilter from "~/components/SearchFilter.vue"
-import type { FilterConfig, SearchConfig, DisplayConfig } from "~/components/SearchFilter.vue"
-import type { StatsCardProps } from "~/components/Cards/Stats.vue"
+import SearchFilter from "@/components/SearchFilter.vue"
+import type { FilterConfig, SearchConfig, DisplayConfig } from "@/components/SearchFilter.vue"
+import type { StatsCardProps } from "@/components/Cards/Stats.vue"
 
 interface User {
   id: string
@@ -171,27 +170,35 @@ const filteredUsers = computed(() => {
   return filtered
 })
 
-// Modal state
-const showInviteModal = ref(false)
-const showEditModal = ref(false)
-const editingUser = ref<User | null>(null)
-const editLoading = ref(false)
+const modalState = reactive({
+  showInvite: false,
+  showEdit: false,
+  editingUser: null as User | null,
+  editLoading: false,
+  showDeactivate: false,
+  deactivatingUser: null as User | null,
+  deactivateLoading: false,
+  showDelete: false,
+  deletingUser: null as User | null,
+  deleteLoading: false
+})
 
-// Deactivate modal state
-const showDeactivateModal = ref(false)
-const deactivatingUser = ref<User | null>(null)
-const deactivateLoading = ref(false)
-
-// Delete modal state
-const showDeleteModal = ref(false)
-const deletingUser = ref<User | null>(null)
-const deleteLoading = ref(false)
+const searchFilterRef = useTemplateRef("searchFilterRef")
+const route = useRoute()
 
 // Check query parameter to auto-open modal
-const route = useRoute()
 onMounted(() => {
+  // auto open the invite user modal
   if (route.query.create === "user") {
-    showInviteModal.value = true
+    modalState.showInvite = true
+    return
+  }
+  // allow deep linking to specific search filter records
+  if (route.query.userId) {
+    const user = users.find((u) => u.id === route.query.userId)
+    if (user && searchFilterRef.value?.setFilters) {
+      searchFilterRef.value.setFilters({ name: user.name })
+    }
   }
 })
 
@@ -203,12 +210,12 @@ const onUserInvited = (inviteData: any) => {
 }
 
 const openEditModal = (user: User) => {
-  editingUser.value = user
-  showEditModal.value = true
+  modalState.editingUser = user
+  modalState.showEdit = true
 }
 
 const handleUserSave = async (updatedUser: User) => {
-  editLoading.value = true
+  modalState.editLoading = true
   try {
     // TODO: Replace with actual API call
     // await $fetch(`/api/users/${updatedUser.id}`, { method: 'PUT', body: updatedUser })
@@ -219,8 +226,8 @@ const handleUserSave = async (updatedUser: User) => {
       users[index] = updatedUser
     }
 
-    showEditModal.value = false
-    editingUser.value = null
+    modalState.editLoading = false
+    modalState.editingUser = null
 
     // TODO: Show success toast
     console.log("User updated:", updatedUser)
@@ -228,29 +235,28 @@ const handleUserSave = async (updatedUser: User) => {
     console.error("Failed to update user:", error)
     // TODO: Show error toast
   } finally {
-    editLoading.value = false
+    modalState.editLoading = false
   }
 }
 
 const handleEditCancel = () => {
-  showEditModal.value = false
+  modalState.showEdit = false
   // Delay clearing the user to avoid flash during modal close animation
   setTimeout(() => {
-    editingUser.value = null
+    modalState.editingUser = null
   }, 150)
 }
 
 const openDeactivateModal = (user: User) => {
-  deactivatingUser.value = user
-  showDeactivateModal.value = true
+  modalState.deactivatingUser = user
+  modalState.showDeactivate = true
 }
 
 const handleUserDeactivate = async () => {
-  if (!deactivatingUser.value) return
-
-  deactivateLoading.value = true
+  if (!modalState.deactivatingUser) return
+  modalState.deactivateLoading = true
   try {
-    const newStatus = deactivatingUser.value.status === "active" ? "inactive" : "active"
+    const newStatus = modalState.deactivatingUser.status === "active" ? "inactive" : "active"
 
     // TODO: Replace with actual API call
     // await $fetch(`/api/users/${deactivatingUser.value.id}/status`, {
@@ -259,13 +265,12 @@ const handleUserDeactivate = async () => {
     // })
 
     // Update local state
-    const index = users.findIndex((u) => u.id === deactivatingUser.value!.id)
+    const index = users.findIndex((u) => u.id === modalState.deactivatingUser!.id)
     if (index !== -1) {
       if (users[index]) users[index].status = newStatus
     }
-
-    showDeactivateModal.value = false
-    deactivatingUser.value = null
+    modalState.showDeactivate = false
+    modalState.deactivatingUser = null
 
     // TODO: Show success toast
     console.log("User status updated:", newStatus)
@@ -273,39 +278,37 @@ const handleUserDeactivate = async () => {
     console.error("Failed to update user status:", error)
     // TODO: Show error toast
   } finally {
-    deactivateLoading.value = false
+    modalState.deactivateLoading = false
   }
 }
 
 const handleDeactivateCancel = () => {
-  showDeactivateModal.value = false
+  modalState.showDeactivate = false
   // Delay clearing the user to avoid flash during modal close animation
   setTimeout(() => {
-    deactivatingUser.value = null
+    modalState.deactivatingUser = null
   }, 150)
 }
 
 const openDeleteModal = (user: User) => {
-  deletingUser.value = user
-  showDeleteModal.value = true
+  modalState.deletingUser = user
+  modalState.showDelete = true
 }
 
 const handleUserDelete = async () => {
-  if (!deletingUser.value) return
-
-  deleteLoading.value = true
+  if (!modalState.deletingUser) return
+  modalState.deleteLoading = true
   try {
     // TODO: Replace with actual API call
     // await $fetch(`/api/users/${deletingUser.value.id}`, { method: 'DELETE' })
 
     // Update local state - remove user from array
-    const index = users.findIndex((u) => u.id === deletingUser.value!.id)
+    const index = users.findIndex((u) => u.id === modalState.deletingUser!.id)
     if (index !== -1) {
       users.splice(index, 1)
     }
-
-    showDeleteModal.value = false
-    deletingUser.value = null
+    modalState.showDelete = false
+    modalState.deletingUser = null
 
     // TODO: Show success toast
     console.log("User deleted successfully")
@@ -313,15 +316,15 @@ const handleUserDelete = async () => {
     console.error("Failed to delete user:", error)
     // TODO: Show error toast
   } finally {
-    deleteLoading.value = false
+    modalState.deleteLoading = false
   }
 }
 
 const handleDeleteCancel = () => {
-  showDeleteModal.value = false
+  modalState.showDelete = false
   // Delay clearing the user to avoid flash during modal close animation
   setTimeout(() => {
-    deletingUser.value = null
+    modalState.deletingUser = null
   }, 150)
 }
 </script>
@@ -330,7 +333,7 @@ const handleDeleteCancel = () => {
   <div class="flex flex-col gap-6">
     <!-- Header -->
     <PageHeader title="Users" subtext="Manage users, roles and team access">
-      <UiButton @click="showInviteModal = true" class="gap-2">
+      <UiButton @click="modalState.showInvite = true" class="gap-2">
         <Plus class="h-4 w-4" />
         Invite User
       </UiButton>
@@ -351,6 +354,7 @@ const handleDeleteCancel = () => {
 
     <!-- Search & Filter Component -->
     <SearchFilter
+      ref="searchFilterRef"
       :items="users"
       :filters="filterConfigs"
       :search-config="searchConfig"
@@ -438,41 +442,41 @@ const handleDeleteCancel = () => {
     </CardsDataList>
 
     <!-- Invite User Modal -->
-    <ModalsInviteUser v-model:open="showInviteModal" @invited="onUserInvited" />
+    <LazyModalsUsersInvite v-model:open="modalState.showInvite" @invited="onUserInvited" />
 
     <!-- Edit User Modal -->
-    <UserEditModal
-      v-model:open="showEditModal"
-      :user="editingUser"
-      :loading="editLoading"
+    <LazyModalsUsersEdit
+      v-model:open="modalState.showEdit"
+      :user="modalState.editingUser"
+      :loading="modalState.editLoading"
       @save="handleUserSave"
       @cancel="handleEditCancel"
     />
 
     <!-- Deactivate User Modal -->
     <ConfirmationModal
-      v-model:open="showDeactivateModal"
-      :title="deactivatingUser?.status === 'active' ? 'Deactivate User' : 'Activate User'"
+      v-model:open="modalState.showDeactivate"
+      :title="modalState.deactivatingUser?.status === 'active' ? 'Deactivate User' : 'Activate User'"
       :description="
-        deactivatingUser?.status === 'active'
-          ? `Are you sure you want to deactivate ${deactivatingUser?.name}? They will lose access to the system.`
-          : `Are you sure you want to activate ${deactivatingUser?.name}? They will regain access to the system.`
+        modalState.deactivatingUser?.status === 'active'
+          ? `Are you sure you want to deactivate ${modalState.deactivatingUser?.name}? They will lose access to the system.`
+          : `Are you sure you want to activate ${modalState.deactivatingUser?.name}? They will regain access to the system.`
       "
-      :confirm-text="deactivatingUser?.status === 'active' ? 'Deactivate' : 'Activate'"
-      :variant="deactivatingUser?.status === 'active' ? 'destructive' : 'default'"
-      :loading="deactivateLoading"
+      :confirm-text="modalState.deactivatingUser?.status === 'active' ? 'Deactivate' : 'Activate'"
+      :variant="modalState.deactivatingUser?.status === 'active' ? 'destructive' : 'default'"
+      :loading="modalState.deactivateLoading"
       @confirm="handleUserDeactivate"
       @cancel="handleDeactivateCancel"
     />
 
     <!-- Delete User Modal -->
     <ConfirmationModal
-      v-model:open="showDeleteModal"
+      v-model:open="modalState.showDelete"
       title="Delete User"
-      :description="`Are you sure you want to delete ${deletingUser?.name}? This action cannot be undone and will permanently remove their account and all associated data.`"
+      :description="`Are you sure you want to delete ${modalState.deletingUser?.name}? This action cannot be undone and will permanently remove their account and all associated data.`"
       confirm-text="Delete User"
       variant="destructive"
-      :loading="deleteLoading"
+      :loading="modalState.deleteLoading"
       @confirm="handleUserDelete"
       @cancel="handleDeleteCancel"
     />

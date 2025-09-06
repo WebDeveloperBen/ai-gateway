@@ -53,6 +53,12 @@ onMounted(() => {
 })
 
 // Functions
+function setFilters(newFilters: Record<string, string>) {
+  selectedFilters.value = { ...selectedFilters.value, ...newFilters }
+  emit("filtersChanged", { ...selectedFilters.value })
+}
+
+defineExpose({ setFilters })
 function selectItem(item: TItem) {
   // Apply name to filters if filter exists
   const nameFilter = props.filters.find((f) => f.key === "name")

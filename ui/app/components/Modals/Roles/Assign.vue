@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Shield, User } from "lucide-vue-next"
 import { useForm } from "vee-validate"
-import type { FormBuilder } from "~/components/Ui/FormBuilder/FormBuilder.vue"
+import type { FormBuilder } from "@/components/Ui/FormBuilder/FormBuilder.vue"
 
 interface User {
   id: string

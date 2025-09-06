@@ -49,9 +49,9 @@ const applications = ref<ApplicationData[]>([
 </script>
 <script setup lang="ts">
 import { Plus, Key, Activity, CheckCircle, XCircle, Layers, Users } from "lucide-vue-next"
-import type { StatsCardProps } from "~/components/Cards/Stats.vue"
-import SearchFilter from "~/components/SearchFilter.vue"
-import type { FilterConfig, SearchConfig, DisplayConfig } from "~/components/SearchFilter.vue"
+import type { StatsCardProps } from "@/components/Cards/Stats.vue"
+import SearchFilter from "@/components/SearchFilter.vue"
+import type { FilterConfig, SearchConfig, DisplayConfig } from "@/components/SearchFilter.vue"
 
 const showCreateModal = ref(false)
 
@@ -218,6 +218,6 @@ const statsCards = computed(() => {
     <ApplicationsList :applications="filteredApplications" @select-application="handleApplicationSelect" />
 
     <!-- Create Application Modal -->
-    <ModalsCreateApplication v-model:open="showCreateModal" @created="onApplicationCreated" />
+    <LazyModalsApplicationsCreate v-model:open="showCreateModal" @created="onApplicationCreated" />
   </div>
 </template>

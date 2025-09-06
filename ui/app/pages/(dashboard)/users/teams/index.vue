@@ -1,20 +1,4 @@
 <script lang="ts">
-interface TeamData {
-  id: string
-  name: string
-  description: string
-  status: "active" | "inactive"
-  memberCount: number
-  owner: string
-  adminCount: number
-  developerCount: number
-  viewerCount: number
-  policies: string[]
-  costCenter: string
-  createdAt: string
-  lastActivity: string
-}
-
 const teams = ref<TeamData[]>([
   {
     id: "team_1",
@@ -94,9 +78,8 @@ import {
   FileText,
   UsersIcon
 } from "lucide-vue-next"
-import SearchFilter from "~/components/SearchFilter.vue"
-import type { FilterConfig, SearchConfig, DisplayConfig } from "~/components/SearchFilter.vue"
-import type { StatsCardProps } from "~/components/Cards/Stats.vue"
+import type { FilterConfig, SearchConfig, DisplayConfig } from "@/components/SearchFilter.vue"
+import type { StatsCardProps } from "@/components/Cards/Stats.vue"
 
 useSeoMeta({ title: "Teams - LLM Gateway" })
 
@@ -369,7 +352,7 @@ const onTeamCreated = (teamData: any) => {
     </CardsDataList>
 
     <!-- Create Team Modal -->
-    <ModalsCreateTeam v-model:open="showCreateModal" @created="onTeamCreated" />
+    <LazyModalsTeamsCreate v-model:open="showCreateModal" @created="onTeamCreated" />
 
     <!-- Delete Team Modal -->
     <ConfirmationModal

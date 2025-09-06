@@ -11,7 +11,8 @@ import {
   Layers,
   Shield,
   FileText,
-  Server
+  Server,
+  TriangleAlert
 } from "lucide-vue-next"
 
 // Dynamic breadcrumbs
@@ -50,10 +51,25 @@ const data = {
       ]
     },
     {
+      title: "Environments",
+      url: "/environments",
+      icon: Server,
+      items: [
+        {
+          title: "Overview",
+          url: "/environments"
+        }
+      ]
+    },
+    {
       title: "Models",
       url: "/models",
       icon: Bot,
       items: [
+        {
+          title: "Overview",
+          url: "/models"
+        },
         {
           title: "Deployments",
           url: "/models/deployments"
@@ -82,32 +98,22 @@ const data = {
           url: "/users/roles"
         }
       ]
-    },
-    {
-      title: "Environments",
-      url: "/environments",
-      icon: Server,
-      items: [
-        {
-          title: "Overview",
-          url: "/environments"
-        },
-        {
-          title: "Configuration",
-          url: "/environments/config"
-        }
-      ]
     }
   ],
   navObservability: [
     {
-      title: "Metrics",
-      url: "/metrics",
+      title: "Analytics",
+      url: "/observability/analytics",
       icon: Shield
     },
     {
-      title: "Audit Logs",
-      url: "/audit-logs",
+      title: "Alerts",
+      url: "/observability/alerts",
+      icon: TriangleAlert
+    },
+    {
+      title: "Logs",
+      url: "/observability/logs",
       icon: FileText
     }
   ],
@@ -119,11 +125,11 @@ const data = {
     },
     {
       title: "Audit Logs",
-      url: "/audit-logs",
+      url: "/audit",
       icon: FileText
     }
   ],
-  navSettings: [
+  navAdmin: [
     {
       title: "Settings",
       url: "/settings",
@@ -131,7 +137,7 @@ const data = {
       items: [
         {
           title: "General",
-          url: "/settings/general"
+          url: "/settings"
         },
         {
           title: "Security",
@@ -282,9 +288,9 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
         </UiSidebarGroup>
         <!-- Settings -->
         <UiSidebarGroup>
-          <UiSidebarGroupLabel label="Settings" />
+          <UiSidebarGroupLabel label="Administration" />
           <UiSidebarMenu>
-            <template v-for="(item, index) in data.navSettings" :key="index">
+            <template v-for="(item, index) in data.navAdmin" :key="index">
               <!-- Items with sub-items -->
               <UiCollapsible v-if="item.items" v-slot="{ open }" as-child>
                 <UiSidebarMenuItem>

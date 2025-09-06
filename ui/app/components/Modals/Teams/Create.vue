@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Plus, X, Crown, Shield, UserCheck, Eye, Building } from "lucide-vue-next"
 import { useForm } from "vee-validate"
-import type { FormBuilder } from "~/components/Ui/FormBuilder/FormBuilder.vue"
+import type { FormBuilder } from "@/components/Ui/FormBuilder/FormBuilder.vue"
 
 interface Props {
   open: boolean

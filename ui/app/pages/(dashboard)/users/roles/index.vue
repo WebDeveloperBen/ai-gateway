@@ -1,22 +1,5 @@
 <script lang="ts">
-import {
-  Users,
-  Crown,
-  Shield,
-  UserCheck,
-  Eye,
-  MoreVertical,
-  Edit,
-  Trash2,
-  UserX,
-  CheckCircle,
-  XCircle,
-  User
-} from "lucide-vue-next"
-import type { FunctionalComponent } from "vue"
-import SearchFilter from "~/components/SearchFilter.vue"
-import type { FilterConfig, SearchConfig, DisplayConfig } from "~/components/SearchFilter.vue"
-import type { StatsCardProps } from "~/components/Cards/Stats.vue"
+import { Users, Shield, UserCheck, MoreVertical, Edit, Trash2, UserX, CheckCircle } from "lucide-vue-next"
 
 interface RoleAssignment {
   userId: string
@@ -159,52 +142,6 @@ const roleStats: RoleStats[] = [
     permissions: ["View dashboards", "View Applications", "View analytics", "Export reports"]
   }
 ]
-
-const stats: StatsCardProps[] = [
-  { title: "Total Role Assignments", value: "8", icon: Users, description: "Across all roles", variant: "chart-1" },
-  { title: "Active Assignments", value: "7", icon: CheckCircle, description: "Currently active", variant: "chart-2" },
-  {
-    title: "Unique Roles",
-    value: "4",
-    icon: Shield,
-    description: "Owner, Admin, Developer, Viewer",
-    variant: "chart-3"
-  },
-  {
-    title: "Teams Covered",
-    value: "4",
-    icon: Crown,
-    description: "All teams have role assignments",
-    variant: "chart-4"
-  }
-]
-
-const roles = ["Owner", "Admin", "Developer", "Viewer"]
-
-const filterConfigs: FilterConfig[] = [
-  {
-    key: "role",
-    label: "Role",
-    options: roles.map((role) => ({
-      value: role,
-      label: role,
-      icon: getRoleIcon(role)
-    }))
-  },
-  {
-    key: "status",
-    label: "Status",
-    options: [
-      { value: "active", label: "Active", icon: CheckCircle },
-      { value: "inactive", label: "Inactive", icon: XCircle }
-    ]
-  }
-]
-
-const searchConfig: SearchConfig<RoleAssignment> = {
-  fields: ["role"],
-  placeholder: "Search by role..."
-}
 </script>
 
 <script setup lang="ts">
@@ -212,20 +149,6 @@ useSeoMeta({ title: "Roles - LLM Gateway" })
 
 const activeFilters = ref<Record<string, string>>({})
 const selectedRole = ref<string>("all")
-
-const displayConfig: DisplayConfig<RoleAssignment> = {
-  getItemText: (assignment) => `${assignment.role}`,
-  getItemValue: (assignment) => assignment.role,
-  getItemIcon: (assignment) => getRoleIcon(assignment.role)
-}
-
-function handleFiltersChanged(filters: Record<string, string>) {
-  activeFilters.value = filters
-}
-
-function handleItemSelected(assignment: RoleAssignment) {
-  console.log("Selected assignment:", assignment)
-}
 
 const filteredAssignments = computed(() => {
   let filtered = roleAssignments
@@ -371,16 +294,6 @@ const onRoleAssigned = (assignmentData: any) => {
       </div>
     </div>
 
-    <!-- Search & Filter Component -->
-    <SearchFilter
-      :items="roleAssignments"
-      :filters="filterConfigs"
-      :search-config="searchConfig"
-      :display-config="displayConfig"
-      @filters-changed="handleFiltersChanged"
-      @item-selected="handleItemSelected"
-    />
-
     <!-- Role Assignments Table -->
     <CardsDataList
       :title="selectedRole === 'all' ? 'All Role Assignments' : `${selectedRole} Assignments`"
@@ -484,7 +397,6 @@ const onRoleAssigned = (assignmentData: any) => {
       </div>
     </CardsDataList>
 
-    <!-- Assign Role Modal -->
-    <ModalsAssignRole v-model:open="showAssignRoleModal" @assigned="onRoleAssigned" />
+    <LazyModalsRolesAssign v-model:open="showAssignRoleModal" @assigned="onRoleAssigned" />
   </div>
 </template>

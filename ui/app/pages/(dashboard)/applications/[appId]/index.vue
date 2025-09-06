@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Key, Activity, Calendar, Users, Settings, Layers, Globe } from "lucide-vue-next"
-import type { StatsCardProps } from "~/components/Cards/Stats.vue"
+import type { StatsCardProps } from "@/components/Cards/Stats.vue"
 
 // Get the app ID from route params
 const route = useRoute()
@@ -223,7 +223,7 @@ const statsCards = computed(() => {
     </UiCard>
 
     <!-- Settings Modal -->
-    <ApplicationSettingsModal
+    <ModalsApplicationsSettings
       v-model:open="isSettingsModalOpen"
       :application="application"
       :loading="isSettingsLoading"

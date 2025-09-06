@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { MetricSpec } from "~/components/charts/Card.vue"
-import { rows } from "~/components/charts/demo-data"
+import type { MetricSpec } from "@/components/charts/Card.vue"
+import { rows } from "@/components/charts/demo-data"
 
 // --- date helpers (unchanged) ---
 const AUS_TZ = "Australia/Sydney"

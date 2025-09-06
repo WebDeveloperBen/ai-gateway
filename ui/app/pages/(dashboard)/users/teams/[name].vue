@@ -1,30 +1,4 @@
 <script lang="ts">
-interface TeamData {
-  id: string
-  name: string
-  description: string
-  status: "active" | "inactive"
-  memberCount: number
-  owner: string
-  adminCount: number
-  developerCount: number
-  viewerCount: number
-  policies: string[]
-  costCenter: string
-  createdAt: string
-  lastActivity: string
-}
-
-interface TeamMember {
-  id: string
-  name: string
-  email: string
-  role: "Owner" | "Admin" | "Developer" | "Viewer"
-  status: "active" | "inactive"
-  lastActive: string
-  avatar?: string
-}
-
 // Mock team data - replace with API call
 const teams: TeamData[] = [
   {

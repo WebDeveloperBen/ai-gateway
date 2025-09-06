@@ -1,1 +1,1 @@
-export type AvailableRoles = "Admin" | "Developer" | "Viewer"
+export type AvailableRoles = "Owner" | "Admin" | "Developer" | "Viewer"
