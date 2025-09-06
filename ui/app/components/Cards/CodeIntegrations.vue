@@ -3,9 +3,11 @@ import { Code, Copy } from "lucide-vue-next"
 import { toast } from "vue-sonner"
 
 type CodeExampleKey = "curl" | "javascript" | "python"
-
+const {
+  app: { domain }
+} = useAppConfig()
 const codeExamples: Record<CodeExampleKey, string> = {
-  curl: `curl -X POST "https://api.yourdomain.com/v1/chat/completions" \\
+  curl: `curl -X POST "${domain}/v1/chat/completions" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -13,7 +15,7 @@ const codeExamples: Record<CodeExampleKey, string> = {
     "messages": [{"role": "user", "content": "Hello!"}]
   }'`,
 
-  javascript: `const response = await fetch('https://api.yourdomain.com/v1/chat/completions', {
+  javascript: `const response = await fetch('${domain}/v1/chat/completions', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer YOUR_API_KEY_HERE',
@@ -37,7 +39,7 @@ data = {
     'messages': [{'role': 'user', 'content': 'Hello!'}]
 }
 
-response = requests.post('https://api.yourdomain.com/v1/chat/completions', 
+response = requests.post('${domain}/v1/chat/completions', 
                         headers=headers, json=data)`
 }
 

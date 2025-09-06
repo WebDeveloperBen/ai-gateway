@@ -3,6 +3,7 @@
 - [ ] add <https://ui-thing.behonbaker.com/components/dialog#onboarding>
 - [ ] add <https://ui-thing.behonbaker.com/components/dialog#edit-profile>
 - [ ] improve the ApiKeysReveal.vue component, warn and ask for confirmation from the user before regnerating the api key. it's a destructive action
+- [ ] fix typing errors for the applicationSettingsModal.vue
 
 When it comes to do sass use this:
 

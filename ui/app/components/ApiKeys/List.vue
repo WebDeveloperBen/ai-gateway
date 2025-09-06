@@ -24,7 +24,7 @@ export type KeyProps = {
 </script>
 
 <script setup lang="ts">
-import { MoreVertical, Key, Activity, Circle, Clock } from "lucide-vue-next"
+import { MoreVertical, Key, Activity, Circle, Clock, Eye, Trash2 } from "lucide-vue-next"
 
 withDefaults(defineProps<KeyProps>(), {
   showEmpty: true,
@@ -127,10 +127,15 @@ const getExpiryStatus = (expiryDate: string) => {
               </UiButton>
             </UiDropdownMenuTrigger>
             <UiDropdownMenuContent align="end">
-              <UiDropdownMenuItem @click="handleApiKeyClick(key)"> View Details </UiDropdownMenuItem>
-              <UiDropdownMenuItem @click="handleRegenerateKey(key)"> Regenerate Key </UiDropdownMenuItem>
+              <UiDropdownMenuItem @click="handleApiKeyClick(key)">
+                <Eye class="mr-2 size-4" />
+                View Details
+              </UiDropdownMenuItem>
               <UiDropdownMenuSeparator />
-              <UiDropdownMenuItem class="text-red-600" @click="handleDeleteKey(key)"> Delete Key </UiDropdownMenuItem>
+              <UiDropdownMenuItem class="text-red-600" @click="handleDeleteKey(key)">
+                <Trash2 class="mr-2 size-4" />
+                Delete Key
+              </UiDropdownMenuItem>
             </UiDropdownMenuContent>
           </UiDropdownMenu>
         </div>

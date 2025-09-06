@@ -106,34 +106,11 @@ const apiKey = ref({
   <div class="flex flex-col gap-6">
     <PageBadgeHeader :subtext="`Used by ${apiKey.applicationName}`" :badge-status="apiKey.status" :title="apiKey.name">
       <!-- Action Buttons -->
-      <div class="flex items-center gap-2">
-        <UiButton variant="default" size="default" class="gap-2" @click="navigateTo('/playground/prompts')">
-          <TestTubeDiagonal class="h-4 w-4" />
-          Go Playground
-        </UiButton>
-        <UiButton variant="outline" size="default" class="gap-2 text-orange-600" @click="showDisableModal = true">
-          <Ban class="h-4 w-4" />
-          Disable Key
-        </UiButton>
-        <UiDropdownMenu>
-          <UiDropdownMenuTrigger as-child>
-            <UiButton variant="outline" size="default">
-              <MoreVertical class="size-4" />
-            </UiButton>
-          </UiDropdownMenuTrigger>
-          <UiDropdownMenuContent align="end">
-            <UiDropdownMenuItem>
-              <RotateCw class="h-4 w-4 mr-2" />
-              Regenerate Key
-            </UiDropdownMenuItem>
-            <UiDropdownMenuSeparator />
-            <UiDropdownMenuItem class="text-red-600" @click="showDeleteModal = true">
-              <Trash2 class="h-4 w-4 mr-2" />
-              Delete Key
-            </UiDropdownMenuItem>
-          </UiDropdownMenuContent>
-        </UiDropdownMenu>
-      </div>
+      <ButtonsGroup>
+        <ButtonsGoTo :action="() => navigateTo('/playgrouns/prompts')" title="Go Playground" :icon="TestTubeDiagonal" />
+        <ButtonsDisable :action="() => (showDisableModal = true)" title="Key" />
+        <ButtonsDelete :action="() => (showDisableModal = true)" />
+      </ButtonsGroup>
     </PageBadgeHeader>
     <!-- Key Information Card -->
     <UiCard>
