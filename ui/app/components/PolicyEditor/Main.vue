@@ -222,7 +222,9 @@ import {
 const policySchema = z.object({
   name: z.string().min(1, "Policy name is required"),
   description: z.string().optional(),
-  targetEnvironment: z.array(z.enum(["all", "dev", "staging", "prod"])).min(1, "At least one environment must be selected"),
+  targetEnvironment: z
+    .array(z.enum(["all", "dev", "staging", "prod"]))
+    .min(1, "At least one environment must be selected"),
   applications: z.array(z.string()).min(1, "At least one application must be selected")
 })
 
@@ -295,7 +297,8 @@ const formFields: FormBuilder[] = [
       { label: "Production", value: "prod" }
     ],
     classes: {
-      option: "flex items-center gap-2 px-3 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors",
+      option:
+        "flex items-center gap-2 px-3 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors",
       optionSelected: "bg-accent/50 text-accent-foreground",
       optionPointed: "bg-accent text-accent-foreground"
     },
@@ -315,7 +318,8 @@ const formFields: FormBuilder[] = [
     canClear: true,
     options: availableApps.value,
     classes: {
-      option: "flex items-center gap-2 px-3 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors",
+      option:
+        "flex items-center gap-2 px-3 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors",
       optionSelected: "bg-accent/50 text-accent-foreground",
       optionPointed: "bg-accent text-accent-foreground"
     },
@@ -520,7 +524,264 @@ function insertSnippet(key: keyof typeof SNIPPETS) {
 }
 
 /** -------------------------------
- *  4) Theme registration (light/dark)
+ *  4) Custom CEL Language Definition
+ *  -------------------------------- */
+
+// Define allowed variables and functions for your CEL policies
+const CEL_VARIABLES = [
+  "role",
+  "app",
+  "model",
+  "region",
+  "env",
+  "tokens",
+  "cost",
+  "pii_detected",
+  "redaction_applied",
+  "hour",
+  "user_id",
+  "request_size",
+  "response_size",
+  "latency"
+]
+
+const CEL_FUNCTIONS = [
+  "startsWith",
+  "endsWith",
+  "contains",
+  "matches",
+  "size",
+  "has",
+  "in",
+  "all",
+  "exists",
+  "exists_one",
+  "map",
+  "filter",
+  "toString",
+  "int",
+  "double"
+]
+
+const CEL_OPERATORS = [
+  "==",
+  "!=",
+  "<",
+  "<=",
+  ">",
+  ">=",
+  "&&",
+  "||",
+  "!",
+  "+",
+  "-",
+  "*",
+  "/",
+  "%",
+  "in",
+  "not",
+  "and",
+  "or"
+]
+
+function registerCELLanguage(m: typeof import("monaco-editor")) {
+  // Don't re-register if already exists
+  const existingLanguages = m.languages.getLanguages()
+  if (!existingLanguages.find(lang => lang.id === 'cel')) {
+    m.languages.register({ id: "cel" })
+  }
+
+  // Add autocompletion for CEL
+  m.languages.registerCompletionItemProvider("cel", {
+    provideCompletionItems: (model, position) => {
+      const word = model.getWordUntilPosition(position)
+      const range = {
+        startLineNumber: position.lineNumber,
+        endLineNumber: position.lineNumber,
+        startColumn: word.startColumn,
+        endColumn: word.endColumn
+      }
+
+      const suggestions = [
+        // Variables
+        ...CEL_VARIABLES.map((variable) => ({
+          label: variable,
+          kind: m.languages.CompletionItemKind.Variable,
+          insertText: variable,
+          range,
+          documentation: getVariableDocumentation(variable),
+          detail: `Variable: ${variable}`
+        })),
+        // Functions
+        ...CEL_FUNCTIONS.map((func) => ({
+          label: func,
+          kind: m.languages.CompletionItemKind.Function,
+          insertText: `${func}()`,
+          range,
+          documentation: getFunctionDocumentation(func),
+          detail: `Function: ${func}()`
+        })),
+        // Constants
+        { label: "true", kind: m.languages.CompletionItemKind.Constant, insertText: "true", range },
+        { label: "false", kind: m.languages.CompletionItemKind.Constant, insertText: "false", range },
+        { label: "null", kind: m.languages.CompletionItemKind.Constant, insertText: "null", range },
+        // Common operators
+        { label: "==", kind: m.languages.CompletionItemKind.Operator, insertText: "== ", range },
+        { label: "!=", kind: m.languages.CompletionItemKind.Operator, insertText: "!= ", range },
+        { label: "&&", kind: m.languages.CompletionItemKind.Operator, insertText: "&& ", range },
+        { label: "||", kind: m.languages.CompletionItemKind.Operator, insertText: "|| ", range }
+      ]
+
+      return { suggestions }
+    }
+  })
+
+  // Add hover documentation
+  m.languages.registerHoverProvider("cel", {
+    provideHover: (model, position) => {
+      // First check if there are any markers at this position
+      const markers = m.editor.getModelMarkers({ resource: model.uri })
+      const markersAtPosition = markers.filter(marker => 
+        marker.startLineNumber === position.lineNumber &&
+        position.column >= marker.startColumn &&
+        position.column <= marker.endColumn
+      )
+
+      if (markersAtPosition.length > 0) {
+        return {
+          range: new m.Range(
+            markersAtPosition[0].startLineNumber,
+            markersAtPosition[0].startColumn,
+            markersAtPosition[0].endLineNumber,
+            markersAtPosition[0].endColumn
+          ),
+          contents: markersAtPosition.map(marker => ({ value: `❌ ${marker.message}` }))
+        }
+      }
+
+      // Then check for variable/function documentation
+      const word = model.getWordAtPosition(position)
+      if (!word) return null
+
+      const { word: wordText } = word
+
+      if (CEL_VARIABLES.includes(wordText)) {
+        return {
+          range: new m.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
+          contents: [{ value: `**${wordText}** (variable)` }, { value: getVariableDocumentation(wordText) }]
+        }
+      }
+
+      if (CEL_FUNCTIONS.includes(wordText)) {
+        return {
+          range: new m.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
+          contents: [{ value: `**${wordText}** (function)` }, { value: getFunctionDocumentation(wordText) }]
+        }
+      }
+
+      return null
+    }
+  })
+
+  // Add quick-fix code actions
+  m.languages.registerCodeActionProvider("cel", {
+    provideCodeActions: (model, range, context) => {
+      const actions: any[] = []
+      
+      for (const marker of context.markers) {
+        if (marker.source !== 'CEL Lint') continue
+
+        // Fix single = to ==
+        if (marker.message.includes("Use '==' for comparison")) {
+          actions.push({
+            title: "Replace '=' with '=='",
+            kind: 'quickfix',
+            edit: {
+              edits: [{
+                resource: model.uri,
+                textEdit: {
+                  range: new m.Range(
+                    marker.startLineNumber, marker.startColumn,
+                    marker.endLineNumber, marker.endColumn
+                  ),
+                  text: '=='
+                }
+              }]
+            },
+            isPreferred: true
+          })
+        }
+
+        // Fix typos in variable names
+        if (marker.message.includes("Did you mean")) {
+          const suggestion = marker.message.match(/'([^']+)'/g)?.[1]?.replace(/'/g, '')
+          if (suggestion) {
+            actions.push({
+              title: `Replace with '${suggestion}'`,
+              kind: 'quickfix',
+              edit: {
+                edits: [{
+                  resource: model.uri,
+                  textEdit: {
+                    range: new m.Range(
+                      marker.startLineNumber, marker.startColumn,
+                      marker.endLineNumber, marker.endColumn
+                    ),
+                    text: suggestion
+                  }
+                }]
+              },
+              isPreferred: true
+            })
+          }
+        }
+      }
+
+      return {
+        actions,
+        dispose: () => {}
+      }
+    }
+  })
+}
+
+function getVariableDocumentation(variable: string): string {
+  const docs: Record<string, string> = {
+    role: 'User role (e.g., "admin", "developer", "user")',
+    app: "Application identifier",
+    model: 'AI model being used (e.g., "gpt-4", "claude-3")',
+    region: 'Geographic region (e.g., "us-east-1", "australiaeast")',
+    env: 'Environment (e.g., "prod", "staging", "dev")',
+    tokens: "Number of tokens in the request",
+    cost: "Estimated cost of the request",
+    pii_detected: "Boolean indicating if PII was detected",
+    redaction_applied: "Boolean indicating if redaction was applied",
+    hour: "Current hour (0-23)",
+    user_id: "Unique user identifier",
+    request_size: "Size of the request in bytes",
+    response_size: "Size of the response in bytes",
+    latency: "Request latency in milliseconds"
+  }
+  return docs[variable] || "Custom variable"
+}
+
+function getFunctionDocumentation(func: string): string {
+  const docs: Record<string, string> = {
+    startsWith: "startsWith(string, prefix) - Check if string starts with prefix",
+    endsWith: "endsWith(string, suffix) - Check if string ends with suffix",
+    contains: "contains(string, substring) - Check if string contains substring",
+    matches: "matches(string, regex) - Check if string matches regex pattern",
+    size: "size(collection) - Get size of string, list, or map",
+    has: "has(object, field) - Check if object has field",
+    in: "value in collection - Check if value exists in collection",
+    all: "all(list, predicate) - Check if all items match predicate",
+    exists: "exists(list, predicate) - Check if any item matches predicate"
+  }
+  return docs[func] || "Built-in function"
+}
+
+/** -------------------------------
+ *  5) Theme registration (light/dark)
  *  -------------------------------- */
 function defineThemes(m: typeof import("monaco-editor")) {
   // Enhanced CEL syntax highlighting
@@ -686,6 +947,9 @@ async function onLoad(ed: MonacoNS.editor.IStandaloneCodeEditor) {
   monaco = await useMonaco()
   if (!monaco) return
 
+  // Register custom CEL language
+  registerCELLanguage(monaco)
+
   // themes
   defineThemes(monaco)
   applyThemeForColorMode()
@@ -697,9 +961,128 @@ async function onLoad(ed: MonacoNS.editor.IStandaloneCodeEditor) {
     () => applyThemeForColorMode()
   )
 
-  // validate as you type
-  editor.onDidChangeModelContent(() => debouncedValidate())
+  // Add smart CEL linting
+  const performCELLinting = () => {
+    console.log('performCELLinting called', { editor: !!editor, monaco: !!monaco })
+    
+    if (!editor || !monaco) {
+      console.log('Missing editor or monaco')
+      return
+    }
+    
+    const model = editor.getModel()
+    if (!model) {
+      console.log('No model found')
+      return
+    }
+
+    const text = model.getValue()
+    console.log('Editor text:', text)
+    
+    const markers: any[] = []
+
+    // Check for single = instead of ==
+    const lines = text.split('\n')
+    lines.forEach((line, lineIndex) => {
+      const lineNumber = lineIndex + 1
+      
+      // Look for single = (not ==)
+      const singleEqualsMatch = line.match(/(\w+)\s*(=)\s*(?!=)/g)
+      if (singleEqualsMatch) {
+        const equalIndex = line.indexOf('=')
+        if (equalIndex !== -1 && line[equalIndex + 1] !== '=') {
+          markers.push({
+            message: "Use '==' for comparison, not '='. CEL uses '==' for equality checks.",
+            severity: 8, // Error
+            startLineNumber: lineNumber,
+            startColumn: equalIndex + 1,
+            endLineNumber: lineNumber,
+            endColumn: equalIndex + 2
+          })
+        }
+      }
+
+      // Check for unknown variables
+      const words = line.match(/\b[a-zA-Z_]\w*\b/g) || []
+      words.forEach(word => {
+        // Skip if it's a known variable, function, keyword, or constant
+        if (
+          CEL_VARIABLES.includes(word) ||
+          CEL_FUNCTIONS.includes(word) ||
+          ['true', 'false', 'null', 'if', 'else', 'in', 'not', 'and', 'or'].includes(word)
+        ) {
+          return
+        }
+
+        // Check if it's in quotes (string literal)
+        const wordIndex = line.indexOf(word)
+        const beforeWord = line.substring(0, wordIndex)
+        const inQuotes = (beforeWord.split('"').length % 2 === 0) || (beforeWord.split("'").length % 2 === 0)
+        
+        if (!inQuotes) {
+          markers.push({
+            message: `Unknown variable '${word}'. Available: ${CEL_VARIABLES.slice(0, 5).join(', ')}...`,
+            severity: 8, // Error
+            startLineNumber: lineNumber,
+            startColumn: wordIndex + 1,
+            endLineNumber: lineNumber,
+            endColumn: wordIndex + word.length + 1
+          })
+        }
+      })
+    })
+
+    console.log('About to set markers:', markers)
+    
+    // Clear existing markers first, then set new ones
+    monaco.editor.setModelMarkers(model, 'cel-linter', [])
+    monaco.editor.setModelMarkers(model, 'cel-linter', markers)
+    
+    console.log('Markers set successfully')
+    
+    // Force editor to show problems panel if there are errors
+    if (markers.length > 0) {
+      editor.trigger('keyboard', 'editor.action.marker.next', {})
+    }
+  }
+
+  // Simple Levenshtein distance for typo detection
+  const levenshteinDistance = (str1: string, str2: string): number => {
+    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null))
+    
+    for (let i = 0; i <= str1.length; i += 1) {
+      matrix[0][i] = i
+    }
+    
+    for (let j = 0; j <= str2.length; j += 1) {
+      matrix[j][0] = j
+    }
+    
+    for (let j = 1; j <= str2.length; j += 1) {
+      for (let i = 1; i <= str1.length; i += 1) {
+        const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1,
+          matrix[j - 1][i] + 1,
+          matrix[j - 1][i - 1] + indicator
+        )
+      }
+    }
+    
+    return matrix[str2.length][str1.length]
+  }
+
+  const debouncedCELLint = useDebounce(performCELLinting, 400)
+
+  // validate as you type (both server and client-side)
+  editor.onDidChangeModelContent(() => {
+    debouncedValidate()
+    debouncedCELLint()
+  })
+
+  // Initial validation
   validate()
+  performCELLinting()
 }
 
 function onDiffLoad(_ed: MonacoNS.editor.IStandaloneDiffEditor) {

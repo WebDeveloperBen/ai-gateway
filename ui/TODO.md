@@ -8,6 +8,7 @@
 # Backend Api
 
 - [ ] add the default roles into the database and properly define their permissions
+- [ ] add published status to policies
 
 # Applications page
 
@@ -34,6 +35,23 @@
 - [ ] setup policies page
 - [ ] setup monaco editor
 - [ ] add CEL support to monaco editor for syntax highlighting and linting
+
+# Policy page
+
+- [ ] make the validate button do something
+- [ ] fix the hardcoded validating status
+- [ ] make the ai draft do something
+- [ ] add keyboard short cuts to pop open a ai draft box to get ai help
+- [ ] handle the idea of published and non published draft policies
+- [ ] handle validate and deploy functionality
+- [ ] expand the monaco editor so it works with treesitter
+- [ ] expand the monaco editor so it works with linting
+- [ ] expand the monaco editor so it doesn't allow duplicate expressions
+- [ ] create all the default expressions for the templates
+- [ ] load the policy templates via the api
+- [ ] Move the policy page into the governance section
+- [ ] create policy / id page or modal
+- [ ] Move the policy creation page to an internal page
 
 # Research
 

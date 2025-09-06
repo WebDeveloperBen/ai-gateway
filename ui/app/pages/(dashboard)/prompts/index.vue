@@ -1,3 +1,3 @@
 <template>
-  <PolicyEditorMain />
+  <div>prompt indexpage</div>
 </template>
