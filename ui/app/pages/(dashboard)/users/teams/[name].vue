@@ -169,26 +169,20 @@ import {
   UserCheck,
   Eye,
   Building,
-  Settings,
   FileText,
-  CheckCircle,
-  XCircle,
   ArrowLeft,
   Edit,
   Plus,
   MoreVertical,
   Trash2,
-  UserX,
-  Calendar,
-  Activity
+  UserX
 } from "lucide-vue-next"
-import type { FunctionalComponent } from "vue"
 
 const route = useRoute()
-const teamId = route.params.id as string
+const teamId = route.params.name as string
 
 // Find team data - replace with API call
-const team = computed(() => teams.find((t) => t.id === teamId))
+const team = computed(() => teams.find((t) => t.name === teamId))
 
 // Filter members for this team (in real app, this would be an API call with team filter)
 const members = computed(() => teamMembers)
@@ -206,41 +200,6 @@ if (!team.value) {
 }
 
 // Helper functions
-function getRoleIcon(role: string): FunctionalComponent {
-  switch (role) {
-    case "Owner":
-      return Crown
-    case "Admin":
-      return Shield
-    case "Developer":
-      return UserCheck
-    case "Viewer":
-      return Eye
-    default:
-      return Users
-  }
-}
-
-function getRoleColor(role: string) {
-  switch (role) {
-    case "Owner":
-      return "text-orange-600 bg-orange-50 border-orange-200"
-    case "Admin":
-      return "text-blue-600 bg-blue-50 border-blue-200"
-    case "Developer":
-      return "text-green-600 bg-green-50 border-green-200"
-    case "Viewer":
-      return "text-purple-600 bg-purple-50 border-purple-200"
-    default:
-      return "text-gray-600 bg-gray-50 border-gray-200"
-  }
-}
-
-function getStatusColor(status: string) {
-  return status === "active"
-    ? "text-green-600 bg-green-50 border-green-200"
-    : "text-gray-600 bg-gray-50 border-gray-200"
-}
 
 // Modal states
 const showEditModal = ref(false)
@@ -393,95 +352,85 @@ const openDeleteMemberModal = (member: TeamMember) => {
     </div>
 
     <!-- Team Members -->
-    <UiCard>
-      <UiCardHeader>
-        <div class="flex items-center justify-between">
-          <UiCardTitle class="flex items-center gap-2">
-            <Users class="size-5" />
-            Team Members
-          </UiCardTitle>
-          <UiButton variant="outline" size="sm" @click="openAddMemberModal">
-            <Plus class="mr-2 size-4" />
-            Add Member
-          </UiButton>
-        </div>
-      </UiCardHeader>
-      <UiCardContent>
-        <div class="space-y-4">
-          <div
-            v-for="member in members"
-            :key="member.id"
-            class="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50"
-          >
-            <div class="flex items-center gap-4">
-              <UiAvatar class="size-10">
-                <UiAvatarImage v-if="member.avatar" :src="member.avatar" :alt="member.name" />
-                <UiAvatarFallback>{{
-                  member.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                }}</UiAvatarFallback>
-              </UiAvatar>
+    <CardsDataList :title="`${team.name} Members`" :icon="Users">
+      <template #actions>
+        <UiButton variant="outline" size="sm" @click="openAddMemberModal">
+          <Plus class="mr-2 size-4" />
+          Add Member
+        </UiButton>
+      </template>
 
-              <div class="space-y-1">
-                <div class="flex items-center gap-3">
-                  <p class="font-medium">{{ member.name }}</p>
-                  <div
-                    class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border"
-                    :class="getRoleColor(member.role)"
-                  >
-                    <component :is="getRoleIcon(member.role)" class="size-3" />
-                    {{ member.role }}
-                  </div>
-                </div>
-                <div class="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>{{ member.email }}</span>
-                  <span>•</span>
-                  <span>Last active {{ member.lastActive }}</span>
-                </div>
-              </div>
-            </div>
+      <div class="space-y-4">
+        <div
+          v-for="member in members"
+          :key="member.id"
+          class="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50"
+        >
+          <div class="flex items-center gap-4">
+            <UiAvatar class="size-10">
+              <UiAvatarImage v-if="member.avatar" :src="member.avatar" :alt="member.name" />
+              <UiAvatarFallback>{{
+                member.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+              }}</UiAvatarFallback>
+            </UiAvatar>
 
-            <div class="flex items-center gap-2">
-              <div
-                class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border"
-                :class="getStatusColor(member.status)"
-              >
+            <div class="space-y-1">
+              <div class="flex items-center gap-3">
+                <p class="font-medium">{{ member.name }}</p>
                 <div
-                  class="size-1.5 rounded-full"
-                  :class="member.status === 'active' ? 'bg-green-500' : 'bg-gray-400'"
-                />
-                {{ member.status === "active" ? "Active" : "Inactive" }}
+                  class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border"
+                  :class="getRoleColor(member.role)"
+                >
+                  <component :is="getRoleIcon(member.role)" class="size-3" />
+                  {{ member.role }}
+                </div>
               </div>
-
-              <UiDropdownMenu v-if="member.role !== 'Owner'">
-                <UiDropdownMenuTrigger as-child>
-                  <UiButton variant="ghost" size="sm">
-                    <MoreVertical class="size-4" />
-                  </UiButton>
-                </UiDropdownMenuTrigger>
-                <UiDropdownMenuContent align="end" class="w-48">
-                  <UiDropdownMenuItem @click="() => {}">
-                    <Edit class="mr-2 size-4" />
-                    Edit Member
-                  </UiDropdownMenuItem>
-                  <UiDropdownMenuItem @click="() => {}">
-                    <component :is="member.status === 'active' ? UserX : UserCheck" class="mr-2 size-4" />
-                    {{ member.status === "active" ? "Deactivate" : "Activate" }}
-                  </UiDropdownMenuItem>
-                  <UiDropdownMenuSeparator />
-                  <UiDropdownMenuItem class="text-destructive" @click="openDeleteMemberModal(member)">
-                    <Trash2 class="mr-2 size-4" />
-                    Remove from Team
-                  </UiDropdownMenuItem>
-                </UiDropdownMenuContent>
-              </UiDropdownMenu>
+              <div class="flex items-center gap-4 text-sm text-muted-foreground">
+                <span>{{ member.email }}</span>
+                <span>•</span>
+                <span>Last active {{ member.lastActive }}</span>
+              </div>
             </div>
           </div>
+
+          <div class="flex items-center gap-2">
+            <div
+              class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border"
+              :class="getStatusColor(member.status)"
+            >
+              <div class="size-1.5 rounded-full" :class="member.status === 'active' ? 'bg-green-500' : 'bg-gray-400'" />
+              {{ member.status === "active" ? "Active" : "Inactive" }}
+            </div>
+
+            <UiDropdownMenu v-if="member.role !== 'Owner'">
+              <UiDropdownMenuTrigger as-child>
+                <UiButton variant="ghost" size="sm">
+                  <MoreVertical class="size-4" />
+                </UiButton>
+              </UiDropdownMenuTrigger>
+              <UiDropdownMenuContent align="end" class="w-48">
+                <UiDropdownMenuItem @click="() => {}">
+                  <Edit class="mr-2 size-4" />
+                  Edit Member
+                </UiDropdownMenuItem>
+                <UiDropdownMenuItem @click="() => {}">
+                  <component :is="member.status === 'active' ? UserX : UserCheck" class="mr-2 size-4" />
+                  {{ member.status === "active" ? "Deactivate" : "Activate" }}
+                </UiDropdownMenuItem>
+                <UiDropdownMenuSeparator />
+                <UiDropdownMenuItem class="text-destructive" @click="openDeleteMemberModal(member)">
+                  <Trash2 class="mr-2 size-4" />
+                  Remove from Team
+                </UiDropdownMenuItem>
+              </UiDropdownMenuContent>
+            </UiDropdownMenu>
+          </div>
         </div>
-      </UiCardContent>
-    </UiCard>
+      </div>
+    </CardsDataList>
 
     <!-- Confirmation Modal for removing members -->
     <ConfirmationModal

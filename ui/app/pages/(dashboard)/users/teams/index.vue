@@ -86,21 +86,16 @@ import {
   Edit,
   Trash2,
   UserCheck,
-  UserX,
   Crown,
   Shield,
   CheckCircle,
   XCircle,
   Eye,
   Building,
-  Settings,
-  Calendar,
-  Activity,
   FileText,
-  View,
-  ViewIcon
+  Users2,
+  UsersIcon
 } from "lucide-vue-next"
-import type { FunctionalComponent } from "vue"
 import SearchFilter from "~/components/SearchFilter.vue"
 import type { FilterConfig, SearchConfig, DisplayConfig } from "~/components/SearchFilter.vue"
 import type { StatsCardProps } from "~/components/Cards/Stats.vue"
@@ -113,7 +108,6 @@ const activeFilters = ref<Record<string, string>>({})
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const editingTeam = ref<TeamData | null>(null)
-const editLoading = ref(false)
 
 // Delete modal state
 const showDeleteModal = ref(false)
@@ -152,10 +146,6 @@ const stats: StatsCardProps[] = [
   }
 ]
 
-// SearchFilter configuration
-const costCenters = [...new Set(teams.value.map((team) => team.costCenter))]
-const policies = [...new Set(teams.value.flatMap((team) => team.policies))]
-
 const filterConfigs: FilterConfig[] = [
   {
     key: "name",
@@ -169,11 +159,6 @@ const filterConfigs: FilterConfig[] = [
       { value: "active", label: "Active", icon: CheckCircle },
       { value: "inactive", label: "Inactive", icon: XCircle }
     ]
-  },
-  {
-    key: "costCenter",
-    label: "Cost Center",
-    options: costCenters.map((center) => ({ value: center, label: center, icon: Settings }))
   }
 ]
 
@@ -214,22 +199,6 @@ const filteredTeams = computed(() => {
   return filtered
 })
 
-// Helper functions
-function getRoleIcon(role: string): FunctionalComponent {
-  switch (role) {
-    case "Owner":
-      return Crown
-    case "Admin":
-      return Shield
-    case "Developer":
-      return UserCheck
-    case "Viewer":
-      return Eye
-    default:
-      return Users
-  }
-}
-
 function getStatusColor(status: string) {
   return status === "active"
     ? "text-green-600 bg-green-50 border-green-200"
@@ -265,10 +234,7 @@ const onTeamCreated = (teamData: any) => {
   <div class="flex flex-col gap-6">
     <!-- Header -->
     <PageHeader title="Teams" subtext="Organize users into teams with role-based access and policy management">
-      <UiButton @click="showCreateModal = true" class="gap-2">
-        <Plus class="h-4 w-4" />
-        Create Team
-      </UiButton>
+      <ButtonsCreate title="Create Team" :action="() => (showCreateModal = true)" />
     </PageHeader>
 
     <!-- Stats Cards -->
@@ -295,105 +261,114 @@ const onTeamCreated = (teamData: any) => {
     />
 
     <!-- Teams List -->
-    <div class="space-y-4">
-      <div
-        v-for="team in filteredTeams"
-        :key="team.id"
-        class="flex items-center justify-between p-6 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-        @click="navigateTo(`/users/teams/${team.id}`)"
-      >
-        <div class="flex items-center gap-6">
-          <div class="p-3 rounded-lg bg-primary/10">
-            <Building class="size-6 text-primary" />
+    <CardsDataList title="All Teams" :icon="UsersIcon">
+      <template #actions>
+        <ButtonsCreate title="Create Team" :action="() => (showCreateModal = true)" />
+      </template>
+
+      <div class="space-y-4">
+        <div
+          v-for="team in filteredTeams"
+          :key="team.id"
+          class="flex items-center justify-between p-6 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+          @click="navigateTo(`/users/teams/${team.name}`)"
+        >
+          <div class="flex items-center gap-6">
+            <div class="p-3 rounded-lg bg-primary/10">
+              <Building class="size-6 text-primary" />
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center gap-3">
+                <h3 class="font-semibold text-lg">{{ team.name }}</h3>
+                <div
+                  class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border"
+                  :class="getStatusColor(team.status)"
+                >
+                  <div
+                    class="size-1.5 rounded-full"
+                    :class="team.status === 'active' ? 'bg-green-500' : 'bg-gray-400'"
+                  />
+                  {{ team.status === "active" ? "Active" : "Inactive" }}
+                </div>
+              </div>
+
+              <p class="text-muted-foreground">{{ team.description }}</p>
+
+              <div class="flex items-center gap-6 text-sm text-muted-foreground">
+                <div class="flex items-center gap-1">
+                  <Users class="size-4" />
+                  <span>{{ team.memberCount }} members</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <Crown class="size-4" />
+                  <span>{{ team.owner }}</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <FileText class="size-4" />
+                  <span>{{ team.policies.length }} policies</span>
+                </div>
+              </div>
+
+              <!-- Role Distribution -->
+              <div class="flex items-center gap-4 text-xs">
+                <div class="flex items-center gap-1">
+                  <Crown class="size-3 text-orange-600" />
+                  <span class="text-muted-foreground">1 Owner</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <Shield class="size-3 text-blue-600" />
+                  <span class="text-muted-foreground">{{ team.adminCount }} Admins</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <UserCheck class="size-3 text-green-600" />
+                  <span class="text-muted-foreground">{{ team.developerCount }} Developers</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <Eye class="size-3 text-purple-600" />
+                  <span class="text-muted-foreground">{{ team.viewerCount }} Viewers</span>
+                </div>
+              </div>
+
+              <!-- Policies -->
+              <div v-if="team.policies.length > 0" class="flex items-center gap-2">
+                <span class="text-xs text-muted-foreground">Policies:</span>
+                <div class="flex flex-wrap gap-1">
+                  <UiBadge v-for="policy in team.policies" :key="policy" variant="outline" class="text-xs">
+                    {{ policy }}
+                  </UiBadge>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div class="space-y-2">
-            <div class="flex items-center gap-3">
-              <h3 class="font-semibold text-lg">{{ team.name }}</h3>
-              <div
-                class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border"
-                :class="getStatusColor(team.status)"
-              >
-                <div class="size-1.5 rounded-full" :class="team.status === 'active' ? 'bg-green-500' : 'bg-gray-400'" />
-                {{ team.status === "active" ? "Active" : "Inactive" }}
-              </div>
-            </div>
-
-            <p class="text-muted-foreground">{{ team.description }}</p>
-
-            <div class="flex items-center gap-6 text-sm text-muted-foreground">
-              <div class="flex items-center gap-1">
-                <Users class="size-4" />
-                <span>{{ team.memberCount }} members</span>
-              </div>
-              <div class="flex items-center gap-1">
-                <Crown class="size-4" />
-                <span>{{ team.owner }}</span>
-              </div>
-              <div class="flex items-center gap-1">
-                <FileText class="size-4" />
-                <span>{{ team.policies.length }} policies</span>
-              </div>
-            </div>
-
-            <!-- Role Distribution -->
-            <div class="flex items-center gap-4 text-xs">
-              <div class="flex items-center gap-1">
-                <Crown class="size-3 text-orange-600" />
-                <span class="text-muted-foreground">1 Owner</span>
-              </div>
-              <div class="flex items-center gap-1">
-                <Shield class="size-3 text-blue-600" />
-                <span class="text-muted-foreground">{{ team.adminCount }} Admins</span>
-              </div>
-              <div class="flex items-center gap-1">
-                <UserCheck class="size-3 text-green-600" />
-                <span class="text-muted-foreground">{{ team.developerCount }} Developers</span>
-              </div>
-              <div class="flex items-center gap-1">
-                <Eye class="size-3 text-purple-600" />
-                <span class="text-muted-foreground">{{ team.viewerCount }} Viewers</span>
-              </div>
-            </div>
-
-            <!-- Policies -->
-            <div v-if="team.policies.length > 0" class="flex items-center gap-2">
-              <span class="text-xs text-muted-foreground">Policies:</span>
-              <div class="flex flex-wrap gap-1">
-                <UiBadge v-for="policy in team.policies" :key="policy" variant="outline" class="text-xs">
-                  {{ policy }}
-                </UiBadge>
-              </div>
-            </div>
+          <div class="flex items-center gap-2" @click.stop>
+            <UiDropdownMenu>
+              <UiDropdownMenuTrigger as-child>
+                <UiButton variant="ghost" size="sm">
+                  <MoreVertical class="size-4" />
+                </UiButton>
+              </UiDropdownMenuTrigger>
+              <UiDropdownMenuContent align="end" class="w-48">
+                <UiDropdownMenuItem @click="navigateTo(`/users/teams/${team.id}`)">
+                  <Eye class="mr-2 size-4" />
+                  View Details
+                </UiDropdownMenuItem>
+                <UiDropdownMenuItem @click="openEditModal(team)">
+                  <Edit class="mr-2 size-4" />
+                  Edit Team
+                </UiDropdownMenuItem>
+                <UiDropdownMenuSeparator />
+                <UiDropdownMenuItem class="text-destructive" @click="openDeleteModal(team)">
+                  <Trash2 class="mr-2 size-4" />
+                  Delete Team
+                </UiDropdownMenuItem>
+              </UiDropdownMenuContent>
+            </UiDropdownMenu>
           </div>
-        </div>
-
-        <div class="flex items-center gap-2" @click.stop>
-          <UiDropdownMenu>
-            <UiDropdownMenuTrigger as-child>
-              <UiButton variant="ghost" size="sm">
-                <MoreVertical class="size-4" />
-              </UiButton>
-            </UiDropdownMenuTrigger>
-            <UiDropdownMenuContent align="end" class="w-48">
-              <UiDropdownMenuItem @click="navigateTo(`/users/teams/${team.id}`)">
-                <Eye class="mr-2 size-4" />
-                View Details
-              </UiDropdownMenuItem>
-              <UiDropdownMenuItem @click="openEditModal(team)">
-                <Edit class="mr-2 size-4" />
-                Edit Team
-              </UiDropdownMenuItem>
-              <UiDropdownMenuSeparator />
-              <UiDropdownMenuItem class="text-destructive" @click="openDeleteModal(team)">
-                <Trash2 class="mr-2 size-4" />
-                Delete Team
-              </UiDropdownMenuItem>
-            </UiDropdownMenuContent>
-          </UiDropdownMenu>
         </div>
       </div>
-    </div>
+    </CardsDataList>
 
     <!-- Create Team Modal -->
     <ModalsCreateTeam v-model:open="showCreateModal" @created="onTeamCreated" />

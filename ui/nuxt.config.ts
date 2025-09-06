@@ -33,7 +33,7 @@ export default defineNuxtConfig({
     "vue-sonner/nuxt"
   ],
   imports: {
-    dirs: ["./tpes"],
+    dirs: ["./models"],
     imports: [
       {
         from: "tailwind-variants",
@@ -51,4 +51,3 @@ export default defineNuxtConfig({
     classSuffix: ""
   }
 })
-

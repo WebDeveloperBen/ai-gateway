@@ -170,12 +170,7 @@ const copyToClipboard = async (text: string) => {
     await navigator.clipboard.writeText(text)
     justCopied.value = true
 
-    toast({
-      title: "Copied to clipboard",
-      description: "API key has been copied to your clipboard.",
-      duration: 3000,
-      icon: "lucide:check"
-    })
+    toast.success("copied", {})
 
     // Reset the copied state after 2 seconds
     setTimeout(() => {

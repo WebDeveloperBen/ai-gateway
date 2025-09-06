@@ -70,15 +70,14 @@ const handleSettingsSave = async (updatedApp: typeof application.value) => {
   try {
     // TODO: Replace with actual API call
     // await $fetch(`/api/applications/${appId}`, { method: 'PUT', body: updatedApp })
-    
+
     // Update local state
     application.value = { ...application.value, ...updatedApp }
     isSettingsModalOpen.value = false
-    
+
     // TODO: Show success toast
-    console.log('Application updated:', updatedApp)
   } catch (error) {
-    console.error('Failed to update application:', error)
+    console.error("Failed to update application:", error)
     // TODO: Show error toast
   } finally {
     isSettingsLoading.value = false

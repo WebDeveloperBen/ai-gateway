@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Eye, EyeOff, RotateCcw, Loader2, Check, Copy } from "lucide-vue-next"
+import { RotateCcw, Loader2, Check, Copy } from "lucide-vue-next"
 import { toast } from "vue-sonner"
 
 interface Props {
@@ -16,16 +16,12 @@ const props = withDefaults(defineProps<Props>(), {
   showRegenerateText: false
 })
 
-const emit = defineEmits<{
-  regenerate: [keyId: string]
-}>()
-
 // State management
 const revealed = ref(false)
 const regenerating = ref(false)
+const showRegenerateDialog = ref(false)
 
 const regeneratedKey = ref<string | null>(null)
-const copied = ref(false)
 
 const fakeRegenerateApiCall = async (): Promise<string> => {
   // Stub: Replace with real backend logic
@@ -42,7 +38,7 @@ const regenerateKey = async () => {
     const newKey = await fakeRegenerateApiCall()
     regeneratedKey.value = newKey
     revealed.value = true
-    toast("Key regenerated", { description: "A new API key has been generated.", duration: 3000 })
+    toast("Key Regenerated", { description: "A new API key has been generated.", duration: 3000 })
   } catch (err) {
     toast("Regeneration failed", { description: "Please try again.", duration: 3000 })
   } finally {
@@ -58,11 +54,8 @@ const copyToClipboard = async (text: string | null) => {
     await navigator.clipboard.writeText(text)
     justCopied.value = true
 
-    toast({
-      title: "Copied to clipboard",
-      description: "API key has been copied to your clipboard.",
-      duration: 3000,
-      icon: "lucide:check"
+    toast.success("API Key Successfully copied to your clipboard", {
+      duration: 3000
     })
 
     // Reset the copied state after 2 seconds

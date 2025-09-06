@@ -1,17 +1,10 @@
 <script setup lang="ts">
-import { Plus, X, Users, Crown, Shield, UserCheck, Eye, Building } from "lucide-vue-next"
+import { Plus, X, Crown, Shield, UserCheck, Eye, Building } from "lucide-vue-next"
 import { useForm } from "vee-validate"
 import type { FormBuilder } from "~/components/Ui/FormBuilder/FormBuilder.vue"
 
 interface Props {
   open: boolean
-}
-
-interface User {
-  id: string
-  name: string
-  email: string
-  role: string
 }
 
 // Sample users for selection
@@ -93,47 +86,14 @@ const { handleSubmit, resetForm, setFieldValue } = useForm<{
 const selectedMembers = ref<Array<{ user: User; role: "Admin" | "Developer" | "Viewer" }>>([])
 const showUserSelector = ref(false)
 
-const availableRoles = [
-  { value: "Admin", label: "Admin", icon: Shield, color: "text-blue-600" },
-  { value: "Developer", label: "Developer", icon: UserCheck, color: "text-green-600" },
-  { value: "Viewer", label: "Viewer", icon: Eye, color: "text-purple-600" }
-]
-
 const isLoading = ref(false)
-
-// Helper functions
-function getRoleIcon(role: string) {
-  switch (role) {
-    case "Admin":
-      return Shield
-    case "Developer":
-      return UserCheck
-    case "Viewer":
-      return Eye
-    default:
-      return Users
-  }
-}
-
-function getRoleColor(role: string) {
-  switch (role) {
-    case "Admin":
-      return "text-blue-600"
-    case "Developer":
-      return "text-green-600"
-    case "Viewer":
-      return "text-purple-600"
-    default:
-      return "text-gray-600"
-  }
-}
 
 function addMember(user: User) {
   if (selectedMembers.value.find((m) => m.user.id === user.id)) return
 
   const newMember = {
     user,
-    role: "Developer" as "Admin" | "Developer" | "Viewer"
+    role: "Developer" as AvailableRoles
   }
   selectedMembers.value.push(newMember)
 
