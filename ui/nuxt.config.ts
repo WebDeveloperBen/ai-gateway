@@ -30,7 +30,8 @@ export default defineNuxtConfig({
     "@vee-validate/nuxt",
     "reka-ui/nuxt",
     "motion-v/nuxt",
-    "vue-sonner/nuxt"
+    "vue-sonner/nuxt",
+    "nuxt-monaco-editor"
   ],
   imports: {
     dirs: ["./models"],
@@ -51,4 +52,3 @@ export default defineNuxtConfig({
     classSuffix: ""
   }
 })
-
