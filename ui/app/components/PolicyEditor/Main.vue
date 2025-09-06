@@ -69,7 +69,7 @@
             </div>
           </div>
 
-          <div class="flex-1 border border-border rounded-lg overflow-hidden">
+          <div class="flex-1 border border-border rounded-lg">
             <MonacoEditor
               ref="editorRef"
               v-model="value"
@@ -432,7 +432,29 @@ const editorOptions: MonacoNS.editor.IStandaloneEditorConstructionOptions = {
   renderLineHighlight: "line",
   smoothScrolling: true,
   cursorBlinking: "smooth",
-  bracketPairColorization: { enabled: true }
+  acceptSuggestionOnEnter: "smart",
+  "semanticHighlighting.enabled": true,
+  codeLens: true,
+  colorDecorators: true,
+  inlineSuggest: {
+    enabled: true,
+    keepOnBlur: false
+  },
+  showUnused: true,
+  bracketPairColorization: { enabled: true },
+  hover: {
+    enabled: true,
+    delay: 100,
+    sticky: true
+  },
+  quickSuggestions: {
+    other: true,
+    comments: true,
+    strings: true
+  },
+  parameterHints: {
+    enabled: true
+  }
 }
 
 const SNIPPETS = {
@@ -587,7 +609,7 @@ const CEL_OPERATORS = [
 function registerCELLanguage(m: typeof import("monaco-editor")) {
   // Don't re-register if already exists
   const existingLanguages = m.languages.getLanguages()
-  if (!existingLanguages.find(lang => lang.id === 'cel')) {
+  if (!existingLanguages.find((lang) => lang.id === "cel")) {
     m.languages.register({ id: "cel" })
   }
 
@@ -636,26 +658,28 @@ function registerCELLanguage(m: typeof import("monaco-editor")) {
     }
   })
 
-  // Add hover documentation
+  // Add hover documentation - restore working version
   m.languages.registerHoverProvider("cel", {
     provideHover: (model, position) => {
       // First check if there are any markers at this position
       const markers = m.editor.getModelMarkers({ resource: model.uri })
-      const markersAtPosition = markers.filter(marker => 
-        marker.startLineNumber === position.lineNumber &&
-        position.column >= marker.startColumn &&
-        position.column <= marker.endColumn
+      const markersAtPosition = markers.filter(
+        (marker) =>
+          marker.startLineNumber === position.lineNumber &&
+          position.column >= marker.startColumn &&
+          position.column <= marker.endColumn
       )
 
       if (markersAtPosition.length > 0) {
+        const firstMarker = markersAtPosition[0]!
         return {
           range: new m.Range(
-            markersAtPosition[0].startLineNumber,
-            markersAtPosition[0].startColumn,
-            markersAtPosition[0].endLineNumber,
-            markersAtPosition[0].endColumn
+            firstMarker.startLineNumber,
+            firstMarker.startColumn,
+            firstMarker.endLineNumber,
+            firstMarker.endColumn
           ),
-          contents: markersAtPosition.map(marker => ({ value: `❌ ${marker.message}` }))
+          contents: markersAtPosition.map((marker) => ({ value: `❌ ${marker.message}` }))
         }
       }
 
@@ -685,28 +709,32 @@ function registerCELLanguage(m: typeof import("monaco-editor")) {
 
   // Add quick-fix code actions
   m.languages.registerCodeActionProvider("cel", {
-    provideCodeActions: (model, range, context) => {
+    provideCodeActions: (model, _range, context) => {
       const actions: any[] = []
-      
+
       for (const marker of context.markers) {
-        if (marker.source !== 'CEL Lint') continue
+        if (marker.source !== "CEL Lint") continue
 
         // Fix single = to ==
         if (marker.message.includes("Use '==' for comparison")) {
           actions.push({
             title: "Replace '=' with '=='",
-            kind: 'quickfix',
+            kind: "quickfix",
             edit: {
-              edits: [{
-                resource: model.uri,
-                textEdit: {
-                  range: new m.Range(
-                    marker.startLineNumber, marker.startColumn,
-                    marker.endLineNumber, marker.endColumn
-                  ),
-                  text: '=='
+              edits: [
+                {
+                  resource: model.uri,
+                  textEdit: {
+                    range: new m.Range(
+                      marker.startLineNumber,
+                      marker.startColumn,
+                      marker.endLineNumber,
+                      marker.endColumn
+                    ),
+                    text: "=="
+                  }
                 }
-              }]
+              ]
             },
             isPreferred: true
           })
@@ -714,22 +742,26 @@ function registerCELLanguage(m: typeof import("monaco-editor")) {
 
         // Fix typos in variable names
         if (marker.message.includes("Did you mean")) {
-          const suggestion = marker.message.match(/'([^']+)'/g)?.[1]?.replace(/'/g, '')
+          const suggestion = marker.message.match(/'([^']+)'/g)?.[1]?.replace(/'/g, "")
           if (suggestion) {
             actions.push({
               title: `Replace with '${suggestion}'`,
-              kind: 'quickfix',
+              kind: "quickfix",
               edit: {
-                edits: [{
-                  resource: model.uri,
-                  textEdit: {
-                    range: new m.Range(
-                      marker.startLineNumber, marker.startColumn,
-                      marker.endLineNumber, marker.endColumn
-                    ),
-                    text: suggestion
+                edits: [
+                  {
+                    resource: model.uri,
+                    textEdit: {
+                      range: new m.Range(
+                        marker.startLineNumber,
+                        marker.startColumn,
+                        marker.endLineNumber,
+                        marker.endColumn
+                      ),
+                      text: suggestion
+                    }
                   }
-                }]
+                ]
               },
               isPreferred: true
             })
@@ -963,34 +995,29 @@ async function onLoad(ed: MonacoNS.editor.IStandaloneCodeEditor) {
 
   // Add smart CEL linting
   const performCELLinting = () => {
-    console.log('performCELLinting called', { editor: !!editor, monaco: !!monaco })
-    
-    if (!editor || !monaco) {
-      console.log('Missing editor or monaco')
-      return
-    }
-    
+    if (!editor || !monaco) return
+
     const model = editor.getModel()
-    if (!model) {
-      console.log('No model found')
-      return
-    }
+    if (!model) return
+
+    // Clear all existing markers first
+    monaco.editor.setModelMarkers(model, "cel-linter", [])
 
     const text = model.getValue()
-    console.log('Editor text:', text)
-    
+    console.log("Validating:", text)
+
     const markers: any[] = []
 
     // Check for single = instead of ==
-    const lines = text.split('\n')
+    const lines = text.split("\n")
     lines.forEach((line, lineIndex) => {
       const lineNumber = lineIndex + 1
-      
+
       // Look for single = (not ==)
       const singleEqualsMatch = line.match(/(\w+)\s*(=)\s*(?!=)/g)
       if (singleEqualsMatch) {
-        const equalIndex = line.indexOf('=')
-        if (equalIndex !== -1 && line[equalIndex + 1] !== '=') {
+        const equalIndex = line.indexOf("=")
+        if (equalIndex !== -1 && line[equalIndex + 1] !== "=") {
           markers.push({
             message: "Use '==' for comparison, not '='. CEL uses '==' for equality checks.",
             severity: 8, // Error
@@ -1002,26 +1029,52 @@ async function onLoad(ed: MonacoNS.editor.IStandaloneCodeEditor) {
         }
       }
 
+      // Check for invalid operators
+      const operatorRegex = /([<>!=]+|[&|]{1,2}|[+\-*/%])/g
+      let operatorMatch
+      while ((operatorMatch = operatorRegex.exec(line)) !== null) {
+        const operator = operatorMatch[1]
+        if (!operator) return
+        if (!CEL_OPERATORS.includes(operator)) {
+          markers.push({
+            message: `Invalid operator '${operator}'. Valid operators: ${CEL_OPERATORS.join(", ")}`,
+            severity: 8, // Error
+            startLineNumber: lineNumber,
+            startColumn: operatorMatch.index + 1,
+            endLineNumber: lineNumber,
+            endColumn: operatorMatch.index + operator.length + 1
+          })
+        }
+      }
+
       // Check for unknown variables
       const words = line.match(/\b[a-zA-Z_]\w*\b/g) || []
-      words.forEach(word => {
+      words.forEach((word) => {
         // Skip if it's a known variable, function, keyword, or constant
         if (
           CEL_VARIABLES.includes(word) ||
           CEL_FUNCTIONS.includes(word) ||
-          ['true', 'false', 'null', 'if', 'else', 'in', 'not', 'and', 'or'].includes(word)
+          ["true", "false", "null", "if", "else", "in", "not", "and", "or"].includes(word)
         ) {
           return
         }
 
-        // Check if it's in quotes (string literal)
+        // Check if it's in quotes (string literal) - improved logic
         const wordIndex = line.indexOf(word)
         const beforeWord = line.substring(0, wordIndex)
-        const inQuotes = (beforeWord.split('"').length % 2 === 0) || (beforeWord.split("'").length % 2 === 0)
-        
+
+        // Count quotes before the word
+        const quotesBefore = (beforeWord.match(/"/g) || []).length
+        const singleQuotesBefore = (beforeWord.match(/'/g) || []).length
+
+        // Check if we're inside quotes
+        const inDoubleQuotes = quotesBefore % 2 === 1
+        const inSingleQuotes = singleQuotesBefore % 2 === 1
+        const inQuotes = inDoubleQuotes || inSingleQuotes
+
         if (!inQuotes) {
           markers.push({
-            message: `Unknown variable '${word}'. Available: ${CEL_VARIABLES.slice(0, 5).join(', ')}...`,
+            message: `Unknown variable '${word}'. Available: ${CEL_VARIABLES.slice(0, 5).join(", ")}...`,
             severity: 8, // Error
             startLineNumber: lineNumber,
             startColumn: wordIndex + 1,
@@ -1032,53 +1085,20 @@ async function onLoad(ed: MonacoNS.editor.IStandaloneCodeEditor) {
       })
     })
 
-    console.log('About to set markers:', markers)
-    
-    // Clear existing markers first, then set new ones
-    monaco.editor.setModelMarkers(model, 'cel-linter', [])
-    monaco.editor.setModelMarkers(model, 'cel-linter', markers)
-    
-    console.log('Markers set successfully')
-    
-    // Force editor to show problems panel if there are errors
-    if (markers.length > 0) {
-      editor.trigger('keyboard', 'editor.action.marker.next', {})
-    }
-  }
+    console.log("Setting markers:", markers.length, "errors found")
 
-  // Simple Levenshtein distance for typo detection
-  const levenshteinDistance = (str1: string, str2: string): number => {
-    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null))
-    
-    for (let i = 0; i <= str1.length; i += 1) {
-      matrix[0][i] = i
-    }
-    
-    for (let j = 0; j <= str2.length; j += 1) {
-      matrix[j][0] = j
-    }
-    
-    for (let j = 1; j <= str2.length; j += 1) {
-      for (let i = 1; i <= str1.length; i += 1) {
-        const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1
-        matrix[j][i] = Math.min(
-          matrix[j][i - 1] + 1,
-          matrix[j - 1][i] + 1,
-          matrix[j - 1][i - 1] + indicator
-        )
-      }
-    }
-    
-    return matrix[str2.length][str1.length]
+    // Set the new markers (we already cleared them at the start)
+    monaco.editor.setModelMarkers(model, "cel-linter", markers)
   }
-
-  const debouncedCELLint = useDebounce(performCELLinting, 400)
 
   // validate as you type (both server and client-side)
   editor.onDidChangeModelContent(() => {
+    // Run validation immediately without debouncing for now
+    performCELLinting()
     debouncedValidate()
-    debouncedCELLint()
   })
+
+  // Add mouse hover listener as backup
 
   // Initial validation
   validate()
