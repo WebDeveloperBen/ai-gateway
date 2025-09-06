@@ -357,16 +357,15 @@ const handleDeleteCancel = () => {
 <template>
   <div class="flex flex-col gap-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-semibold tracking-tight">Users</h1>
-        <p class="text-muted-foreground">Manage users, roles and team access</p>
-      </div>
-      <UiButton @click="showInviteModal = true">
-        <Plus class="mr-2 size-4" />
+    <PageHeader
+      title="Users"
+      subtext="Manage users, roles and team access"
+    >
+      <UiButton @click="showInviteModal = true" class="gap-2">
+        <Plus class="h-4 w-4" />
         Invite User
       </UiButton>
-    </div>
+    </PageHeader>
 
     <!-- Stats Cards -->
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

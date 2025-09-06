@@ -1,5 +1,5 @@
 <script lang="ts">
-import { MoreVertical, Key, Activity, AlertCircle, Circle, Layers } from "lucide-vue-next"
+import { MoreVertical, Key, Activity, AlertCircle, Circle, Layers, Eye, BarChart3, Trash2 } from "lucide-vue-next"
 interface Application {
   id: string
   name: string
@@ -30,6 +30,7 @@ withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   selectApplication: [application: Application]
+  deleteApplication: [application: Application]
 }>()
 
 const formatNumber = (num: number) => {
@@ -38,6 +39,10 @@ const formatNumber = (num: number) => {
 
 const handleApplicationClick = (app: Application) => {
   emit("selectApplication", app)
+}
+
+const deleteApplication = (app: Application) => {
+  emit("deleteApplication", app)
 }
 </script>
 
@@ -81,16 +86,24 @@ const handleApplicationClick = (app: Application) => {
                 <MoreVertical class="h-4 w-4" />
               </UiButton>
             </UiDropdownMenuTrigger>
-            <UiDropdownMenuContent align="end">
-              <UiDropdownMenuItem as-child>
-                <NuxtLink :to="`/applications/${app.id}`"> View Details </NuxtLink>
+            <UiDropdownMenuContent align="end" class="w-48">
+              <UiDropdownMenuItem @click="navigateTo(`/applications/${app.id}`)">
+                <Eye class="mr-2 size-4" />
+                View Details
               </UiDropdownMenuItem>
-              <UiDropdownMenuItem as-child>
-                <NuxtLink :to="`/applications/${app.id}/keys`"> Manage API Keys </NuxtLink>
+              <UiDropdownMenuItem @click="navigateTo(`/applications/${app.id}/keys`)">
+                <Key class="mr-2 size-4" />
+                Manage API Keys
               </UiDropdownMenuItem>
-              <UiDropdownMenuItem> View Analytics </UiDropdownMenuItem>
+              <UiDropdownMenuItem @click="navigateTo(`/applications/${app.id}/analytics`)">
+                <BarChart3 class="mr-2 size-4" />
+                View Analytics
+              </UiDropdownMenuItem>
               <UiDropdownMenuSeparator />
-              <UiDropdownMenuItem class="text-red-600"> Delete Application </UiDropdownMenuItem>
+              <UiDropdownMenuItem class="text-destructive" @click="deleteApplication(app)">
+                <Trash2 class="mr-2 size-4" />
+                Delete Application
+              </UiDropdownMenuItem>
             </UiDropdownMenuContent>
           </UiDropdownMenu>
         </div>

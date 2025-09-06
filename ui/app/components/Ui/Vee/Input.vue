@@ -25,6 +25,7 @@
         :required="required"
         :name="name"
         :disabled="disabled"
+        :aria-invalid="!!errorMessage"
         v-bind="$attrs"
         :class="[hasIcon && 'pl-9', hasTrailingIcon && 'pr-9']"
         :placeholder="placeholder"

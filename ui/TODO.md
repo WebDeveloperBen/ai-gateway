@@ -1,7 +1,8 @@
-- [x] on /Applications/<app_id> give the settings button something to do (maybe open the modal to edit the page)
-- [x] make component from /users/overview/stats cards for a second flavour (undecided which is better)
-- [x] add ability to edit a user (likely just a modal for now, but eventually an internal page)
-- [x] add confirmation modal to deactivate a user
-- [x] add confirmation modal to delete a user
-- [ ] add functionality of roles to enable ACL's
-- [ ] add functionality for teams / grouping of individuals with the intentional to be able to share ACL's easily (Can be a later thing)
+- [ ] add teams page
+- [ ] add roles page
+- [ ] add <https://ui-thing.behonbaker.com/components/dialog#onboarding>
+- [ ] add <https://ui-thing.behonbaker.com/components/dialog#edit-profile>
+
+When it comes to do sass use this:
+
+- [ ] <https://ui-thing.behonbaker.com/components/dialog#change-plan>

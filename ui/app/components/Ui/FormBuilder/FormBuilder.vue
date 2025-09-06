@@ -218,6 +218,23 @@ const omit = (obj: FormBuilder, keys: Array<keyof FormBuilder>) =>
   Object.fromEntries(Object.entries(obj).filter(([key]) => !keys.includes(key as keyof FormBuilder)))
 
 const removeFields = (field: FormBuilder) => {
-  return omit(field, ["wrapperClass", "renderIf", "variant", "slot"])
+  const cleanedField = omit(field, ["wrapperClass", "renderIf", "variant", "slot"])
+  
+  // Add validation rules for required fields if not already provided
+  if (field.required && !cleanedField.rules) {
+    cleanedField.rules = (value: any) => {
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
+        return `${field.label || field.name} is required`
+      }
+      return true
+    }
+  }
+  
+  // Enable validation on blur for better UX
+  if (field.required && !cleanedField.validateOnMount) {
+    cleanedField.validateOnMount = false // Don't validate immediately on mount
+  }
+  
+  return cleanedField
 }
 </script>
