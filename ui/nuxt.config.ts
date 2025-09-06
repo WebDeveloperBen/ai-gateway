@@ -51,3 +51,4 @@ export default defineNuxtConfig({
     classSuffix: ""
   }
 })
+
