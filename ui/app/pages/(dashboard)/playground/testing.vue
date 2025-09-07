@@ -13,102 +13,15 @@ import {
   PenTool,
   BarChart,
   Shield,
-  Users,
   Zap,
   Loader2,
   Save,
   Settings,
   History,
   Tag,
-  Globe,
   AlertCircle
 } from "lucide-vue-next"
 import type { FormBuilder } from "~/components/Ui/FormBuilder/FormBuilder.vue"
-
-interface Model {
-  id: string
-  name: string
-  provider: string
-  description: string
-  maxTokens: number
-  costPer1kTokens: {
-    input: number
-    output: number
-  }
-}
-
-interface PromptTemplate {
-  id: string
-  name: string
-  content: string
-  category: string
-  description: string
-  icon: any
-}
-
-interface TestResult {
-  id: string
-  timestamp: string
-  prompt: string
-  response: string
-  model: string
-  tokensUsed: {
-    input: number
-    output: number
-    total: number
-  }
-  responseTime: number
-  estimatedCost: number
-  success: boolean
-  error?: string
-}
-
-interface PromptVersion {
-  id: string
-  version: string
-  name: string
-  description?: string
-  content: string
-  systemPrompt?: string
-  parameters?: {
-    temperature?: number
-    maxTokens?: number
-    topP?: number
-    frequencyPenalty?: number
-    presencePenalty?: number
-  }
-  tags: string[]
-  createdAt: string
-  createdBy: string
-  isPublished: boolean
-  publishedAt?: string
-}
-
-interface SavedPrompt {
-  id: string
-  name: string
-  description?: string
-  tags: string[]
-  environments: string[]
-  applications: string[]
-  versions: PromptVersion[]
-  currentVersion: string
-  createdAt: string
-  updatedAt: string
-}
-
-interface Environment {
-  id: string
-  name: string
-  description?: string
-}
-
-interface Application {
-  id: string
-  name: string
-  description?: string
-  environment: string
-}
 
 // Sample data - would come from API
 const availableModels = ref<Model[]>([
@@ -136,13 +49,6 @@ const availableModels = ref<Model[]>([
     maxTokens: 8192,
     costPer1kTokens: { input: 0.03, output: 0.06 }
   }
-])
-
-// Mock data for environments, applications, and saved prompts
-const availableEnvironments = ref<Environment[]>([
-  { id: "dev", name: "Development", description: "Development environment" },
-  { id: "staging", name: "Staging", description: "Staging environment" },
-  { id: "prod", name: "Production", description: "Production environment" }
 ])
 
 const availableApplications = ref<Application[]>([
@@ -347,14 +253,28 @@ const userPromptTemplates = ref<PromptTemplate[]>([
 <script setup lang="ts">
 useSeoMeta({ title: "Model Testing - LLM Gateway" })
 
+// Initialize playground state provider
+const playgroundState = useProvidePlaygroundState({
+  activePromptTab: "user",
+  activeTemplateTab: "user",
+  promptText: "",
+  systemPrompt: "",
+  isLoading: false
+})
+
+const {
+  activePromptTab,
+  activeTemplateTab,
+  promptText,
+  systemPrompt,
+  isLoading,
+  promptTextarea,
+  systemPromptTextarea
+} = playgroundState
+
 // State management
 const selectedModel = ref<string>("")
-const promptText = ref<string>("")
-const systemPrompt = ref<string>("")
-const isLoading = ref(false)
 const testResults = ref<TestResult[]>([])
-const activePromptTab = ref<"system" | "user">("user")
-const activeTemplateTab = ref<"system" | "user">("user")
 const showParametersModal = ref(false)
 
 // Model parameters
@@ -371,7 +291,6 @@ const selectedPromptId = ref<string>("")
 const selectedVersionId = ref<string>("")
 const currentPrompt = ref<SavedPrompt | null>(null)
 const currentVersion = ref<PromptVersion | null>(null)
-const isEditingPrompt = ref(false)
 const showReplaceWarning = ref(false)
 const showPromptLibrary = ref(false)
 const pendingPromptId = ref<string>("")
@@ -399,10 +318,6 @@ const libraryFormModel = ref({
 const librarySearchQuery = ref("")
 const libraryEnvironmentFilter = ref("")
 const libraryApplicationFilter = ref("")
-
-// Textarea refs for cursor position
-const promptTextarea = useTemplateRef<HTMLTextAreaElement>("promptTextarea")
-const systemPromptTextarea = useTemplateRef<HTMLTextAreaElement>("systemPromptTextarea")
 
 // Model selection
 const selectedModelData = computed(() => {
@@ -464,92 +379,7 @@ const selectedVersionInLibrary = computed(() => {
   return selectedPromptInLibrary.value?.versions.find((v) => v.id === libraryFormModel.value.versionId)
 })
 
-// Form fields for the prompt library modal
-const libraryFormFields = computed((): FormBuilder[] => {
-  const selectedPrompt = filteredPrompts.value.find((p) => p.id === libraryFormModel.value.promptId)
-
-  return [
-    {
-      variant: "Select",
-      label: "Saved Prompt",
-      name: "promptId",
-      placeholder: filteredPrompts.value.length > 0 ? "Choose a saved prompt..." : "No prompts match your filters",
-      required: true,
-      modelValue: libraryFormModel.value.promptId,
-      options: filteredPrompts.value.map((prompt) => ({
-        value: prompt.id,
-        label: prompt.name,
-        description: `${prompt.versions.length} versions • Used by ${prompt.applications.length} apps • ${prompt.environments.join(", ")}`
-      })),
-      wrapperClass: "col-span-full",
-      disabled: filteredPrompts.value.length === 0
-    },
-    ...(selectedPrompt
-      ? [
-          {
-            variant: "Select" as const,
-            label: "Version",
-            name: "versionId" as const,
-            placeholder: "Select version...",
-            required: true,
-            modelValue: libraryFormModel.value.versionId,
-            options: [
-              ...selectedPrompt.versions
-                .slice()
-                .reverse()
-                .map((version) => ({
-                  value: version.id,
-                  label: `${version.version} - ${version.name}`,
-                  description: `by ${version.createdBy} • ${new Date(version.createdAt).toLocaleDateString()}`
-                }))
-            ],
-            wrapperClass: "col-span-full"
-          }
-        ]
-      : [])
-  ]
-})
-
 // Functions
-const insertTemplate = (template: PromptTemplate, templateType: "system" | "user" = activeTemplateTab.value) => {
-  const isSystemTemplate = templateType === "system"
-  const textarea = isSystemTemplate ? systemPromptTextarea.value : promptTextarea.value
-
-  if (!textarea) {
-    // If textarea not available, switch to the appropriate tab first
-    activePromptTab.value = templateType
-    activeTemplateTab.value = templateType
-    nextTick(() => {
-      insertTemplate(template, templateType)
-    })
-    return
-  }
-
-  // Get current cursor position
-  const cursorPosition = textarea.selectionStart || 0
-  const currentText = isSystemTemplate ? systemPrompt.value : promptText.value
-
-  // Simple insertion at cursor position
-  const beforeText = currentText.slice(0, cursorPosition)
-  const afterText = currentText.slice(cursorPosition)
-  const newText = beforeText + template.content + afterText
-
-  // Update the reactive value
-  if (isSystemTemplate) {
-    systemPrompt.value = newText
-  } else {
-    promptText.value = newText
-  }
-
-  // Wait for Vue to update the DOM, then set cursor position
-  nextTick(() => {
-    if (textarea) {
-      textarea.focus()
-      const newCursorPosition = cursorPosition + template.content.length
-      textarea.setSelectionRange(newCursorPosition, newCursorPosition)
-    }
-  })
-}
 
 const runTest = async () => {
   if (!selectedModel.value || (!promptText.value.trim() && !systemPrompt.value.trim())) {
@@ -698,32 +528,6 @@ const formatTime = (dateString: string) => {
   })
 }
 
-// Prompt management functions
-const loadPrompt = (promptId: string) => {
-  const prompt = savedPrompts.value.find((p) => p.id === promptId)
-  if (prompt) {
-    currentPrompt.value = prompt
-    selectedPromptId.value = promptId
-
-    // Load the current version
-    const version = prompt.versions.find((v) => v.version === prompt.currentVersion)
-    if (version) {
-      currentVersion.value = version
-      selectedVersionId.value = version.id
-      promptText.value = version.content
-    }
-
-    // Update metadata
-    promptMetadata.value = {
-      name: prompt.name,
-      description: prompt.description || "",
-      tags: [...prompt.tags],
-      environments: [...prompt.environments],
-      applications: [...prompt.applications]
-    }
-  }
-}
-
 const loadVersion = () => {
   if (!currentPrompt.value || !selectedVersionId.value) {
     // Load draft (empty state)
@@ -746,7 +550,7 @@ const loadVersion = () => {
     currentVersion.value = version
     promptText.value = version.content
     systemPrompt.value = version.systemPrompt || ""
-    
+
     // Load version's parameters or use defaults
     if (version.parameters) {
       modelParameters.value = {
@@ -765,18 +569,6 @@ const loadVersion = () => {
         frequencyPenalty: 0.0,
         presencePenalty: 0.0
       }
-    }
-  }
-}
-
-const copyPromptId = async () => {
-  if (currentPrompt.value) {
-    try {
-      await navigator.clipboard.writeText(currentPrompt.value.id)
-      // TODO: Show success toast
-      console.log("Prompt ID copied to clipboard")
-    } catch (err) {
-      console.error("Failed to copy prompt ID:", err)
     }
   }
 }
@@ -858,34 +650,36 @@ watch([librarySearchQuery, libraryApplicationFilter], () => {
 })
 
 // Watch for changes to prompt content and model parameters to switch to draft mode
-watch([promptText, systemPrompt, modelParameters], () => {
-  if (currentVersion.value) {
-    const contentChanged = promptText.value !== currentVersion.value.content
-    const systemPromptChanged = systemPrompt.value !== (currentVersion.value.systemPrompt || "")
-    
-    // Check if model parameters have changed
-    const parametersChanged = currentVersion.value.parameters ? (
-      modelParameters.value.temperature !== (currentVersion.value.parameters.temperature ?? 0.7) ||
-      modelParameters.value.maxTokens !== (currentVersion.value.parameters.maxTokens ?? 1000) ||
-      modelParameters.value.topP !== (currentVersion.value.parameters.topP ?? 1.0) ||
-      modelParameters.value.frequencyPenalty !== (currentVersion.value.parameters.frequencyPenalty ?? 0.0) ||
-      modelParameters.value.presencePenalty !== (currentVersion.value.parameters.presencePenalty ?? 0.0)
-    ) : (
-      // If no parameters saved, check if current parameters differ from defaults
-      modelParameters.value.temperature !== 0.7 ||
-      modelParameters.value.maxTokens !== 1000 ||
-      modelParameters.value.topP !== 1.0 ||
-      modelParameters.value.frequencyPenalty !== 0.0 ||
-      modelParameters.value.presencePenalty !== 0.0
-    )
-    
-    if (contentChanged || systemPromptChanged || parametersChanged) {
-      // Content or parameters have been modified, switch to draft
-      currentVersion.value = null
-      selectedVersionId.value = ""
+watch(
+  [promptText, systemPrompt, modelParameters],
+  () => {
+    if (currentVersion.value) {
+      const contentChanged = promptText.value !== currentVersion.value.content
+      const systemPromptChanged = systemPrompt.value !== (currentVersion.value.systemPrompt || "")
+
+      // Check if model parameters have changed
+      const parametersChanged = currentVersion.value.parameters
+        ? modelParameters.value.temperature !== (currentVersion.value.parameters.temperature ?? 0.7) ||
+          modelParameters.value.maxTokens !== (currentVersion.value.parameters.maxTokens ?? 1000) ||
+          modelParameters.value.topP !== (currentVersion.value.parameters.topP ?? 1.0) ||
+          modelParameters.value.frequencyPenalty !== (currentVersion.value.parameters.frequencyPenalty ?? 0.0) ||
+          modelParameters.value.presencePenalty !== (currentVersion.value.parameters.presencePenalty ?? 0.0)
+        : // If no parameters saved, check if current parameters differ from defaults
+          modelParameters.value.temperature !== 0.7 ||
+          modelParameters.value.maxTokens !== 1000 ||
+          modelParameters.value.topP !== 1.0 ||
+          modelParameters.value.frequencyPenalty !== 0.0 ||
+          modelParameters.value.presencePenalty !== 0.0
+
+      if (contentChanged || systemPromptChanged || parametersChanged) {
+        // Content or parameters have been modified, switch to draft
+        currentVersion.value = null
+        selectedVersionId.value = ""
+      }
     }
-  }
-}, { deep: true })
+  },
+  { deep: true }
+)
 
 // Enhanced selection handlers for card-based interface
 const selectPrompt = (prompt: SavedPrompt) => {
@@ -1033,7 +827,7 @@ onMounted(() => {
 
         <!-- Browse Library Button -->
         <div class="col-span-2">
-          <UiButton variant="outline" size="default" class="w-full" @click="openPromptLibrary" :disabled="isLoading">
+          <UiButton variant="outline" size="lg" class="w-full" @click="openPromptLibrary" :disabled="isLoading">
             <Library class="h-4 w-4 mr-2" />
             Browse Library
           </UiButton>
@@ -1043,14 +837,14 @@ onMounted(() => {
         <div class="col-span-2">
           <UiButton
             variant="default"
-            size="default"
+            size="lg"
             class="w-full"
             @click="runTest"
             :disabled="!selectedModel || (!promptText.trim() && !systemPrompt.trim()) || isLoading"
           >
             <Play v-if="!isLoading" class="h-4 w-4 mr-2" />
             <Loader2 v-else class="h-4 w-4 animate-spin mr-2" />
-            {{ isLoading ? "Testing..." : "Test" }}
+            {{ isLoading ? "Testing..." : "Run Test" }}
           </UiButton>
         </div>
       </form>
@@ -1375,16 +1169,7 @@ onMounted(() => {
                     </div>
                   </div>
                 </div>
-
-                <!-- Empty State -->
-                <div
-                  v-else
-                  class="flex flex-col items-center justify-center flex-1 text-center text-muted-foreground p-8"
-                >
-                  <MessageSquare class="h-12 w-12 mb-3 opacity-50" />
-                  <p class="text-sm mb-1">No responses yet</p>
-                  <p class="text-xs opacity-70">Run a test to see AI responses here</p>
-                </div>
+                <BlocksEmptyState title="No responses yet" subtext="Run a test to see AI responses here" v-else />
               </UiScrollArea>
             </div>
           </div>
@@ -1392,105 +1177,10 @@ onMounted(() => {
       </div>
 
       <!-- Right: Template Sidebar -->
-      <div class="w-80 flex flex-col rounded-xl border bg-card shadow-lg overflow-hidden">
-        <!-- Templates Header -->
-        <div class="p-4 border-b bg-card">
-          <h3 class="font-semibold text-sm flex items-center gap-2 text-foreground">
-            <Library class="h-4 w-4 text-primary" />
-            Prompt Templates
-          </h3>
-          <p class="text-xs text-muted-foreground mt-1">Click to insert at cursor position</p>
-        </div>
-
-        <!-- Template Type Tabs -->
-        <div class="border-b bg-muted/20">
-          <div class="flex">
-            <button
-              @click="
-                () => {
-                  activeTemplateTab = 'system'
-                  activePromptTab = 'system'
-                }
-              "
-              :class="[
-                'flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-2',
-                activeTemplateTab === 'system'
-                  ? 'border-primary text-primary bg-background'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-background/50'
-              ]"
-            >
-              <Settings class="h-4 w-4" />
-              System
-            </button>
-            <button
-              @click="
-                () => {
-                  activeTemplateTab = 'user'
-                  activePromptTab = 'user'
-                }
-              "
-              :class="[
-                'flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-2',
-                activeTemplateTab === 'user'
-                  ? 'border-primary text-primary bg-background'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-background/50'
-              ]"
-            >
-              <MessageSquare class="h-4 w-4" />
-              User
-            </button>
-          </div>
-        </div>
-
-        <!-- Template Content -->
-        <div class="flex-1 min-h-0">
-          <UiScrollArea class="h-full">
-            <div class="p-4">
-              <!-- System Templates -->
-              <div v-show="activeTemplateTab === 'system'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div
-                  v-for="template in systemPromptTemplates"
-                  :key="template.id"
-                  class="flex flex-col gap-3 p-4 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/30 cursor-pointer transition-all duration-200 ease-in-out group hover:shadow-md hover:scale-[1.02]"
-                  @click="insertTemplate(template, 'system')"
-                  :title="template.description"
-                >
-                  <div
-                    class="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors shadow-sm"
-                  >
-                    <component :is="template.icon" class="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p class="text-sm font-semibold text-foreground">{{ template.name }}</p>
-                    <p class="text-xs text-muted-foreground leading-tight mt-1">{{ template.description }}</p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- User Templates -->
-              <div v-show="activeTemplateTab === 'user'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div
-                  v-for="template in userPromptTemplates"
-                  :key="template.id"
-                  class="flex flex-col gap-3 p-4 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/30 cursor-pointer transition-all duration-200 ease-in-out group hover:shadow-md hover:scale-[1.02]"
-                  @click="insertTemplate(template, 'user')"
-                  :title="template.description"
-                >
-                  <div
-                    class="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors shadow-sm"
-                  >
-                    <component :is="template.icon" class="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p class="text-sm font-semibold text-foreground">{{ template.name }}</p>
-                    <p class="text-xs text-muted-foreground leading-tight mt-1">{{ template.description }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </UiScrollArea>
-        </div>
-      </div>
+      <PlaygroundSidebar
+        :system-prompt-templates="systemPromptTemplates"
+        :user-prompt-templates="userPromptTemplates"
+      />
     </div>
 
     <!-- Model Info Bar -->
@@ -1564,7 +1254,7 @@ onMounted(() => {
             <div class="p-6 space-y-6 flex-1 overflow-y-auto min-h-0">
               <!-- Application Filter -->
               <div>
-                <label class="text-sm font-medium text-foreground mb-3 block flex items-center gap-2">
+                <label class="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                   <Settings class="h-4 w-4" />
                   Application
                 </label>
@@ -2017,48 +1707,3 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Custom slider styling */
-.slider::-webkit-slider-thumb {
-  appearance: none;
-  height: 16px;
-  width: 16px;
-  border-radius: 50%;
-  background: hsl(var(--primary));
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.slider::-webkit-slider-track {
-  background: hsl(var(--muted));
-  border-radius: 8px;
-  height: 8px;
-}
-
-.slider::-moz-range-thumb {
-  height: 16px;
-  width: 16px;
-  border-radius: 50%;
-  background: hsl(var(--primary));
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.slider::-moz-range-track {
-  background: hsl(var(--muted));
-  border-radius: 8px;
-  height: 8px;
-  border: none;
-}
-
-.slider:focus {
-  outline: none;
-}
-
-.slider:focus::-webkit-slider-thumb {
-  ring: 2px solid hsl(var(--primary));
-  ring-offset: 2px;
-}
-</style>

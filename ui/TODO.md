@@ -52,6 +52,7 @@
 - [ ] create ability to save the settings of the paramaters to the prompt
 - [ ] create logic to fetch latest version prompt from the backend
 - [ ] create ability to let users define which versioning schema they want to use (Nice to have only)
+- [ ] add prompt templates to database
 - [ ]
 
 # Prompt tags

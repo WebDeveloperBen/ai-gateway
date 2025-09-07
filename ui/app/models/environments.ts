@@ -1,3 +1,8 @@
+export type Environment = {
+  id: string
+  name: string
+  description?: string
+}
 export type EnvironmentData = {
   id: string
   name: string
