@@ -60,3 +60,6 @@ When it comes to do sass use this:
 - [ ] <https://ui-thing.behonbaker.com/components/dialog#change-plan>
 - [ ] add <https://ui-thing.behonbaker.com/components/dialog#onboarding>
 - [ ] add <https://ui-thing.behonbaker.com/components/dialog#edit-profile>
+- [ ] add <https://ui-thing.behonbaker.com/goodies/terminal#usage>
+- [ ] add <https://ui-thing.behonbaker.com/goodies/tip-tap> (or reuse monaco editor)
+- [ ] explore replacing native select with this: <https://ui-thing.behonbaker.com/components/listbox#objects>
