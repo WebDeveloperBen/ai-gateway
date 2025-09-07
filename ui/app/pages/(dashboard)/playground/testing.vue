@@ -241,25 +241,11 @@ const playgroundState = useProvidePlaygroundState({
   isLoading: false
 })
 
-const { promptText, systemPrompt, isLoading, promptState, modelState, utils } = playgroundState
+const { promptText, systemPrompt, isLoading, promptState, modelState, libraryState, utils, modalActions } =
+  playgroundState
 
-// State management
-const selectedModel = ref<string>("")
-const showParametersModal = ref(false)
-
-// Model parameters
-const modelParameters = ref({
-  temperature: 0.7,
-  maxTokens: 1000,
-  topP: 1.0,
-  frequencyPenalty: 0.0,
-  presencePenalty: 0.0
-})
-
-// Prompt versioning state
+// Remaining local state (not moved to composable yet)
 const selectedPromptId = ref<string>("")
-const showReplaceWarning = ref(false)
-const showPromptLibrary = ref(false)
 const pendingPromptId = ref<string>("")
 const pendingVersionId = ref<string>("")
 const promptMetadata = ref({
@@ -275,20 +261,11 @@ const formModel = ref({
   model: ""
 })
 
-// Modal form model for prompt library selection
-const libraryFormModel = ref({
-  promptId: "",
-  versionId: ""
-})
-
-// Library search and filter state
-const librarySearchQuery = ref("")
-const libraryEnvironmentFilter = ref("")
-const libraryApplicationFilter = ref("")
-
-// Model selection
+// Model selection - update composable when model changes
 const selectedModelData = computed(() => {
-  return availableModels.value.find((m) => m.id === selectedModel.value)
+  const model = availableModels.value.find((m) => m.id === modelState.selectedModel)
+  modelState.selectedModelData = model
+  return model
 })
 
 // Form fields for model configuration
@@ -299,7 +276,7 @@ const formFields = computed((): FormBuilder[] => [
     name: "model",
     placeholder: "Select a model...",
     required: true,
-    modelValue: formModel.value.model,
+    modelValue: modelState.selectedModel,
     options: availableModels.value.map((model) => ({
       value: model.id,
       label: `${model.name} (${model.provider})`,
@@ -310,7 +287,7 @@ const formFields = computed((): FormBuilder[] => [
 ])
 
 const runTest = async () => {
-  if (!selectedModel.value || (!promptText.value.trim() && !systemPrompt.value.trim())) {
+  if (!modelState.selectedModel || (!promptText.value.trim() && !systemPrompt.value.trim())) {
     return
   }
 
@@ -334,7 +311,7 @@ const runTest = async () => {
     // })
 
     // Simulate API response with more realistic variations based on parameters
-    const simulationDelay = Math.max(500, 2000 - modelParameters.value.temperature * 500)
+    const simulationDelay = Math.max(500, 2000 - modelState.parameters.temperature * 500)
     await new Promise((resolve) => setTimeout(resolve, simulationDelay))
     const endTime = Date.now()
 
@@ -348,7 +325,7 @@ const runTest = async () => {
 
     const mockResponse =
       mockResponses[Math.floor(Math.random() * mockResponses.length)] +
-      (modelParameters.value.temperature > 1.0
+      (modelState.parameters.temperature > 1.0
         ? " With higher creativity settings, responses become more varied and exploratory!"
         : "")
 
@@ -356,7 +333,7 @@ const runTest = async () => {
     const systemTokens = utils.estimateTokens(systemPrompt.value)
     const userTokens = utils.estimateTokens(promptText.value)
     const inputTokens = systemTokens + userTokens
-    const outputTokens = Math.min(utils.estimateTokens(mockResponse), modelParameters.value.maxTokens)
+    const outputTokens = Math.min(utils.estimateTokens(mockResponse), modelState.parameters.maxTokens)
     const totalTokens = inputTokens + outputTokens
 
     const modelData = selectedModelData.value!
@@ -368,7 +345,7 @@ const runTest = async () => {
       timestamp: new Date().toISOString(),
       prompt: fullPrompt,
       response: mockResponse,
-      model: `${modelData.name} (T:${modelParameters.value.temperature})`,
+      model: `${modelData.name} (T:${modelState.parameters.temperature})`,
       tokensUsed: {
         input: inputTokens,
         output: outputTokens,
@@ -419,7 +396,7 @@ const createNewPrompt = () => {
   promptState.selectedVersionId = ""
   promptText.value = ""
   systemPrompt.value = ""
-  modelParameters.value = {
+  modelState.parameters = {
     temperature: 0.7,
     maxTokens: 1000,
     topP: 1.0,
@@ -437,40 +414,31 @@ const createNewPrompt = () => {
 
 // Form change handlers
 const handleModelChange = (value: string) => {
-  selectedModel.value = value
+  modelState.selectedModel = value
   formModel.value.model = value
 }
 
 // Watch for library form changes
 watch(
-  () => libraryFormModel.value.promptId,
+  () => libraryState.formModel.promptId,
   (newPromptId) => {
     if (newPromptId) {
       // Reset version when prompt changes
-      libraryFormModel.value.versionId = ""
+      libraryState.formModel.versionId = ""
     }
   },
   { immediate: false }
 )
 
-// Modal handlers
-const openPromptLibrary = () => {
-  showPromptLibrary.value = true
-  libraryFormModel.value = { promptId: "", versionId: "" }
-  librarySearchQuery.value = ""
-  libraryEnvironmentFilter.value = ""
-  libraryApplicationFilter.value = ""
-}
-
 // Clear selection when filters change
-watch([librarySearchQuery, libraryApplicationFilter], () => {
-  libraryFormModel.value.promptId = ""
-  libraryFormModel.value.versionId = ""
+watch([() => libraryState.searchQuery, () => libraryState.applicationFilter], () => {
+  libraryState.formModel.promptId = ""
+  libraryState.formModel.versionId = ""
 })
 
 // Watch for changes to prompt content and model parameters to switch to draft mode
 watch(
-  [promptText, systemPrompt, modelParameters],
+  [promptText, systemPrompt, () => modelState.parameters],
   () => {
     if (promptState.currentVersion) {
       const contentChanged = promptText.value !== promptState.currentVersion.content
@@ -478,17 +446,17 @@ watch(
 
       // Check if model parameters have changed
       const parametersChanged = promptState.currentVersion.parameters
-        ? modelParameters.value.temperature !== (promptState.currentVersion.parameters.temperature ?? 0.7) ||
-          modelParameters.value.maxTokens !== (promptState.currentVersion.parameters.maxTokens ?? 1000) ||
-          modelParameters.value.topP !== (promptState.currentVersion.parameters.topP ?? 1.0) ||
-          modelParameters.value.frequencyPenalty !== (promptState.currentVersion.parameters.frequencyPenalty ?? 0.0) ||
-          modelParameters.value.presencePenalty !== (promptState.currentVersion.parameters.presencePenalty ?? 0.0)
+        ? modelState.parameters.temperature !== (promptState.currentVersion.parameters.temperature ?? 0.7) ||
+          modelState.parameters.maxTokens !== (promptState.currentVersion.parameters.maxTokens ?? 1000) ||
+          modelState.parameters.topP !== (promptState.currentVersion.parameters.topP ?? 1.0) ||
+          modelState.parameters.frequencyPenalty !== (promptState.currentVersion.parameters.frequencyPenalty ?? 0.0) ||
+          modelState.parameters.presencePenalty !== (promptState.currentVersion.parameters.presencePenalty ?? 0.0)
         : // If no parameters saved, check if current parameters differ from defaults
-          modelParameters.value.temperature !== 0.7 ||
-          modelParameters.value.maxTokens !== 1000 ||
-          modelParameters.value.topP !== 1.0 ||
-          modelParameters.value.frequencyPenalty !== 0.0 ||
-          modelParameters.value.presencePenalty !== 0.0
+          modelState.parameters.temperature !== 0.7 ||
+          modelState.parameters.maxTokens !== 1000 ||
+          modelState.parameters.topP !== 1.0 ||
+          modelState.parameters.frequencyPenalty !== 0.0 ||
+          modelState.parameters.presencePenalty !== 0.0
 
       if (contentChanged || systemPromptChanged || parametersChanged) {
         // Content or parameters have been modified, switch to draft
@@ -502,39 +470,39 @@ watch(
 
 // Enhanced selection handlers for card-based interface
 const selectPrompt = (prompt: SavedPrompt) => {
-  if (libraryFormModel.value.promptId === prompt.id) {
+  if (libraryState.formModel.promptId === prompt.id) {
     // Toggle off if already selected
-    libraryFormModel.value.promptId = ""
-    libraryFormModel.value.versionId = ""
+    libraryState.formModel.promptId = ""
+    libraryState.formModel.versionId = ""
   } else {
     // Select new prompt
-    libraryFormModel.value.promptId = prompt.id
-    libraryFormModel.value.versionId = "" // Reset version selection
+    libraryState.formModel.promptId = prompt.id
+    libraryState.formModel.versionId = "" // Reset version selection
   }
 }
 
 const selectVersion = (version: PromptVersion) => {
-  libraryFormModel.value.versionId = version.id
+  libraryState.formModel.versionId = version.id
 }
 
 const confirmPromptSelection = () => {
-  if (!libraryFormModel.value.promptId || !libraryFormModel.value.versionId) {
+  if (!libraryState.formModel.promptId || !libraryState.formModel.versionId) {
     return // Validation - both fields required
   }
 
-  const promptId = libraryFormModel.value.promptId
-  const versionId = libraryFormModel.value.versionId
+  const promptId = libraryState.formModel.promptId
+  const versionId = libraryState.formModel.versionId
 
   // Check if we need to warn about replacing content
   if (promptText.value.trim()) {
     pendingPromptId.value = promptId
     pendingVersionId.value = versionId
-    showPromptLibrary.value = false
-    showReplaceWarning.value = true
+    modalActions.closePromptLibrary()
+    modalActions.openReplaceWarning()
   } else {
     // Load directly
     loadPromptVersion(promptId, versionId)
-    showPromptLibrary.value = false
+    modalActions.closePromptLibrary()
   }
 }
 
@@ -552,7 +520,7 @@ const loadPromptVersion = (promptId: string, versionId: string) => {
 
     // Load parameters if they exist
     if (version.parameters) {
-      modelParameters.value = {
+      modelState.parameters = {
         temperature: version.parameters.temperature ?? 0.7,
         maxTokens: version.parameters.maxTokens ?? 1000,
         topP: version.parameters.topP ?? 1.0,
@@ -579,13 +547,13 @@ const confirmReplaceContent = () => {
   } else {
     createNewPrompt()
   }
-  showReplaceWarning.value = false
+  modalActions.closeReplaceWarning()
   pendingPromptId.value = ""
   pendingVersionId.value = ""
 }
 
 const cancelReplaceContent = () => {
-  showReplaceWarning.value = false
+  modalActions.closeReplaceWarning()
   pendingPromptId.value = ""
   pendingVersionId.value = ""
 }
@@ -595,7 +563,7 @@ const cancelReplaceContent = () => {
 // Set default model
 onMounted(() => {
   if (availableModels.value.length > 0) {
-    selectedModel.value = availableModels.value[0]?.id ?? ""
+    modelState.selectedModel = availableModels.value[0]?.id ?? ""
     formModel.value.model = availableModels.value[0]?.id ?? ""
   }
 })
@@ -615,7 +583,13 @@ onMounted(() => {
 
         <!-- Browse Library Button -->
         <div class="col-span-2">
-          <UiButton variant="outline" size="lg" class="w-full" @click="openPromptLibrary" :disabled="isLoading">
+          <UiButton
+            variant="outline"
+            size="lg"
+            class="w-full"
+            @click="modalActions.openPromptLibrary"
+            :disabled="isLoading"
+          >
             <Library class="h-4 w-4 mr-2" />
             Browse Library
           </UiButton>
@@ -628,7 +602,7 @@ onMounted(() => {
             size="lg"
             class="w-full"
             @click="runTest"
-            :disabled="!selectedModel || (!promptText.trim() && !systemPrompt.trim()) || isLoading"
+            :disabled="!modelState.selectedModel || (!promptText.trim() && !systemPrompt.trim()) || isLoading"
           >
             <Play v-if="!isLoading" class="h-4 w-4 mr-2" />
             <Loader2 v-else class="h-4 w-4 animate-spin mr-2" />
@@ -641,7 +615,7 @@ onMounted(() => {
     <!-- Main Editor Area -->
     <div class="flex gap-6 flex-1 min-h-0">
       <!-- Prompt Editor -->
-      <PromptEditor :showParametersModal="() => (showParametersModal = true)" />
+      <PromptEditor :showParametersModal="modalActions.openParametersModal" />
 
       <!-- Right: Template Sidebar -->
       <PlaygroundSidebar
@@ -667,46 +641,20 @@ onMounted(() => {
 
     <!-- Prompt Library Modal -->
     <ModalsPlaygroundPromptLibrary
-      :open="showPromptLibrary"
-      @update:open="showPromptLibrary = $event"
       :saved-prompts="savedPrompts"
       :available-applications="availableApplications"
-      :library-search-query="librarySearchQuery"
-      @update:library-search-query="librarySearchQuery = $event"
-      :library-application-filter="libraryApplicationFilter"
-      @update:library-application-filter="libraryApplicationFilter = $event"
-      :library-form-model="libraryFormModel"
-      @update:library-form-model="libraryFormModel = $event"
       @select-prompt="selectPrompt"
       @select-version="selectVersion"
       @confirm-selection="confirmPromptSelection"
     />
 
     <ModalsPlaygroundReplaceContentWarning
-      :open="showReplaceWarning"
       :pending-prompt-id="pendingPromptId"
-      @update:open="showReplaceWarning = $event"
       @confirm-replace="confirmReplaceContent"
       @cancel-replace="cancelReplaceContent"
     />
 
     <!-- Model Parameters Modal -->
-    <ModalsPlaygroundModelParameters
-      :open="showParametersModal"
-      :model-parameters="modelParameters"
-      :selected-model-data="selectedModelData"
-      @update:open="showParametersModal = $event"
-      @update:model-parameters="modelParameters = $event"
-      @reset-to-defaults="
-        modelParameters = {
-          temperature: 0.7,
-          maxTokens: 1000,
-          topP: 1.0,
-          frequencyPenalty: 0.0,
-          presencePenalty: 0.0
-        }
-      "
-      @apply-settings="showParametersModal = false"
-    />
+    <ModalsPlaygroundModelParameters />
   </div>
 </template>

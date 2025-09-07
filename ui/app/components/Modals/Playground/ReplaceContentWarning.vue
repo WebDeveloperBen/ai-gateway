@@ -1,32 +1,29 @@
 <script setup lang="ts">
 import { AlertCircle } from "lucide-vue-next"
 
-interface Props {
-  open: boolean
+defineProps<{
   pendingPromptId: string
-}
+}>()
 
-interface Emits {
-  "update:open": [value: boolean]
-  confirmReplace: []
-  cancelReplace: []
-}
-
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const { modalState, modalActions } = usePlaygroundState()!
 
 const isOpen = computed({
-  get: () => props.open,
-  set: (value) => emit("update:open", value)
+  get: () => modalState.showReplaceWarning,
+  set: (value) => {
+    if (value) {
+      modalActions.openReplaceWarning()
+    } else {
+      modalActions.closeReplaceWarning()
+    }
+  }
 })
 
-function confirmReplace() {
-  emit("confirmReplace")
-}
-
-function cancelReplace() {
-  emit("cancelReplace")
-}
+// We still need these to be emitted since testing.vue has the business logic
+// for what happens on confirm/cancel (handling pendingPromptId, etc.)
+defineEmits<{
+  confirmReplace: []
+  cancelReplace: []
+}>()
 </script>
 
 <template>
@@ -53,11 +50,10 @@ function cancelReplace() {
 
       <template #footer>
         <UiDialogFooter class="flex gap-3 justify-end">
-          <UiButton variant="outline" @click="cancelReplace"> Cancel </UiButton>
-          <UiButton variant="destructive" @click="confirmReplace"> Replace Content </UiButton>
+          <UiButton variant="outline" @click="$emit('cancelReplace')"> Cancel </UiButton>
+          <UiButton variant="destructive" @click="$emit('confirmReplace')"> Replace Content </UiButton>
         </UiDialogFooter>
       </template>
     </UiDialogContent>
   </UiDialog>
 </template>
-

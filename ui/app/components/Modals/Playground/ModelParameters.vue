@@ -1,68 +1,35 @@
 <script setup lang="ts">
 import { Settings } from "lucide-vue-next"
 
-interface ModelParameters {
-  temperature: number
-  maxTokens: number
-  topP: number
-  frequencyPenalty: number
-  presencePenalty: number
-}
-
-interface ModelData {
-  name: string
-  maxTokens: number
-  costPer1kTokens: {
-    input: number
-    output: number
-  }
-}
-
-interface Props {
-  open: boolean
-  modelParameters: ModelParameters
-  selectedModelData: ModelData | null | undefined
-}
-
-interface Emits {
-  "update:open": [value: boolean]
-  "update:modelParameters": [value: ModelParameters]
-  resetToDefaults: []
-  applySettings: []
-}
-
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const { modelState, modalState, modalActions } = usePlaygroundState()!
 
 const isOpen = computed({
-  get: () => props.open,
-  set: (value) => emit("update:open", value)
-})
-
-const parameters = computed({
-  get: () => props.modelParameters,
-  set: (value) => emit("update:modelParameters", value)
+  get: () => modalState.showParametersModal,
+  set: (value) => {
+    if (value) {
+      modalActions.openParametersModal()
+    } else {
+      modalActions.closeParametersModal()
+    }
+  }
 })
 
 function closeModal() {
-  isOpen.value = false
+  modalActions.closeParametersModal()
 }
 
 function resetToDefaults() {
-  emit("resetToDefaults")
+  modelState.parameters = {
+    temperature: 0.7,
+    maxTokens: 1000,
+    topP: 1.0,
+    frequencyPenalty: 0.0,
+    presencePenalty: 0.0
+  }
 }
 
 function applySettings() {
-  emit("applySettings")
   closeModal()
-}
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 4
-  }).format(amount)
 }
 </script>
 
@@ -86,12 +53,12 @@ function formatCurrency(amount: number): string {
             <div class="flex justify-between items-center">
               <label class="text-sm font-medium text-foreground">Temperature</label>
               <span class="text-sm text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
-                {{ parameters.temperature }}
+                {{ modelState.parameters.temperature }}
               </span>
             </div>
             <input
               type="range"
-              v-model.number="parameters.temperature"
+              v-model.number="modelState.parameters.temperature"
               min="0"
               max="2"
               step="0.1"
@@ -107,14 +74,14 @@ function formatCurrency(amount: number): string {
             <div class="flex justify-between items-center">
               <label class="text-sm font-medium text-foreground">Max Tokens</label>
               <span class="text-sm text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
-                {{ parameters.maxTokens }}
+                {{ modelState.parameters.maxTokens }}
               </span>
             </div>
             <input
               type="range"
-              v-model.number="parameters.maxTokens"
+              v-model.number="modelState.parameters.maxTokens"
               min="50"
-              :max="selectedModelData?.maxTokens || 4000"
+              :max="modelState.selectedModelData?.maxTokens || 4000"
               step="50"
               class="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer slider"
             />
@@ -126,12 +93,12 @@ function formatCurrency(amount: number): string {
             <div class="flex justify-between items-center">
               <label class="text-sm font-medium text-foreground">Top P</label>
               <span class="text-sm text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
-                {{ parameters.topP }}
+                {{ modelState.parameters.topP }}
               </span>
             </div>
             <input
               type="range"
-              v-model.number="parameters.topP"
+              v-model.number="modelState.parameters.topP"
               min="0.1"
               max="1"
               step="0.05"
@@ -145,12 +112,12 @@ function formatCurrency(amount: number): string {
             <div class="flex justify-between items-center">
               <label class="text-sm font-medium text-foreground">Frequency Penalty</label>
               <span class="text-sm text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
-                {{ parameters.frequencyPenalty }}
+                {{ modelState.parameters.frequencyPenalty }}
               </span>
             </div>
             <input
               type="range"
-              v-model.number="parameters.frequencyPenalty"
+              v-model.number="modelState.parameters.frequencyPenalty"
               min="-2"
               max="2"
               step="0.1"
@@ -164,12 +131,12 @@ function formatCurrency(amount: number): string {
             <div class="flex justify-between items-center">
               <label class="text-sm font-medium text-foreground">Presence Penalty</label>
               <span class="text-sm text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
-                {{ parameters.presencePenalty }}
+                {{ modelState.parameters.presencePenalty }}
               </span>
             </div>
             <input
               type="range"
-              v-model.number="parameters.presencePenalty"
+              v-model.number="modelState.parameters.presencePenalty"
               min="-2"
               max="2"
               step="0.1"
@@ -180,19 +147,20 @@ function formatCurrency(amount: number): string {
 
           <!-- Current Model Info -->
           <div class="md:col-span-2 p-4 bg-muted/20 rounded-lg border">
-            <div v-if="selectedModelData" class="text-sm">
-              <h4 class="font-medium mb-2">Current Model: {{ selectedModelData.name }}</h4>
+            <div v-if="modelState.selectedModelData" class="text-sm">
+              <h4 class="font-medium mb-2">Current Model: {{ modelState.selectedModelData.name }}</h4>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-muted-foreground">
                 <div>
-                  <span class="font-medium">Max Tokens:</span> {{ selectedModelData.maxTokens.toLocaleString() }}
+                  <span class="font-medium">Max Tokens:</span>
+                  {{ modelState.selectedModelData.maxTokens.toLocaleString() }}
                 </div>
                 <div>
                   <span class="font-medium">Input Cost:</span>
-                  {{ formatCurrency(selectedModelData.costPer1kTokens.input) }}/1k
+                  {{ formatCurrency(modelState.selectedModelData.costPer1kTokens.input) }}/1k
                 </div>
                 <div>
                   <span class="font-medium">Output Cost:</span>
-                  {{ formatCurrency(selectedModelData.costPer1kTokens.output) }}/1k
+                  {{ formatCurrency(modelState.selectedModelData.costPer1kTokens.output) }}/1k
                 </div>
               </div>
             </div>
@@ -213,4 +181,3 @@ function formatCurrency(amount: number): string {
     </UiDialogContent>
   </UiDialog>
 </template>
-

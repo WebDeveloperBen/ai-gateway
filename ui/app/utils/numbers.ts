@@ -9,3 +9,10 @@ export const formatNumberPretty = (num: number) => {
   }
   return num.toString()
 }
+
+export const formatCurrency = (amount: number): string =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 4
+  }).format(amount)

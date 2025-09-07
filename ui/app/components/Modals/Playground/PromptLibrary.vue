@@ -1,49 +1,47 @@
 <script setup lang="ts">
 import { Library, Settings, Tag, History } from "lucide-vue-next"
 
-interface Props {
-  open: boolean
-  savedPrompts: any[]
-  availableApplications: any[]
-  librarySearchQuery: string
-  libraryApplicationFilter: string
-  libraryFormModel: {
-    promptId: string
-    versionId: string
-  }
+const props = defineProps<{ savedPrompts: any[]; availableApplications: any[] }>()
+
+// Use the playground state
+const playgroundState = usePlaygroundState()
+if (!playgroundState) {
+  throw new Error("PromptLibrary modal must be used within a playground state provider")
 }
 
-interface Emits {
-  "update:open": [value: boolean]
-  "update:librarySearchQuery": [value: string]
-  "update:libraryApplicationFilter": [value: string]
-  "update:libraryFormModel": [value: { promptId: string; versionId: string }]
+const { modalState, modalActions, libraryState } = playgroundState
+
+const isOpen = computed({
+  get: () => modalState.showPromptLibrary,
+  set: (value) => {
+    if (value) {
+      modalActions.openPromptLibrary()
+    } else {
+      modalActions.closePromptLibrary()
+    }
+  }
+})
+
+// These still need to be emitted since testing.vue handles the business logic
+const emit = defineEmits<{
   selectPrompt: [prompt: any]
   selectVersion: [version: any]
   confirmSelection: []
-}
-
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
-
-const isOpen = computed({
-  get: () => props.open,
-  set: (value) => emit("update:open", value)
-})
+}>()
 
 const searchQuery = computed({
-  get: () => props.librarySearchQuery,
-  set: (value) => emit("update:librarySearchQuery", value)
+  get: () => libraryState.searchQuery,
+  set: (value) => (libraryState.searchQuery = value)
 })
 
 const applicationFilter = computed({
-  get: () => props.libraryApplicationFilter,
-  set: (value) => emit("update:libraryApplicationFilter", value)
+  get: () => libraryState.applicationFilter,
+  set: (value) => (libraryState.applicationFilter = value)
 })
 
 const formModel = computed({
-  get: () => props.libraryFormModel,
-  set: (value) => emit("update:libraryFormModel", value)
+  get: () => libraryState.formModel,
+  set: (value) => (libraryState.formModel = value)
 })
 
 const filteredPrompts = computed(() => {
@@ -67,12 +65,12 @@ const filteredPrompts = computed(() => {
 })
 
 const selectedVersionInLibrary = computed(() => {
-  if (!props.libraryFormModel.promptId || !props.libraryFormModel.versionId) return null
+  if (!libraryState.formModel.promptId || !libraryState.formModel.versionId) return null
 
-  const prompt = props.savedPrompts.find((p) => p.id === props.libraryFormModel.promptId)
+  const prompt = props.savedPrompts.find((p) => p.id === libraryState.formModel.promptId)
   if (!prompt) return null
 
-  return prompt.versions.find((v: any) => v.id === props.libraryFormModel.versionId)
+  return prompt.versions.find((v: any) => v.id === libraryState.formModel.versionId)
 })
 
 function selectPrompt(prompt: any) {

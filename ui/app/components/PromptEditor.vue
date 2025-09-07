@@ -1,16 +1,5 @@
 <script setup lang="ts">
-import { 
-  FileText, 
-  Copy, 
-  Save, 
-  Settings, 
-  MessageSquare, 
-  RotateCcw,
-  Clock,
-  Cpu,
-  DollarSign,
-  Zap
-} from "lucide-vue-next"
+import { FileText, Copy, Save, Settings, MessageSquare, RotateCcw, Clock, Cpu, DollarSign, Zap } from "lucide-vue-next"
 
 interface Props {
   showParametersModal: () => void
@@ -21,7 +10,7 @@ const props = defineProps<Props>()
 // Use the playground state
 const playgroundState = usePlaygroundState()
 if (!playgroundState) {
-  throw new Error('PromptEditor must be used within a playground state provider')
+  throw new Error("PromptEditor must be used within a playground state provider")
 }
 
 const {
@@ -30,15 +19,15 @@ const {
   promptText,
   systemPrompt,
   isLoading,
-  
+
   // Reactive state
   promptState,
   modelState,
-  
+
   // Template refs
   promptTextarea,
   systemPromptTextarea,
-  
+
   // Functions
   insertTemplate,
   actions,
@@ -46,7 +35,7 @@ const {
 } = playgroundState
 
 // Template tab switching helper
-const switchToTab = (tab: 'system' | 'user') => {
+const switchToTab = (tab: "system" | "user") => {
   activePromptTab.value = tab
 }
 </script>
@@ -83,7 +72,10 @@ const switchToTab = (tab: 'system' | 'user') => {
         <!-- Controls -->
         <div class="flex items-center gap-3">
           <!-- Version Selector -->
-          <div v-if="promptState.currentPrompt && promptState.currentPrompt.versions.length > 0" class="flex items-center gap-2">
+          <div
+            v-if="promptState.currentPrompt && promptState.currentPrompt.versions.length > 0"
+            class="flex items-center gap-2"
+          >
             <label class="text-xs text-muted-foreground">Version:</label>
             <select
               v-model="promptState.selectedVersionId"
@@ -248,7 +240,8 @@ const switchToTab = (tab: 'system' | 'user') => {
             <span
               v-if="
                 modelState.selectedModelData &&
-                utils.estimateTokens(promptText) + utils.estimateTokens(systemPrompt) > modelState.selectedModelData.maxTokens
+                utils.estimateTokens(promptText) + utils.estimateTokens(systemPrompt) >
+                  modelState.selectedModelData.maxTokens
               "
               class="text-red-500 font-medium"
             >
@@ -320,9 +313,7 @@ const switchToTab = (tab: 'system' | 'user') => {
 
                       <div class="flex items-center gap-1">
                         <Zap class="h-3 w-3 text-purple-600 dark:text-purple-400" />
-                        <span class="text-muted-foreground"
-                          >{{ result.tokensUsed.total.toLocaleString() }} tokens</span
-                        >
+                        <span class="text-muted-foreground">{{ result.tokensUsed.total.toLocaleString() }} tokens</span>
                       </div>
 
                       <div class="flex items-center gap-1">
@@ -365,3 +356,4 @@ const switchToTab = (tab: 'system' | 'user') => {
     </div>
   </div>
 </template>
+

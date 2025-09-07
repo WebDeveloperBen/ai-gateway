@@ -1,4 +1,4 @@
-import { createInjectionState } from '@vueuse/core'
+import { createInjectionState } from "@vueuse/core"
 
 interface SavedPrompt {
   id: string
@@ -57,32 +57,60 @@ interface TestResult {
   error?: string
 }
 
+type PlaygroundEditorTabOptions = "system" | "user"
+
 const [useProvidePlaygroundState, usePlaygroundState] = createInjectionState(
   (initialState?: {
-    activePromptTab?: 'system' | 'user'
-    activeTemplateTab?: 'system' | 'user'
+    activePromptTab?: "system" | "user"
+    activeTemplateTab?: "system" | "user"
     promptText?: string
     systemPrompt?: string
     isLoading?: boolean
   }) => {
     // Basic editor state
-    const activePromptTab = ref<'system' | 'user'>(initialState?.activePromptTab ?? 'user')
-    const activeTemplateTab = ref<'system' | 'user'>(initialState?.activeTemplateTab ?? 'user')
-    const promptText = ref<string>(initialState?.promptText ?? '')
-    const systemPrompt = ref<string>(initialState?.systemPrompt ?? '')
+    const activePromptTab = ref<PlaygroundEditorTabOptions>(initialState?.activePromptTab ?? "user")
+    const activeTemplateTab = ref<PlaygroundEditorTabOptions>(initialState?.activeTemplateTab ?? "user")
+    const promptText = ref<string>(initialState?.promptText ?? "")
+    const systemPrompt = ref<string>(initialState?.systemPrompt ?? "")
     const isLoading = ref(initialState?.isLoading ?? false)
 
     // Prompt/version state using reactive for better encapsulation
     const promptState = reactive({
       currentPrompt: null as SavedPrompt | null,
       currentVersion: null as PromptVersion | null,
-      selectedVersionId: '',
+      selectedVersionId: ""
     })
 
     // Model and test state
     const modelState = reactive({
+      selectedModel: "",
       selectedModelData: null as ModelData | null | undefined,
       testResults: [] as TestResult[],
+      parameters: {
+        temperature: 0.7,
+        maxTokens: 1000,
+        topP: 1.0,
+        frequencyPenalty: 0.0,
+        presencePenalty: 0.0
+      }
+    })
+
+    // Modal state
+    const modalState = reactive({
+      showParametersModal: false,
+      showPromptLibrary: false,
+      showReplaceWarning: false
+    })
+
+    // Library state
+    const libraryState = reactive({
+      searchQuery: "",
+      environmentFilter: "",
+      applicationFilter: "",
+      formModel: {
+        promptId: "",
+        versionId: ""
+      }
     })
 
     // Template refs - to be set by components
@@ -90,8 +118,8 @@ const [useProvidePlaygroundState, usePlaygroundState] = createInjectionState(
     const systemPromptTextarea = ref<HTMLTextAreaElement | null>(null)
 
     // Template insertion
-    const insertTemplate = (template: PromptTemplate, templateType: 'system' | 'user' = 'user') => {
-      const isSystemTemplate = templateType === 'system'
+    const insertTemplate = (template: PromptTemplate, templateType: PlaygroundEditorTabOptions = "user") => {
+      const isSystemTemplate = templateType === "system"
       const textarea = isSystemTemplate ? systemPromptTextarea.value : promptTextarea.value
 
       // Switch to the appropriate tab
@@ -100,9 +128,9 @@ const [useProvidePlaygroundState, usePlaygroundState] = createInjectionState(
       if (!textarea) {
         // Fallback to simple append if textarea not available
         if (isSystemTemplate) {
-          systemPrompt.value += (systemPrompt.value ? '\n\n' : '') + template.content
+          systemPrompt.value += (systemPrompt.value ? "\n\n" : "") + template.content
         } else {
-          promptText.value += (promptText.value ? '\n\n' : '') + template.content
+          promptText.value += (promptText.value ? "\n\n" : "") + template.content
         }
         return
       }
@@ -133,17 +161,17 @@ const [useProvidePlaygroundState, usePlaygroundState] = createInjectionState(
     // Prompt editor actions
     const actions = {
       clearPrompt: () => {
-        promptText.value = ''
+        promptText.value = ""
         promptTextarea.value?.focus()
       },
-      
+
       clearSystemPrompt: () => {
-        systemPrompt.value = ''
+        systemPrompt.value = ""
       },
 
       copyPrompt: async () => {
         try {
-          let content = ''
+          let content = ""
           if (systemPrompt.value.trim()) {
             content += `SYSTEM: ${systemPrompt.value.trim()}\n\n`
           }
@@ -152,13 +180,13 @@ const [useProvidePlaygroundState, usePlaygroundState] = createInjectionState(
           }
           await navigator.clipboard.writeText(content)
         } catch (err) {
-          console.error('Failed to copy prompt:', err)
+          console.error("Failed to copy prompt:", err)
         }
       },
 
       savePrompt: () => {
         // TODO: Implement save logic - would call API
-        console.log('Saving prompt:', {
+        console.log("Saving prompt:", {
           content: promptText.value,
           systemPrompt: systemPrompt.value,
           currentPrompt: promptState.currentPrompt
@@ -169,7 +197,7 @@ const [useProvidePlaygroundState, usePlaygroundState] = createInjectionState(
         try {
           await navigator.clipboard.writeText(response)
         } catch (err) {
-          console.error('Failed to copy response:', err)
+          console.error("Failed to copy response:", err)
         }
       },
 
@@ -177,17 +205,71 @@ const [useProvidePlaygroundState, usePlaygroundState] = createInjectionState(
         if (!promptState.currentPrompt || !promptState.selectedVersionId) {
           // Load draft (empty state)
           promptState.currentVersion = null
-          promptText.value = ''
-          systemPrompt.value = ''
+          promptText.value = ""
+          systemPrompt.value = ""
+          // Reset parameters to defaults
+          modelState.parameters = {
+            temperature: 0.7,
+            maxTokens: 1000,
+            topP: 1.0,
+            frequencyPenalty: 0.0,
+            presencePenalty: 0.0
+          }
           return
         }
 
-        const version = promptState.currentPrompt.versions.find(v => v.id === promptState.selectedVersionId)
+        const version = promptState.currentPrompt.versions.find((v) => v.id === promptState.selectedVersionId)
         if (version) {
           promptState.currentVersion = version
           promptText.value = version.content
-          systemPrompt.value = version.systemPrompt || ''
+          systemPrompt.value = version.systemPrompt || ""
+
+          // Load version's parameters or use defaults
+          if (version.parameters) {
+            modelState.parameters = {
+              temperature: version.parameters.temperature ?? 0.7,
+              maxTokens: version.parameters.maxTokens ?? 1000,
+              topP: version.parameters.topP ?? 1.0,
+              frequencyPenalty: version.parameters.frequencyPenalty ?? 0.0,
+              presencePenalty: version.parameters.presencePenalty ?? 0.0
+            }
+          } else {
+            // No parameters saved with this version, use defaults
+            modelState.parameters = {
+              temperature: 0.7,
+              maxTokens: 1000,
+              topP: 1.0,
+              frequencyPenalty: 0.0,
+              presencePenalty: 0.0
+            }
+          }
         }
+      }
+    }
+
+    // Modal actions
+    const modalActions = {
+      openParametersModal: () => {
+        modalState.showParametersModal = true
+      },
+      closeParametersModal: () => {
+        modalState.showParametersModal = false
+      },
+      openPromptLibrary: () => {
+        modalState.showPromptLibrary = true
+        libraryState.formModel = { promptId: "", versionId: "" }
+        libraryState.searchQuery = ""
+        libraryState.environmentFilter = ""
+        libraryState.applicationFilter = ""
+      },
+      closePromptLibrary: () => {
+        modalState.showPromptLibrary = false
+      },
+      openReplaceWarning: () => {
+        modalState.showReplaceWarning = true
+      },
+      closeReplaceWarning: () => {
+        modalState.showReplaceWarning = false
       }
     }
 
@@ -196,7 +278,7 @@ const [useProvidePlaygroundState, usePlaygroundState] = createInjectionState(
       estimateTokens: (text: string): number => {
         if (!text) return 0
         let tokenEstimate = 0
-        
+
         tokenEstimate += text.length / 4
         const punctuation = (text.match(/[.,;:!?(){}[\]"']/g) || []).length
         tokenEstimate += punctuation * 0.5
@@ -209,16 +291,16 @@ const [useProvidePlaygroundState, usePlaygroundState] = createInjectionState(
       },
 
       formatTime: (dateString: string) => {
-        return new Date(dateString).toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit'
+        return new Date(dateString).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit"
         })
       },
 
       formatCurrency: (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
+        return new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
           minimumFractionDigits: 6
         }).format(amount)
       }
@@ -231,18 +313,21 @@ const [useProvidePlaygroundState, usePlaygroundState] = createInjectionState(
       promptText,
       systemPrompt,
       isLoading,
-      
+
       // Reactive state objects
       promptState,
       modelState,
-      
+      modalState,
+      libraryState,
+
       // Template refs
       promptTextarea,
       systemPromptTextarea,
-      
+
       // Functions
       insertTemplate,
       actions,
+      modalActions,
       utils
     }
   }
@@ -250,3 +335,4 @@ const [useProvidePlaygroundState, usePlaygroundState] = createInjectionState(
 
 export { useProvidePlaygroundState }
 export { usePlaygroundState }
+
