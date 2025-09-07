@@ -36,6 +36,32 @@
 - [ ] setup monaco editor
 - [ ] add CEL support to monaco editor for syntax highlighting and linting
 
+# Prompts Page
+
+- [ ] save prompts and retrieve by id
+- [ ] move save button to end of row
+- [ ] move ready and its icon to somewhere else or even just remove it
+- [ ] set prompts per environment
+- [ ] set prompts per app
+- [ ] versioned prompts
+- [ ] promote to live prompt in use by apps
+- [ ] fix the load prompts button so it actually works
+- [ ] break up the massive page into DRY components
+- [ ] make the model paramaters actually do something
+- [ ] create backend endpoint to call prompt playground model (should be the account holders model not ours)
+- [ ] create ability to save the settings of the paramaters to the prompt
+- [ ] create logic to fetch latest version prompt from the backend
+- [ ] create ability to let users define which versioning schema they want to use (Nice to have only)
+- [ ]
+
+# Prompt tags
+
+- [ ] Let users tag their prompts to enhance filtering, organisation, and improve user interface styling, user defined through strings, no impact in the application just for user experience purpose and should feed into filtering
+
+# Budgets
+
+- [ ] How to maintain a cost sheet with live data ? sync daily? from each provider that we support ? -> required for budget policies
+
 # Policy page
 
 - [ ] make the validate button do something
