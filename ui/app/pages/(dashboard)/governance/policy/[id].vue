@@ -45,7 +45,8 @@ const policies: Record<string, PolicyDetail> = {
   policy_1: {
     id: "policy_1",
     name: "Rate Limiting - Production",
-    description: "Enforce strict rate limits for production applications to prevent abuse and ensure fair resource allocation across all applications.",
+    description:
+      "Enforce strict rate limits for production applications to prevent abuse and ensure fair resource allocation across all applications.",
     type: "rate_limit",
     status: "active",
     priority: "high",
@@ -65,7 +66,7 @@ const policies: Record<string, PolicyDetail> = {
         enabled: true
       },
       {
-        id: "rule_2", 
+        id: "rule_2",
         condition: "requests_per_hour > 50000",
         action: "throttle",
         value: 50000,
@@ -90,7 +91,7 @@ const policies: Record<string, PolicyDetail> = {
       {
         id: "app_2",
         name: "Content Generator",
-        status: "active", 
+        status: "active",
         team: "Marketing",
         appliedDate: "2024-12-20T14:30:00Z"
       },
@@ -110,7 +111,7 @@ const policies: Record<string, PolicyDetail> = {
         user: "Alice Johnson"
       },
       {
-        timestamp: "2025-01-10T11:15:00Z", 
+        timestamp: "2025-01-10T11:15:00Z",
         action: "Application Added",
         details: "Applied policy to Analytics Dashboard",
         user: "Bob Smith"
@@ -123,7 +124,7 @@ const policies: Record<string, PolicyDetail> = {
       },
       {
         timestamp: "2024-12-20T14:30:00Z",
-        action: "Application Added", 
+        action: "Application Added",
         details: "Applied policy to Content Generator",
         user: "Alice Johnson"
       }
@@ -132,7 +133,8 @@ const policies: Record<string, PolicyDetail> = {
   policy_2: {
     id: "policy_2",
     name: "Content Safety Filter",
-    description: "Block harmful or inappropriate content across all AI interactions to maintain platform safety and compliance.",
+    description:
+      "Block harmful or inappropriate content across all AI interactions to maintain platform safety and compliance.",
     type: "content_filter",
     status: "active",
     priority: "high",
@@ -154,7 +156,7 @@ const policies: Record<string, PolicyDetail> = {
       {
         id: "rule_2",
         condition: "hate_speech_score > 0.8",
-        action: "block", 
+        action: "block",
         value: 0.8,
         enabled: true
       },
@@ -172,11 +174,32 @@ const policies: Record<string, PolicyDetail> = {
 }
 </script>
 <script setup lang="ts">
-import { 
-  Shield, Clock, Filter, Zap, AlertTriangle, CheckCircle, XCircle, 
-  Settings, Edit, Play, Pause, Eye, Activity, FileText, Users,
-  Calendar, User, Tag, GitBranch, MoreHorizontal, Plus, Trash2,
-  RotateCcw, Download, Upload
+import {
+  Shield,
+  Clock,
+  Filter,
+  Zap,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Settings,
+  Edit,
+  Play,
+  Pause,
+  Eye,
+  Activity,
+  FileText,
+  Users,
+  Calendar,
+  User,
+  Tag,
+  GitBranch,
+  MoreHorizontal,
+  Plus,
+  Trash2,
+  RotateCcw,
+  Download,
+  Upload
 } from "lucide-vue-next"
 import type { StatsCardProps } from "@/components/Cards/Stats.vue"
 
@@ -186,7 +209,7 @@ const policyId = route.params.id as string
 const policy = computed(() => policies[policyId])
 
 useSeoMeta({
-  title: computed(() => policy.value ? `${policy.value.name} - Governance Policy` : "Policy Not Found")
+  title: computed(() => (policy.value ? `${policy.value.name} - Governance Policy` : "Policy Not Found"))
 })
 
 if (!policy.value) {
@@ -198,6 +221,7 @@ if (!policy.value) {
 
 const showSettingsModal = ref(false)
 const isSettingsLoading = ref(false)
+const showAssignApplicationModal = ref(false)
 
 const handlePolicyToggle = async () => {
   console.log(`Toggling policy ${policyId}`)
@@ -224,54 +248,84 @@ const handleSettingsCancel = () => {
   showSettingsModal.value = false
 }
 
+const openAssignApplicationModal = () => {
+  showAssignApplicationModal.value = true
+}
+
+const handleApplicationAssigned = (applicationId: string) => {
+  console.log(`Application ${applicationId} assigned to policy ${policyId}`)
+  // TODO: Refresh policy data or update applications list
+}
+
 const getPolicyTypeIcon = (type: PolicyDetail["type"]) => {
   switch (type) {
-    case "rate_limit": return Clock
-    case "content_filter": return Filter
-    case "access_control": return Shield
-    case "cost_limit": return Zap
-    default: return Shield
+    case "rate_limit":
+      return Clock
+    case "content_filter":
+      return Filter
+    case "access_control":
+      return Shield
+    case "cost_limit":
+      return Zap
+    default:
+      return Shield
   }
 }
 
 const getPolicyTypeColor = (type: PolicyDetail["type"]) => {
   switch (type) {
-    case "rate_limit": return "text-blue-600 bg-blue-50 border-blue-200"
-    case "content_filter": return "text-purple-600 bg-purple-50 border-purple-200"
-    case "access_control": return "text-green-600 bg-green-50 border-green-200"
-    case "cost_limit": return "text-orange-600 bg-orange-50 border-orange-200"
-    default: return "text-gray-600 bg-gray-50 border-gray-200"
+    case "rate_limit":
+      return "text-blue-600 bg-blue-50 border-blue-200"
+    case "content_filter":
+      return "text-purple-600 bg-purple-50 border-purple-200"
+    case "access_control":
+      return "text-green-600 bg-green-50 border-green-200"
+    case "cost_limit":
+      return "text-orange-600 bg-orange-50 border-orange-200"
+    default:
+      return "text-gray-600 bg-gray-50 border-gray-200"
   }
 }
 
 const getPriorityColor = (priority: PolicyDetail["priority"]) => {
   switch (priority) {
-    case "high": return "text-red-600 bg-red-50 border-red-200"
-    case "medium": return "text-yellow-600 bg-yellow-50 border-yellow-200"
-    case "low": return "text-green-600 bg-green-50 border-green-200"
-    default: return "text-gray-600 bg-gray-50 border-gray-200"
+    case "high":
+      return "text-red-600 bg-red-50 border-red-200"
+    case "medium":
+      return "text-yellow-600 bg-yellow-50 border-yellow-200"
+    case "low":
+      return "text-green-600 bg-green-50 border-green-200"
+    default:
+      return "text-gray-600 bg-gray-50 border-gray-200"
   }
 }
 
 const getStatusColor = (status: PolicyDetail["status"]) => {
   switch (status) {
-    case "active": return "text-green-600 bg-green-50 border-green-200"
-    case "inactive": return "text-gray-600 bg-gray-50 border-gray-200"
-    default: return "text-gray-600 bg-gray-50 border-gray-200"
+    case "active":
+      return "text-green-600 bg-green-50 border-green-200"
+    case "inactive":
+      return "text-gray-600 bg-gray-50 border-gray-200"
+    default:
+      return "text-gray-600 bg-gray-50 border-gray-200"
   }
 }
 
 const getEnforcementColor = (enforcement: PolicyDetail["enforcement"]) => {
   switch (enforcement) {
-    case "strict": return "text-red-600 bg-red-50 border-red-200"
-    case "warn": return "text-yellow-600 bg-yellow-50 border-yellow-200"
-    case "log": return "text-blue-600 bg-blue-50 border-blue-200"
-    default: return "text-gray-600 bg-gray-50 border-gray-200"
+    case "strict":
+      return "text-red-600 bg-red-50 border-red-200"
+    case "warn":
+      return "text-yellow-600 bg-yellow-50 border-yellow-200"
+    case "log":
+      return "text-blue-600 bg-blue-50 border-blue-200"
+    default:
+      return "text-gray-600 bg-gray-50 border-gray-200"
   }
 }
 
 const getApplicationStatusColor = (status: PolicyApplication["status"]) => {
-  return status === "active" 
+  return status === "active"
     ? "text-green-600 bg-green-50 border-green-200"
     : "text-gray-600 bg-gray-50 border-gray-200"
 }
@@ -288,17 +342,17 @@ const statsCards = computed(() => {
     },
     {
       title: "Policy Type",
-      value: policy.value.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      value: policy.value.type.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase()),
       description: "Governance category"
     },
     {
-      title: "Priority Level", 
+      title: "Priority Level",
       value: policy.value.priority.charAt(0).toUpperCase() + policy.value.priority.slice(1),
       description: "Enforcement priority"
     },
     {
       title: "Active Rules",
-      value: policy.value.rules.filter(rule => rule.enabled).length,
+      value: policy.value.rules.filter((rule) => rule.enabled).length,
       description: `of ${policy.value.rules.length} total rules`
     }
   ].map((stat, index) => ({
@@ -311,24 +365,20 @@ const statsCards = computed(() => {
 
 <template>
   <div v-if="policy" class="flex flex-col gap-6">
-    <PageBadgeHeader 
-      :badge-status="policy.status" 
-      :title="policy.name" 
-      :subtext="policy.description"
-    >
+    <PageBadgeHeader :badge-status="policy.status" :title="policy.name" :subtext="policy.description">
       <div class="flex items-center gap-2">
         <UiButton variant="outline" size="sm" class="gap-2">
           <Download class="h-4 w-4" />
           Export
         </UiButton>
-        <UiButton 
-          :variant="policy.status === 'active' ? 'destructive' : 'default'" 
-          size="sm" 
+        <UiButton
+          :variant="policy.status === 'active' ? 'destructive' : 'default'"
+          size="sm"
           class="gap-2"
           @click="handlePolicyToggle"
         >
           <component :is="policy.status === 'active' ? Pause : Play" class="h-4 w-4" />
-          {{ policy.status === 'active' ? 'Disable' : 'Enable' }}
+          {{ policy.status === "active" ? "Disable" : "Enable" }}
         </UiButton>
         <UiButton variant="default" class="gap-2" @click="openSettingsModal">
           <Settings class="h-4 w-4" />
@@ -365,12 +415,12 @@ const statsCards = computed(() => {
                 Type
               </label>
               <div class="mt-1">
-                <div 
+                <div
                   class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border"
                   :class="getPolicyTypeColor(policy.type)"
                 >
                   <component :is="getPolicyTypeIcon(policy.type)" class="size-3" />
-                  {{ policy.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) }}
+                  {{ policy.type.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase()) }}
                 </div>
               </div>
             </div>
@@ -381,7 +431,7 @@ const statsCards = computed(() => {
                 Priority
               </label>
               <div class="mt-1">
-                <div 
+                <div
                   class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border"
                   :class="getPriorityColor(policy.priority)"
                 >
@@ -397,7 +447,7 @@ const statsCards = computed(() => {
                 Enforcement
               </label>
               <div class="mt-1">
-                <div 
+                <div
                   class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border"
                   :class="getEnforcementColor(policy.enforcement)"
                 >
@@ -458,7 +508,7 @@ const statsCards = computed(() => {
         </UiCardHeader>
         <UiCardContent>
           <div class="space-y-3">
-            <div 
+            <div
               v-for="rule in policy.rules"
               :key="rule.id"
               class="p-3 border rounded-lg"
@@ -470,12 +520,11 @@ const statsCards = computed(() => {
                   <span class="text-sm font-medium">{{ rule.condition }}</span>
                 </div>
                 <UiBadge :variant="rule.enabled ? 'default' : 'secondary'" class="text-xs">
-                  {{ rule.enabled ? 'Active' : 'Disabled' }}
+                  {{ rule.enabled ? "Active" : "Disabled" }}
                 </UiBadge>
               </div>
               <div class="text-xs text-muted-foreground">
-                <strong>Action:</strong> {{ rule.action }} 
-                <strong class="ml-2">Value:</strong> {{ rule.value }}
+                <strong>Action:</strong> {{ rule.action }} <strong class="ml-2">Value:</strong> {{ rule.value }}
               </div>
             </div>
           </div>
@@ -485,14 +534,14 @@ const statsCards = computed(() => {
 
     <CardsDataList title="Applied Applications" :icon="Users">
       <template #actions>
-        <UiButton variant="outline" size="sm" class="gap-2">
+        <UiButton variant="outline" size="sm" class="gap-2" @click="openAssignApplicationModal">
           <Plus class="h-4 w-4" />
           Add Application
         </UiButton>
       </template>
 
       <div class="space-y-4">
-        <div 
+        <div
           v-for="app in policy.applications"
           :key="app.id"
           class="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
@@ -522,7 +571,7 @@ const statsCards = computed(() => {
               {{ app.status === "active" ? "Active" : "Inactive" }}
             </div>
 
-            <UiDropdownMenu>
+            <UiDropdownMenu @click.stop>
               <UiDropdownMenuTrigger as-child>
                 <UiButton variant="ghost" size="sm">
                   <MoreHorizontal class="size-4" />
@@ -549,23 +598,12 @@ const statsCards = computed(() => {
       </div>
     </CardsDataList>
 
-    <UiCard>
-      <UiCardHeader>
-        <UiCardTitle class="flex items-center gap-2">
-          <Activity class="h-5 w-5" />
-          Audit Log
-        </UiCardTitle>
-        <UiCardDescription>Recent policy events and changes</UiCardDescription>
-      </UiCardHeader>
-      <UiCardContent>
-        <RecentActivity 
-          :activities="policy.auditLog.map(log => ({
-            timestamp: log.timestamp,
-            action: log.action,
-            details: `${log.details} (by ${log.user})`
-          }))"
-        />
-      </UiCardContent>
-    </UiCard>
+    <!-- Assign Application Modal -->
+    <LazyModalsPolicyAssignApplication
+      v-model:open="showAssignApplicationModal"
+      :policy-id="policyId"
+      :policy-name="policy.name"
+      @assigned="handleApplicationAssigned"
+    />
   </div>
 </template>

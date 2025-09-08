@@ -177,39 +177,39 @@ const appConfig = useAppConfig()
 const getLevelColor = (level: LogEntry["level"]) => {
   switch (level) {
     case "error":
-      return "text-red-600 bg-red-50 border-red-200"
+      return "text-destructive bg-destructive/10 border-destructive/20"
     case "warn":
-      return "text-yellow-600 bg-yellow-50 border-yellow-200"
+      return "text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/50 border-yellow-200 dark:border-yellow-800"
     case "info":
-      return "text-blue-600 bg-blue-50 border-blue-200"
+      return "text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800"
     case "debug":
-      return "text-gray-600 bg-gray-50 border-gray-200"
+      return "text-muted-foreground bg-muted/50 border-border"
     default:
-      return "text-gray-600 bg-gray-50 border-gray-200"
+      return "text-muted-foreground bg-muted/50 border-border"
   }
 }
 
 const getStatusColor = (statusCode: number) => {
   if (statusCode >= 200 && statusCode < 300) {
-    return "text-green-600 bg-green-50 border-green-200"
+    return "text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/50 border-green-200 dark:border-green-800"
   } else if (statusCode >= 300 && statusCode < 400) {
-    return "text-blue-600 bg-blue-50 border-blue-200"
+    return "text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800"
   } else if (statusCode >= 400 && statusCode < 500) {
-    return "text-yellow-600 bg-yellow-50 border-yellow-200"
+    return "text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/50 border-yellow-200 dark:border-yellow-800"
   } else if (statusCode >= 500) {
-    return "text-red-600 bg-red-50 border-red-200"
+    return "text-destructive bg-destructive/10 border-destructive/20"
   }
-  return "text-gray-600 bg-gray-50 border-gray-200"
+  return "text-muted-foreground bg-muted/50 border-border"
 }
 
 const getMethodColor = (method: string) => {
   const methodColors = {
-    GET: "text-blue-600 bg-blue-50 border-blue-200",
-    POST: "text-green-600 bg-green-50 border-green-200",
-    PUT: "text-yellow-600 bg-yellow-50 border-yellow-200",
-    DELETE: "text-red-600 bg-red-50 border-red-200"
+    GET: "text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800",
+    POST: "text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/50 border-green-200 dark:border-green-800",
+    PUT: "text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/50 border-yellow-200 dark:border-yellow-800",
+    DELETE: "text-destructive bg-destructive/10 border-destructive/20"
   }
-  return methodColors[method as keyof typeof methodColors] || "text-gray-600 bg-gray-50 border-gray-200"
+  return methodColors[method as keyof typeof methodColors] || "text-muted-foreground bg-muted/50 border-border"
 }
 
 const searchQuery = ref("")
@@ -536,10 +536,10 @@ const columns: TableColumn<LogEntry>[] = [
       const time = getValue<number>()
       const colorClass =
         time > 2000
-          ? "text-red-600 bg-red-50"
+          ? "text-destructive bg-destructive/10"
           : time > 1000
-            ? "text-yellow-600 bg-yellow-50"
-            : "text-green-600 bg-green-50"
+            ? "text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/50"
+            : "text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/50"
       return h(
         "span",
         {
@@ -596,10 +596,7 @@ const columnVisibility = ref({})
 
 <template>
   <div class="flex flex-col gap-6 w-full max-w-full min-w-0">
-    <PageHeader
-      title="Logs (TanStack Table)"
-      :subtext="`Monitor and analyze ${appConfig.app.name} gateway logs with TanStack Table - Now with drag-and-drop column reordering!`"
-    >
+    <PageHeader title="Logs" :subtext="`Monitor and analyze ${appConfig.app.name} gateway logs with TanStack Table`">
       <div class="flex items-center gap-2">
         <UiDropdownMenu>
           <UiDropdownMenuTrigger as-child>
@@ -713,28 +710,32 @@ const columnVisibility = ref({})
       class="border rounded-lg"
     >
       <template #expanded="{ row }">
-        <div class="bg-slate-50 p-4 rounded-lg space-y-4 text-sm border">
+        <div class="bg-muted/30 p-4 rounded-lg space-y-4 text-sm border">
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div class="space-y-3">
-              <h4 class="font-semibold text-slate-900 border-b border-slate-200 pb-1">Request Details</h4>
+              <h4 class="font-semibold text-foreground border-b border-border pb-1">Request Details</h4>
               <div class="space-y-2 text-xs">
                 <div>
-                  <span class="font-medium text-slate-700">Request ID:</span>
-                  <code class="bg-white px-2 py-1 rounded text-slate-800 border">{{ row.original.requestId }}</code>
+                  <span class="font-medium text-muted-foreground">Request ID:</span>
+                  <code class="bg-background px-2 py-1 rounded text-foreground border">{{
+                    row.original.requestId
+                  }}</code>
                 </div>
                 <div>
-                  <span class="font-medium text-slate-700">Method:</span>
+                  <span class="font-medium text-muted-foreground">Method:</span>
                   <span
                     :class="`inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${getMethodColor(row.original.method)}`"
                     >{{ row.original.method }}</span
                   >
                 </div>
                 <div>
-                  <span class="font-medium text-slate-700">Endpoint:</span>
-                  <code class="bg-white px-2 py-1 rounded text-slate-800 border">{{ row.original.endpoint }}</code>
+                  <span class="font-medium text-muted-foreground">Endpoint:</span>
+                  <code class="bg-background px-2 py-1 rounded text-foreground border">{{
+                    row.original.endpoint
+                  }}</code>
                 </div>
                 <div>
-                  <span class="font-medium text-slate-700">Status Code:</span>
+                  <span class="font-medium text-muted-foreground">Status Code:</span>
                   <span
                     :class="`inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${getStatusColor(row.original.statusCode)}`"
                     >{{ row.original.statusCode }}</span
@@ -744,27 +745,27 @@ const columnVisibility = ref({})
             </div>
 
             <div class="space-y-3">
-              <h4 class="font-semibold text-slate-900 border-b border-slate-200 pb-1">Application & User</h4>
+              <h4 class="font-semibold text-foreground border-b border-border pb-1">Application & User</h4>
               <div class="space-y-2 text-xs">
                 <div>
-                  <span class="font-medium text-slate-700">Application:</span>
-                  <span class="text-slate-900 font-medium">{{ row.original.application }}</span>
+                  <span class="font-medium text-muted-foreground">Application:</span>
+                  <span class="text-foreground font-medium">{{ row.original.application }}</span>
                 </div>
                 <div>
-                  <span class="font-medium text-slate-700">User ID:</span>
-                  <span class="text-slate-800">{{ row.original.userId || "N/A" }}</span>
+                  <span class="font-medium text-muted-foreground">User ID:</span>
+                  <span class="text-foreground">{{ row.original.userId || "N/A" }}</span>
                 </div>
                 <div>
-                  <span class="font-medium text-slate-700">Source:</span>
+                  <span class="font-medium text-muted-foreground">Source:</span>
                   <span
-                    class="inline-flex items-center px-2 py-1 rounded text-xs font-medium border bg-slate-100 border-slate-300 text-slate-700"
+                    class="inline-flex items-center px-2 py-1 rounded text-xs font-medium border bg-muted border-border text-muted-foreground"
                     >{{ row.original.source }}</span
                   >
                 </div>
                 <div>
-                  <span class="font-medium text-slate-700">Response Time:</span>
+                  <span class="font-medium text-muted-foreground">Response Time:</span>
                   <span
-                    :class="`font-mono ${row.original.time > 2000 ? 'text-red-600' : row.original.time > 1000 ? 'text-yellow-600' : 'text-green-600'}`"
+                    :class="`font-mono ${row.original.time > 2000 ? 'text-destructive' : row.original.time > 1000 ? 'text-yellow-700 dark:text-yellow-400' : 'text-green-700 dark:text-green-400'}`"
                     >{{ row.original.time }}ms</span
                   >
                 </div>
@@ -772,14 +773,14 @@ const columnVisibility = ref({})
             </div>
 
             <div class="space-y-3">
-              <h4 class="font-semibold text-slate-900 border-b border-slate-200 pb-1">Metadata</h4>
+              <h4 class="font-semibold text-foreground border-b border-border pb-1">Metadata</h4>
               <div class="space-y-2 text-xs">
                 <div>
-                  <span class="font-medium text-slate-700">Timestamp:</span>
-                  <span class="font-mono text-slate-800">{{ new Date(row.original.timestamp).toLocaleString() }}</span>
+                  <span class="font-medium text-muted-foreground">Timestamp:</span>
+                  <span class="font-mono text-foreground">{{ new Date(row.original.timestamp).toLocaleString() }}</span>
                 </div>
                 <div>
-                  <span class="font-medium text-slate-700">Level:</span>
+                  <span class="font-medium text-muted-foreground">Level:</span>
                   <span
                     :class="`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border ${getLevelColor(row.original.level)}`"
                     ><div class="w-1.5 h-1.5 rounded-full bg-current opacity-70"></div>
@@ -787,12 +788,12 @@ const columnVisibility = ref({})
                   >
                 </div>
                 <div>
-                  <span class="font-medium text-slate-700">Tags:</span>
+                  <span class="font-medium text-muted-foreground">Tags:</span>
                   <div class="flex flex-wrap gap-1 mt-1">
                     <span
                       v-for="tag in row.original.tags"
                       :key="tag"
-                      class="inline-flex items-center px-2 py-1 rounded text-xs bg-slate-200 text-slate-700 border border-slate-300"
+                      class="inline-flex items-center px-2 py-1 rounded text-xs bg-muted text-muted-foreground border border-border"
                     >
                       {{ tag }}
                     </span>
@@ -802,9 +803,11 @@ const columnVisibility = ref({})
             </div>
           </div>
 
-          <div class="space-y-3 pt-2 border-t border-slate-200">
-            <h4 class="font-semibold text-slate-900">Message</h4>
-            <div class="bg-white p-3 rounded border border-slate-200 font-mono text-xs leading-relaxed text-slate-800">
+          <div class="space-y-3 pt-2 border-t border-border">
+            <h4 class="font-semibold text-foreground">Message</h4>
+            <div
+              class="bg-background p-3 rounded border border-border font-mono text-xs leading-relaxed text-foreground"
+            >
               {{ row.original.message }}
             </div>
           </div>
