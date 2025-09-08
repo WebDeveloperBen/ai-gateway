@@ -119,7 +119,7 @@ const data = {
     },
     {
       title: "Playground",
-      url: "/playground",
+      url: "/playground/testing",
       icon: Server
     }
   ],
@@ -143,12 +143,12 @@ const data = {
   navGovernance: [
     {
       title: "Policies",
-      url: "/policies",
+      url: "/governance/policy",
       icon: Shield
     },
     {
       title: "Audit Logs",
-      url: "/audit",
+      url: "/governance/audit",
       icon: FileText
     }
   ],
