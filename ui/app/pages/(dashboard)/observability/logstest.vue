@@ -169,7 +169,7 @@ const logData: LogEntry[] = [
 </script>
 
 <script setup lang="ts">
-import { Download, Filter, Code, History, Play, ChevronDown, ChevronUp } from "lucide-vue-next"
+import { Download, Filter, Code, History, Play, ChevronDown, ChevronUp, ChevronRight } from "lucide-vue-next"
 import type { TableColumn } from "~/components/Blocks/DataTable.vue"
 
 const appConfig = useAppConfig()
@@ -375,6 +375,40 @@ const handleExportJSON = () => {
 // Define table columns using TanStack Table format
 const columns: TableColumn<LogEntry>[] = [
   {
+    id: "_expander",
+    header: "",
+    size: 36,
+    enableSorting: false,
+    enableHiding: false,
+    cell: ({ row }) =>
+      h(
+        "button",
+        {
+          type: "button",
+          class:
+            "inline-flex items-center justify-center size-6 rounded-md border bg-background hover:bg-muted transition",
+          "aria-label": row.getIsExpanded() ? "Collapse row" : "Expand row",
+          onClick: (e: Event) => {
+            e.stopPropagation()
+            row.toggleExpanded()
+          }
+        },
+        [
+          h(ChevronRight, {
+            class: ["h-4 w-4 transition-transform", row.getIsExpanded() ? "rotate-90" : "rotate-0"]
+              .filter(Boolean)
+              .join(" ")
+          })
+        ]
+      ),
+    meta: {
+      class: {
+        th: "w-9",
+        td: "w-9"
+      }
+    }
+  },
+  {
     accessorKey: "timestamp",
     header: "Timestamp",
     cell: ({ getValue }) => {
@@ -557,7 +591,7 @@ const sorting = ref([{ id: "timestamp", desc: true }])
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
+  <div class="flex flex-col gap-6 w-full max-w-full min-w-0">
     <PageHeader
       title="Logs (TanStack Table)"
       :subtext="`Monitor and analyze ${appConfig.app.name} gateway logs with TanStack Table`"

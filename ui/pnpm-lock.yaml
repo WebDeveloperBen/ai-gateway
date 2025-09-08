@@ -44,42 +44,12 @@ importers:
       '@vueuse/nuxt':
         specifier: ^13.7.0
         version: 13.7.0(magicast@0.3.5)(nuxt@4.0.3(@netlify/blobs@9.1.2)(@parcel/watcher@2.5.1)(@types/node@24.3.0)(@vue/compiler-sfc@3.5.19)(db0@0.3.2)(ioredis@5.7.0)(lightningcss@1.30.1)(magicast@0.3.5)(rollup@4.48.0)(terser@5.43.1)(typescript@5.9.2)(vite@7.1.3(@types/node@24.3.0)(jiti@2.5.1)(lightningcss@1.30.1)(terser@5.43.1)(yaml@2.8.1))(yaml@2.8.1))(vue@3.5.19(typescript@5.9.2))
-      add:
-        specifier: ^2.0.6
-        version: 2.0.6
       badge:
         specifier: ^1.0.3
         version: 1.0.3
       command:
         specifier: ^1.1.1
         version: 1.1.1(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      datatables.net-buttons-dt:
-        specifier: ^3.2.4
-        version: 3.2.4
-      datatables.net-colreorder-dt:
-        specifier: ^2.1.1
-        version: 2.1.1
-      datatables.net-fixedcolumns-dt:
-        specifier: ^5.0.4
-        version: 5.0.4
-      datatables.net-fixedheader-dt:
-        specifier: ^4.0.3
-        version: 4.0.3
-      datatables.net-responsive-dt:
-        specifier: ^3.0.6
-        version: 3.0.6
-      datatables.net-searchbuilder-dt:
-        specifier: ^1.8.3
-        version: 1.8.3
-      datatables.net-select-dt:
-        specifier: ^3.1.0
-        version: 3.1.0
-      datatables.net-vue3:
-        specifier: ^3.0.4
-        version: 3.0.4(datatables.net@2.3.3)(vue@3.5.19(typescript@5.9.2))
-      jszip:
-        specifier: ^3.10.1
-        version: 3.10.1
       lucide-vue-next:
         specifier: ^0.542.0
         version: 0.542.0(vue@3.5.19(typescript@5.9.2))
@@ -1914,9 +1884,6 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  add@2.0.6:
-    resolution: {integrity: sha512-j5QzrmsokwWWp6kUcJQySpbG+xfOBqqKnup3OIk1pz+kB/80SLorZ9V8zHFLO92Lcd+hbvq8bT+zOGoPkmBV0Q==}
-
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
@@ -2367,61 +2334,6 @@ packages:
   data-uri-to-buffer@4.0.1:
     resolution: {integrity: sha512-0R9ikRb668HB7QDxT1vkpuUBtqc53YyAwMwGeUFKRojY/NWKvdZ+9UYtRfGmhqNbRkTSVpMbmyhXipFFv2cb/A==}
     engines: {node: '>= 12'}
-
-  datatables.net-buttons-dt@3.2.4:
-    resolution: {integrity: sha512-lw+C6pp6NJOFGPdOwCtehA16ABFnu/3vwar8Hjxz0BDLoLa3/BbgjZFva/1B5p/HzUvfGVTeUHYnJrrVHZBzKw==}
-
-  datatables.net-buttons@3.2.4:
-    resolution: {integrity: sha512-anA39/R0kpHA2DOwqEHy/ZMXD5vf4tWmyNO0BnO0kJG7AFNvGTUCWBnBifXYg3G64U6JYpYY+MuTFKIB1/ZMTQ==}
-
-  datatables.net-colreorder-dt@2.1.1:
-    resolution: {integrity: sha512-e0Q5biqVALzCNnypJLHXAJCkQuMYiDmiRFKAuTAdkiJu7A4/cPx6TMmEeSsvhPKOu28VSi1k67ePoC0J7E+fbQ==}
-
-  datatables.net-colreorder@2.1.1:
-    resolution: {integrity: sha512-alhSZYEYmxsXujl43nIHh2+Ym8o/CBm/2kPIExcUz7sOB8FOw2Q614KztqRYh46V5IA+RUuGSxzodjakZ63wAQ==}
-
-  datatables.net-dt@2.3.3:
-    resolution: {integrity: sha512-7rCTiXqyLSSAo63Ltg31B67yORR6TG1cvFTqK5MrDY6IHNsZ3n9ORNwCH8pFaLquz5ve3LFV9OO9+6m4SKuvoA==}
-
-  datatables.net-fixedcolumns-dt@5.0.4:
-    resolution: {integrity: sha512-zfy/3Nuxy6eE4Crnum/L5hZQShvtXrPBN5HDmmXXefd9xMl8Zl+a+kH4ykWXDa3U6x75molirCcW98UiMtomiw==}
-
-  datatables.net-fixedcolumns@5.0.4:
-    resolution: {integrity: sha512-mYZ18oahD2oopcpBDmbSEZ2w+bna4TuTmmoaNd01JLEkJWsAH2yZ99fYslLrBX5Rku4GnCG5J8Sr3cJrrLw+3g==}
-
-  datatables.net-fixedheader-dt@4.0.3:
-    resolution: {integrity: sha512-HBcCvAF9hrkSDKt6jWedJbyvQd8BwEXeZlhXlb3NRBOZSo2nDHgKyycKGcyIuMHHhwz5/KlLI4S231KthppbTw==}
-
-  datatables.net-fixedheader@4.0.3:
-    resolution: {integrity: sha512-Mzx6MT7/+aaLQ3fRlOaFPJQFMOYorsSx2PvD/Hh3DAv6O/Oq8UPQsJ84I16feAqkPqoDdtP/eaXuUKH+NYDfVQ==}
-
-  datatables.net-responsive-dt@3.0.6:
-    resolution: {integrity: sha512-pkJ2lJ1mQg0rtvpjWZYwpB4PzhLj295fxBfqZX7hUt8nHyGcNXPYq1WF/LJbS7ab576YWZ5uOQNWx+zCmdAZkQ==}
-
-  datatables.net-responsive@3.0.6:
-    resolution: {integrity: sha512-GHVgU7k7/ST7F/z1/0ieaJiNghrO1mgH8PbikAaL9MH1pw+GMcCuL5sFaFzIyMRzZz7tnrmVnjrkNX+W01VzhA==}
-
-  datatables.net-searchbuilder-dt@1.8.3:
-    resolution: {integrity: sha512-+i7eYJ12k2Z0gXiYUKqxnt5uiSVBnaCp9Y0WTlXWKFSV5bWyO2iA2jsbWvGdHTF21Jv4RyU4v4YSCAGW6+TWtw==}
-
-  datatables.net-searchbuilder@1.8.3:
-    resolution: {integrity: sha512-ezxPNd2kU554/dVKzu4YgV/BAEzqRdlYGuzyPXg1QmROg0CRaY9o/J4F7khy0DlUFRMEVJBXYHQmO3yqvhmyBw==}
-
-  datatables.net-select-dt@3.1.0:
-    resolution: {integrity: sha512-yN67Vrb51YwRj/L/+UubckJfA18OX5p6D5mtXsNyo6zuN7ppdhFmsupmPixT8CACvy+ZdLLaubLjShron/l/sw==}
-
-  datatables.net-select@3.1.0:
-    resolution: {integrity: sha512-DqXX6kYsDCjMtfiFsAVerYRI3HoGl3LOouJTkXRbp5E9EnWUHbDnmLPnPBirqqTD0j7GzJbi6/cIXNin8Wh2Nw==}
-
-  datatables.net-vue3@3.0.4:
-    resolution: {integrity: sha512-m7b7+zdH07d6J+Dz97KNs2PMezxZk+RgB4Or9i0J/SAXA/kaBRpQLTpr9Pyg8fh66/r4FQxnIkHhPTbW78Ep5A==}
-    engines: {node: '>=12'}
-    peerDependencies:
-      datatables.net: ^2
-      vue: ^3.0.5
-
-  datatables.net@2.3.3:
-    resolution: {integrity: sha512-SWL3za6nheY6gdoiLgCc++tYmxbwrmv2bjrEiII9rXBWXXSbOZct6pjR3FueMVRM5jmt7pQcXiGovfuFDnutQg==}
 
   db0@0.3.2:
     resolution: {integrity: sha512-xzWNQ6jk/+NtdfLyXEipbX55dmDSeteLFt/ayF+wZUU5bzKgmrDOxmInUTbyVRp46YwnJdkDA1KhB7WIXFofJw==}
@@ -3051,9 +2963,6 @@ packages:
   image-meta@0.2.1:
     resolution: {integrity: sha512-K6acvFaelNxx8wc2VjbIzXKDVB0Khs0QT35U6NkGfTdCmjLNcO2945m7RFNR9/RPVFm48hq7QPzK8uGH18HCGw==}
 
-  immediate@3.0.6:
-    resolution: {integrity: sha512-XXOFtyqDjNDAQxVfYxuF7g9Il/IbWmmlQg2MYKOH8ExIT1qg6xc4zyS3HaEEATgs1btfzxq15ciUiY7gjSXRGQ==}
-
   impound@1.0.0:
     resolution: {integrity: sha512-8lAJ+1Arw2sMaZ9HE2ZmL5zOcMnt18s6+7Xqgq2aUVy4P1nlzAyPtzCDxsk51KVFwHEEdc6OWvUyqwHwhRYaug==}
 
@@ -3233,9 +3142,6 @@ packages:
     engines: {node: '>=0.10.30'}
     deprecated: This version has been deprecated in accordance with the hapi support policy (hapi.im/support). Please upgrade to the latest version to get the best features, bug fixes, and security patches. If you are unable to upgrade at this time, paid support is available for older versions (hapi.im/commercial).
 
-  jquery@3.7.1:
-    resolution: {integrity: sha512-m4avr8yL8kmFN8psrbFFFmB/If14iN5o9nw/NgnnM+kybDJpRsAynV2BsfpTYrTRysYUdADVD7CkUUizgkpLfg==}
-
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
@@ -3254,9 +3160,6 @@ packages:
 
   jsonfile@6.2.0:
     resolution: {integrity: sha512-FGuPw30AdOIUTRMC2OMRtQV+jkVj2cfPqSeWXv1NEAJ1qZ5zb1X6z1mFhbfOB/iy3ssJCD+3KuZ8r8C3uVFlAg==}
-
-  jszip@3.10.1:
-    resolution: {integrity: sha512-xXDvecyTpGLrqFrvkrUSoxxfJI5AH7U8zxxtVclpsUtMCq4JQ290LY8AW5c7Ggnr/Y/oK+bQMbqK2qmtk3pN4g==}
 
   junk@4.0.1:
     resolution: {integrity: sha512-Qush0uP+G8ZScpGMZvHUiRfI0YBWuB3gVBYlI0v0vvOJt5FLicco+IkP0a50LqTTQhmts/m6tP5SWE+USyIvcQ==}
@@ -3300,9 +3203,6 @@ packages:
   lazystream@1.0.1:
     resolution: {integrity: sha512-b94GiNHQNy6JNTrt5w6zNyffMrNkXZb3KTkCZJb2V1xaEGCk093vkZ2jk3tpaeP33/OiXC+WvK9AxUebnf5nbw==}
     engines: {node: '>= 0.6.3'}
-
-  lie@3.3.0:
-    resolution: {integrity: sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ==}
 
   lightningcss-darwin-arm64@1.30.1:
     resolution: {integrity: sha512-c8JK7hyE65X1MHMN+Viq9n11RRC7hgin3HhYKhrMyaXflk5GVplZ60IxyoVtzILeKr+xAJwg6zK6sjTBJ0FKYQ==}
@@ -3819,9 +3719,6 @@ packages:
 
   pako@0.2.9:
     resolution: {integrity: sha512-NUcwaKxUxWrZLpDG+z/xZaCgQITkA/Dv4V/T6bw7VON6l1Xz/VnrBqrYjZQ12TamKHzITTfOEIYUj48y2KXImA==}
-
-  pako@1.0.11:
-    resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
 
   parse-gitignore@2.0.0:
     resolution: {integrity: sha512-RmVuCHWsfu0QPNW+mraxh/xjQVw/lhUCUru8Zni3Ctq3AoMhpDTq0OVdKS6iesd6Kqb7viCV3isAL43dciOSog==}
@@ -4365,9 +4262,6 @@ packages:
   serve-static@2.2.0:
     resolution: {integrity: sha512-61g9pCh0Vnh7IutZjtLGGpTA355+OPn2TyDv/6ivP2h/AdAVX9azsoxmg2/M6nZeQZNYBEwIcsne1mJd9oQItQ==}
     engines: {node: '>= 18'}
-
-  setimmediate@1.0.5:
-    resolution: {integrity: sha512-MATJdZp8sLqDl/68LfQmbP8zKPLQNV6BIZoIgrscFDQ+RsvK/BxeDQOgyxKKoh0y/8h3BqVFnCqQ/gd+reiIXA==}
 
   setprototypeof@1.2.0:
     resolution: {integrity: sha512-E5LDX7Wrp85Kil5bhZv46j8jOeboKq5JMmYM3gVGdGH8xFpPWXUMsNrlODCrkoxMEeNi/XZIwuRvY4XNwYMJpw==}
@@ -6992,8 +6886,6 @@ snapshots:
 
   acorn@8.15.0: {}
 
-  add@2.0.6: {}
-
   agent-base@7.1.4: {}
 
   alien-signals@2.0.7: {}
@@ -7481,97 +7373,6 @@ snapshots:
   csstype@3.1.3: {}
 
   data-uri-to-buffer@4.0.1: {}
-
-  datatables.net-buttons-dt@3.2.4:
-    dependencies:
-      datatables.net-buttons: 3.2.4
-      datatables.net-dt: 2.3.3
-      jquery: 3.7.1
-
-  datatables.net-buttons@3.2.4:
-    dependencies:
-      datatables.net: 2.3.3
-      jquery: 3.7.1
-
-  datatables.net-colreorder-dt@2.1.1:
-    dependencies:
-      datatables.net-colreorder: 2.1.1
-      datatables.net-dt: 2.3.3
-      jquery: 3.7.1
-
-  datatables.net-colreorder@2.1.1:
-    dependencies:
-      datatables.net: 2.3.3
-      jquery: 3.7.1
-
-  datatables.net-dt@2.3.3:
-    dependencies:
-      datatables.net: 2.3.3
-      jquery: 3.7.1
-
-  datatables.net-fixedcolumns-dt@5.0.4:
-    dependencies:
-      datatables.net-dt: 2.3.3
-      datatables.net-fixedcolumns: 5.0.4
-      jquery: 3.7.1
-
-  datatables.net-fixedcolumns@5.0.4:
-    dependencies:
-      datatables.net: 2.3.3
-      jquery: 3.7.1
-
-  datatables.net-fixedheader-dt@4.0.3:
-    dependencies:
-      datatables.net-dt: 2.3.3
-      datatables.net-fixedheader: 4.0.3
-      jquery: 3.7.1
-
-  datatables.net-fixedheader@4.0.3:
-    dependencies:
-      datatables.net: 2.3.3
-      jquery: 3.7.1
-
-  datatables.net-responsive-dt@3.0.6:
-    dependencies:
-      datatables.net-dt: 2.3.3
-      datatables.net-responsive: 3.0.6
-      jquery: 3.7.1
-
-  datatables.net-responsive@3.0.6:
-    dependencies:
-      datatables.net: 2.3.3
-      jquery: 3.7.1
-
-  datatables.net-searchbuilder-dt@1.8.3:
-    dependencies:
-      datatables.net-dt: 2.3.3
-      datatables.net-searchbuilder: 1.8.3
-      jquery: 3.7.1
-
-  datatables.net-searchbuilder@1.8.3:
-    dependencies:
-      datatables.net: 2.3.3
-      jquery: 3.7.1
-
-  datatables.net-select-dt@3.1.0:
-    dependencies:
-      datatables.net-dt: 2.3.3
-      datatables.net-select: 3.1.0
-      jquery: 3.7.1
-
-  datatables.net-select@3.1.0:
-    dependencies:
-      datatables.net: 2.3.3
-      jquery: 3.7.1
-
-  datatables.net-vue3@3.0.4(datatables.net@2.3.3)(vue@3.5.19(typescript@5.9.2)):
-    dependencies:
-      datatables.net: 2.3.3
-      vue: 3.5.19(typescript@5.9.2)
-
-  datatables.net@2.3.3:
-    dependencies:
-      jquery: 3.7.1
 
   db0@0.3.2: {}
 
@@ -8232,8 +8033,6 @@ snapshots:
 
   image-meta@0.2.1: {}
 
-  immediate@3.0.6: {}
-
   impound@1.0.0:
     dependencies:
       exsolve: 1.0.7
@@ -8380,8 +8179,6 @@ snapshots:
       moment: 2.30.1
       topo: 1.1.0
 
-  jquery@3.7.1: {}
-
   js-tokens@4.0.0: {}
 
   js-tokens@9.0.1: {}
@@ -8395,13 +8192,6 @@ snapshots:
       universalify: 2.0.1
     optionalDependencies:
       graceful-fs: 4.2.11
-
-  jszip@3.10.1:
-    dependencies:
-      lie: 3.3.0
-      pako: 1.0.11
-      readable-stream: 2.3.8
-      setimmediate: 1.0.5
 
   junk@4.0.1: {}
 
@@ -8435,10 +8225,6 @@ snapshots:
   lazystream@1.0.1:
     dependencies:
       readable-stream: 2.3.8
-
-  lie@3.3.0:
-    dependencies:
-      immediate: 3.0.6
 
   lightningcss-darwin-arm64@1.30.1:
     optional: true
@@ -9175,8 +8961,6 @@ snapshots:
 
   pako@0.2.9: {}
 
-  pako@1.0.11: {}
-
   parse-gitignore@2.0.0: {}
 
   parse-json@8.3.0:
@@ -9731,8 +9515,6 @@ snapshots:
       send: 1.2.0
     transitivePeerDependencies:
       - supports-color
-
-  setimmediate@1.0.5: {}
 
   setprototypeof@1.2.0: {}
 

@@ -461,7 +461,7 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
     <!-- Sidebar main content -->
     <UiSidebarInset>
       <!-- Navbar -->
-      <UiNavbar sticky class="flex relative h-16 shrink-0 items-center gap-2 border-b px-4">
+      <UiNavbar class="flex relative h-16 shrink-0 items-center gap-2 border-b px-4">
         <UiSidebarTrigger class="-ml-1" />
         <UiDivider orientation="vertical" class="mr-2 h-4 w-px" />
         <UiBreadcrumbs :items="breadcrumbItems" />

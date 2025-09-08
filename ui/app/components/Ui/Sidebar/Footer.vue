@@ -14,7 +14,7 @@ import type { PrimitiveProps } from "reka-ui"
 import type { HTMLAttributes } from "vue"
 
 export const sideBarFooterStyles = tv({
-  base: "flex flex-col gap-2 p-2"
+  base: "flex bg-background bg flex-col gap-2 p-2"
 })
 </script>
 <script setup lang="ts">
