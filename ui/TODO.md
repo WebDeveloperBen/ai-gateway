@@ -16,7 +16,7 @@
 
 # Environment page
 
-- [ ] dd action to team member add member card
+- [ ] add action to team member add member card
 - [ ] add action to applications deploy app card
 - [ ] add action when hovering and clicking api keys
 - [ ] add refresh action to the recent activity card icon button
@@ -79,6 +79,11 @@
 - [ ] Move the policy page into the governance section
 - [ ] create policy / id page or modal
 - [ ] Move the policy creation page to an internal page
+
+# Providers
+
+- [ ] add the ability to add custom models
+- [ ] add ability to add fine tuned models
 
 # Research
 

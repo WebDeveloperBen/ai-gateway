@@ -75,7 +75,7 @@ const deleteApplication = (app: Application) => {
               <div class="flex items-center gap-2">
                 <span class="text-muted-foreground">Models:</span>
                 <div class="flex gap-1">
-                  <UiModelBadge v-for="model in app.models" :key="model" :model="model" size="sm" />
+                  <ModelBadge v-for="model in app.models" :key="model" :model="model" size="sm" />
                 </div>
               </div>
             </div>
