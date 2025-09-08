@@ -351,7 +351,7 @@ const runTest = async () => {
         output: outputTokens,
         total: totalTokens
       },
-      responseTime: endTime - startTime,
+      time: endTime - startTime,
       estimatedCost,
       success: true
     }
@@ -366,7 +366,7 @@ const runTest = async () => {
       response: "",
       model: selectedModelData.value?.name || "Unknown",
       tokensUsed: { input: 0, output: 0, total: 0 },
-      responseTime: 0,
+      time: 0,
       estimatedCost: 0,
       success: false,
       error: "Failed to get response from model"

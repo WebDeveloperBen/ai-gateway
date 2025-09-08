@@ -308,7 +308,7 @@ const switchToTab = (tab: "system" | "user") => {
                     <div v-if="result.success" class="flex items-center gap-4 text-xs">
                       <div class="flex items-center gap-1">
                         <Clock class="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                        <span class="text-muted-foreground">{{ result.responseTime }}ms</span>
+                        <span class="text-muted-foreground">{{ result.time }}ms</span>
                       </div>
 
                       <div class="flex items-center gap-1">

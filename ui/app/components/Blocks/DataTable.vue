@@ -1,3 +1,5 @@
+<!-- Table.vue -->
+<!-- eslint-disable vue/block-tag-newline -->
 <script lang="ts">
 import type { Ref, WatchOptions } from "vue"
 import type { Cell, Header, RowData, TableMeta } from "@tanstack/table-core"
@@ -85,10 +87,12 @@ export interface TableProps<T extends TableData = TableData> extends TableOption
   empty?: string
   sticky?: boolean | "header" | "footer"
   loading?: boolean
-  // keep props but loosen types to plain strings so we don't depend on app config types
   loadingColor?: string
   loadingAnimation?: string
   watchOptions?: WatchOptions
+  /** Column reordering */
+  enableColumnReordering?: boolean
+  /** Typical TanStack options passthroughs */
   globalFilterOptions?: Omit<GlobalFilterOptions<T>, "onGlobalFilterChange">
   columnFiltersOptions?: Omit<ColumnFiltersOptions<T>, "getFilteredRowModel" | "onColumnFiltersChange">
   columnPinningOptions?: Omit<ColumnPinningOptions, "onColumnPinningChange">
@@ -105,7 +109,6 @@ export interface TableProps<T extends TableData = TableData> extends TableOption
   onHover?: (e: Event, row: TableRow<T> | null) => void
   onContextmenu?: ((e: Event, row: TableRow<T>) => void) | Array<(e: Event, row: TableRow<T>) => void>
   class?: any
-  // keep `ui` passthrough for user overrides; just treat it as a bag of classnames
   ui?: {
     root?: any
     base?: any
@@ -156,12 +159,9 @@ import {
 import { reactiveOmit } from "@vueuse/core"
 
 const props = withDefaults(defineProps<TableProps<T>>(), {
-  watchOptions: () => ({
-    deep: true
-  })
+  watchOptions: () => ({ deep: true }),
+  enableColumnReordering: false
 })
-
-// ❌ removed: const appConfig = useAppConfig() as Table["AppConfig"]
 
 const data = ref(props.data ?? []) as Ref<T[]>
 const columns = computed<TableColumn<T>[]>(
@@ -171,22 +171,20 @@ const columns = computed<TableColumn<T>[]>(
 )
 const meta = computed(() => props.meta ?? {})
 
-/** tiny class combiner (shadcn-style) */
+/** tiny class combiner */
 function cn(...inputs: any[]) {
   return inputs.flat(Infinity).filter(Boolean).join(" ")
 }
 
-/** Tailwind/shadcn-flavored UI map mirroring your previous `ui.*` API */
+/** Tailwind/shadcn UI */
 const ui = computed(() => {
   const isStickyHeader = props.sticky === true || props.sticky === "header"
   const isStickyFooter = props.sticky === true || props.sticky === "footer"
-
   return {
     root: ({ class: extra }: any = {}) =>
       cn("relative w-full overflow-auto rounded-2xl border bg-card text-card-foreground shadow-sm", extra),
     base: ({ class: extra }: any = {}) => cn("w-full caption-bottom text-sm", extra),
     caption: ({ class: extra }: any = {}) => cn("mt-4 text-xs text-muted-foreground", extra),
-
     thead: ({ class: extra }: any = {}) =>
       cn(
         "text-sm",
@@ -199,53 +197,44 @@ const ui = computed(() => {
         isStickyFooter && "sticky bottom-0 z-10 bg-muted/60 backdrop-blur supports-[backdrop-filter]:bg-muted/40",
         extra
       ),
-
     tr: ({ class: extra }: any = {}) =>
       cn(
         "border-b last:border-0 data-[selectable=true]:cursor-pointer",
         "hover:bg-muted/30 data-[selected=true]:bg-muted data-[expanded=true]:bg-muted/20",
         extra
       ),
-
     th: ({ pinned, class: extra }: any = {}) =>
       cn(
         "h-10 px-3 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+        "relative", // for drop-indicator positioning
         pinned && "sticky left-0 bg-background shadow-[inset_-1px_0_0_theme(colors.border)]",
         extra
       ),
-
     td: ({ pinned, class: extra }: any = {}) =>
       cn(
-        "p-3 align-middle [&:has([role=checkbox])]:pr-0",
-        "whitespace-nowrap",
+        "p-3 align-middle [&:has([role=checkbox])]:pr-0 whitespace-nowrap",
         pinned && "sticky left-0 bg-background shadow-[inset_-1px_0_0_theme(colors.border)]",
         extra
       ),
-
     separator: ({ class: extra }: any = {}) => cn("h-px bg-border", extra),
     tbody: ({ class: extra }: any = {}) => cn("", extra),
-
     loading: ({ class: extra }: any = {}) => cn("py-10 text-center text-muted-foreground", extra),
     empty: ({ class: extra }: any = {}) => cn("py-10 text-center text-muted-foreground", extra)
   }
 })
 
 const hasFooter = computed(() => {
-  function hasFooterRecursive(columns: TableColumn<T>[]): boolean {
-    for (const column of columns) {
-      if ("footer" in column) {
-        return true
-      }
-      if ("columns" in column && hasFooterRecursive(column.columns as TableColumn<T>[])) {
-        return true
-      }
+  function hasFooterRecursive(cols: TableColumn<T>[]): boolean {
+    for (const c of cols) {
+      if ("footer" in c) return true
+      if ("columns" in c && hasFooterRecursive(c.columns as TableColumn<T>[])) return true
     }
     return false
   }
-
   return hasFooterRecursive(columns.value)
 })
 
+/** TanStack controlled states */
 const globalFilterState = defineModel<string>("globalFilter", { default: undefined })
 const columnFiltersState = defineModel<ColumnFiltersState>("columnFilters", { default: [] })
 const columnOrderState = defineModel<ColumnOrderState>("columnOrder", { default: [] })
@@ -262,6 +251,117 @@ const paginationState = defineModel<PaginationState>("pagination", { default: {}
 
 const tableRef = ref<HTMLTableElement | null>(null)
 
+/** Column reordering drag state + hysteresis */
+const draggedColumn = ref<string | null>(null)
+const dragOverColumn = ref<string | null>(null)
+const dropPosition = ref<"before" | "after" | null>(null)
+const HYSTERESIS = 0.15 // 15% dead-zone around mid; adjust 0.1–0.2 as desired
+const stableDropPos = ref<Record<string, "before" | "after">>({})
+
+/** Column reordering fns */
+const handleColumnDragStart = (e: DragEvent, columnId: string) => {
+  if (!props.enableColumnReordering) return
+  draggedColumn.value = columnId
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = "move"
+    e.dataTransfer.setData("text/plain", columnId)
+  }
+}
+
+const handleColumnDragOver = (e: DragEvent, columnId: string) => {
+  if (!props.enableColumnReordering || !draggedColumn.value) return
+  e.preventDefault()
+  e.dataTransfer!.dropEffect = "move"
+
+  // Compute relative X and apply hysteresis against center
+  const el = e.currentTarget as HTMLElement
+  const rect = el.getBoundingClientRect()
+  const rel = (e.clientX - rect.left) / rect.width
+
+  let nextPos: "before" | "after" = stableDropPos.value[columnId] ?? "after"
+  if (rel < 0.5 - HYSTERESIS) nextPos = "before"
+  else if (rel > 0.5 + HYSTERESIS) nextPos = "after"
+
+  // Only show indicator if the drop would actually change the order
+  const currentOrder =
+    columnOrderState.value.length > 0 ? [...columnOrderState.value] : tableApi.getAllLeafColumns().map((c) => c.id)
+
+  const draggedIndex = currentOrder.indexOf(draggedColumn.value)
+  const targetIndex = currentOrder.indexOf(columnId)
+
+  let wouldChangeOrder = false
+  if (draggedIndex !== -1 && targetIndex !== -1) {
+    if (nextPos === "before") {
+      wouldChangeOrder = targetIndex !== draggedIndex + 1
+    } else {
+      wouldChangeOrder = targetIndex !== draggedIndex - 1
+    }
+  }
+
+  dragOverColumn.value = columnId
+  stableDropPos.value[columnId] = nextPos
+  dropPosition.value = wouldChangeOrder ? nextPos : null
+}
+
+const handleColumnDragLeave = () => {
+  if (!props.enableColumnReordering) return
+  dragOverColumn.value = null
+  dropPosition.value = null
+}
+
+const handleColumnDrop = (e: DragEvent, targetColumnId: string) => {
+  if (!props.enableColumnReordering || !draggedColumn.value) return
+  e.preventDefault()
+
+  const draggedId = draggedColumn.value
+  if (draggedId === targetColumnId) {
+    draggedColumn.value = null
+    dragOverColumn.value = null
+    dropPosition.value = null
+    return
+  }
+
+  const currentOrder =
+    columnOrderState.value.length > 0 ? [...columnOrderState.value] : tableApi.getAllLeafColumns().map((c) => c.id)
+
+  const draggedIndex = currentOrder.indexOf(draggedId)
+  const targetIndex = currentOrder.indexOf(targetColumnId)
+
+  if (draggedIndex !== -1 && targetIndex !== -1) {
+    currentOrder.splice(draggedIndex, 1)
+    let newTargetIndex = targetIndex
+    if (draggedIndex < targetIndex) newTargetIndex = targetIndex - 1
+    if (dropPosition.value === "after") newTargetIndex = newTargetIndex + 1
+    currentOrder.splice(newTargetIndex, 0, draggedId)
+    columnOrderState.value = currentOrder
+  }
+
+  draggedColumn.value = null
+  dragOverColumn.value = null
+  dropPosition.value = null
+  stableDropPos.value = {}
+}
+
+const handleColumnDragEnd = () => {
+  draggedColumn.value = null
+  dragOverColumn.value = null
+  dropPosition.value = null
+  stableDropPos.value = {}
+}
+
+/** Visibility helpers (optional) */
+const toggleColumnVisibility = (columnId: string) => {
+  const column = tableApi.getColumn(columnId)
+  if (column) {
+    columnVisibilityState.value = {
+      ...columnVisibilityState.value,
+      [columnId]: !column.getIsVisible()
+    }
+  }
+}
+const resetColumnOrder = () => (columnOrderState.value = [])
+
+/** TanStack table */
 const tableApi = useVueTable({
   ...reactiveOmit(
     props,
@@ -283,32 +383,32 @@ const tableApi = useVueTable({
   meta: meta.value,
   getCoreRowModel: getCoreRowModel(),
   ...(props.globalFilterOptions || {}),
-  onGlobalFilterChange: (updaterOrValue) => valueUpdater(updaterOrValue, globalFilterState),
+  onGlobalFilterChange: (u) => valueUpdater(u, globalFilterState),
   ...(props.columnFiltersOptions || {}),
   getFilteredRowModel: getFilteredRowModel(),
-  onColumnFiltersChange: (updaterOrValue) => valueUpdater(updaterOrValue, columnFiltersState),
-  onColumnOrderChange: (updaterOrValue) => valueUpdater(updaterOrValue, columnOrderState),
+  onColumnFiltersChange: (u) => valueUpdater(u, columnFiltersState),
+  onColumnOrderChange: (u) => valueUpdater(u, columnOrderState),
   ...(props.visibilityOptions || {}),
-  onColumnVisibilityChange: (updaterOrValue) => valueUpdater(updaterOrValue, columnVisibilityState),
+  onColumnVisibilityChange: (u) => valueUpdater(u, columnVisibilityState),
   ...(props.columnPinningOptions || {}),
-  onColumnPinningChange: (updaterOrValue) => valueUpdater(updaterOrValue, columnPinningState),
+  onColumnPinningChange: (u) => valueUpdater(u, columnPinningState),
   ...(props.columnSizingOptions || {}),
-  onColumnSizingChange: (updaterOrValue) => valueUpdater(updaterOrValue, columnSizingState),
-  onColumnSizingInfoChange: (updaterOrValue) => valueUpdater(updaterOrValue, columnSizingInfoState),
+  onColumnSizingChange: (u) => valueUpdater(u, columnSizingState),
+  onColumnSizingInfoChange: (u) => valueUpdater(u, columnSizingInfoState),
   ...(props.rowSelectionOptions || {}),
-  onRowSelectionChange: (updaterOrValue) => valueUpdater(updaterOrValue, rowSelectionState),
+  onRowSelectionChange: (u) => valueUpdater(u, rowSelectionState),
   ...(props.rowPinningOptions || {}),
-  onRowPinningChange: (updaterOrValue) => valueUpdater(updaterOrValue, rowPinningState),
+  onRowPinningChange: (u) => valueUpdater(u, rowPinningState),
   ...(props.sortingOptions || {}),
   getSortedRowModel: getSortedRowModel(),
-  onSortingChange: (updaterOrValue) => valueUpdater(updaterOrValue, sortingState),
+  onSortingChange: (u) => valueUpdater(u, sortingState),
   ...(props.groupingOptions || {}),
-  onGroupingChange: (updaterOrValue) => valueUpdater(updaterOrValue, groupingState),
+  onGroupingChange: (u) => valueUpdater(u, groupingState),
   ...(props.expandedOptions || {}),
   getExpandedRowModel: getExpandedRowModel(),
-  onExpandedChange: (updaterOrValue) => valueUpdater(updaterOrValue, expandedState),
+  onExpandedChange: (u) => valueUpdater(u, expandedState),
   ...(props.paginationOptions || {}),
-  onPaginationChange: (updaterOrValue) => valueUpdater(updaterOrValue, paginationState),
+  onPaginationChange: (u) => valueUpdater(u, paginationState),
   ...(props.facetedOptions || {}),
   state: {
     get globalFilter() {
@@ -357,46 +457,30 @@ function valueUpdater<T extends Updater<any>>(updaterOrValue: T, ref: Ref) {
   ref.value = typeof updaterOrValue === "function" ? updaterOrValue(ref.value) : updaterOrValue
 }
 
+/** Row events */
 function onRowSelect(e: Event, row: TableRow<T>) {
-  if (!props.onSelect) {
-    return
-  }
+  if (!props.onSelect) return
   const target = e.target as HTMLElement
   const isInteractive = target.closest("button") || target.closest("a")
-  if (isInteractive) {
-    return
-  }
-
+  if (isInteractive) return
   e.preventDefault()
   e.stopPropagation()
-
-  // FIXME: `e` should be the first argument for consistency
   props.onSelect(row, e)
 }
-
 function onRowHover(e: Event, row: TableRow<T> | null) {
-  if (!props.onHover) {
-    return
-  }
-
+  if (!props.onHover) return
   props.onHover(e, row)
 }
-
 function onRowContextmenu(e: Event, row: TableRow<T>) {
-  if (!props.onContextmenu) {
-    return
-  }
-
-  if (Array.isArray(props.onContextmenu)) {
-    props.onContextmenu.forEach((fn) => fn(e, row))
-  } else {
-    props.onContextmenu(e, row)
-  }
+  if (!props.onContextmenu) return
+  if (Array.isArray(props.onContextmenu)) props.onContextmenu.forEach((fn) => fn(e, row))
+  else props.onContextmenu(e, row)
 }
 
+/** helpers */
 function resolveValue<T, A = undefined>(prop: T | ((arg: A) => T), arg?: A): T | undefined {
   if (typeof prop === "function") {
-    // @ts-expect-error: TS can't know if prop is a function here
+    // @ts-expect-error
     return prop(arg)
   }
   return prop
@@ -412,12 +496,13 @@ watch(
 
 defineExpose({
   tableRef,
-  tableApi
+  tableApi,
+  resetColumnOrder,
+  toggleColumnVisibility
 })
 </script>
 
 <template>
-  <!-- same template, but now bound to Tailwind/shadcn classes via `ui.*` -->
   <Primitive :as="as" :class="ui.root({ class: [props.ui?.root, props.class] })">
     <table ref="tableRef" :class="ui.base({ class: [props.ui?.base] })">
       <caption v-if="caption || !!$slots.caption" :class="ui.caption({ class: [props.ui?.caption] })">
@@ -439,20 +524,53 @@ defineExpose({
             :scope="header.colSpan > 1 ? 'colgroup' : 'col'"
             :colspan="header.colSpan > 1 ? header.colSpan : undefined"
             :rowspan="header.rowSpan > 1 ? header.rowSpan : undefined"
+            :draggable="props.enableColumnReordering && !header.isPlaceholder"
             :class="
-              ui.th({
-                class: [props.ui?.th, resolveValue(header.column.columnDef.meta?.class?.th, header)],
-                pinned: !!header.column.getIsPinned()
-              })
+              cn(
+                ui.th({
+                  class: [props.ui?.th, resolveValue(header.column.columnDef.meta?.class?.th, header)],
+                  pinned: !!header.column.getIsPinned()
+                }),
+                props.enableColumnReordering &&
+                  !header.isPlaceholder &&
+                  'cursor-move select-none transition-all duration-200',
+                draggedColumn === header.id && 'opacity-50 scale-95',
+                dragOverColumn === header.id && draggedColumn !== header.id && 'bg-muted/30'
+              )
             "
+            @dragstart="handleColumnDragStart($event, header.id)"
+            @dragover="handleColumnDragOver($event, header.id)"
+            @dragleave="handleColumnDragLeave"
+            @drop="handleColumnDrop($event, header.id)"
+            @dragend="handleColumnDragEnd"
           >
-            <slot :name="`${header.id}-header`" v-bind="header.getContext()">
-              <FlexRender
-                v-if="!header.isPlaceholder"
-                :render="header.column.columnDef.header"
-                :props="header.getContext()"
-              />
-            </slot>
+            <!-- Stable drop indicator using hysteresis + gutter centering -->
+            <div
+              v-if="
+                dragOverColumn === header.id &&
+                draggedColumn !== header.id &&
+                props.enableColumnReordering &&
+                dropPosition
+              "
+              :class="
+                cn(
+                  'absolute inset-y-0 w-1 bg-primary pointer-events-none',
+                  (stableDropPos[header.id] ?? 'after') === 'before'
+                    ? 'left-0 -translate-x-1/2'
+                    : 'right-0 translate-x-1/2'
+                )
+              "
+            />
+
+            <div class="relative group">
+              <slot :name="`${header.id}-header`" v-bind="header.getContext()">
+                <FlexRender
+                  v-if="!header.isPlaceholder"
+                  :render="header.column.columnDef.header"
+                  :props="header.getContext()"
+                />
+              </slot>
+            </div>
           </th>
         </tr>
 
@@ -500,6 +618,8 @@ defineExpose({
                 </slot>
               </td>
             </tr>
+
+            <!-- Expanded row -->
             <tr v-if="row.getIsExpanded()" :class="ui.tr({ class: [props.ui?.tr] })">
               <td :colspan="row.getAllCells().length" :class="ui.td({ class: [props.ui?.td] })">
                 <slot name="expanded" :row="row" />
@@ -515,7 +635,7 @@ defineExpose({
         </tr>
 
         <tr v-else>
-          <td :colspan="tableApi.getAllLeafColumns().length" :class="ui.empty({ class: props.ui?.empty })">
+          <td :colspan="tableApi.getAllLeafColumns().length" :class="ui.empty({ class: [props.ui?.empty] })">
             <slot name="empty">
               {{ empty || "No Results" }}
             </slot>
