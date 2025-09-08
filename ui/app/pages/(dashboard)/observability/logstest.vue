@@ -167,14 +167,12 @@ const logData: LogEntry[] = [
   }
 ]
 </script>
+
 <script setup lang="ts">
 import { Download, Filter, Code, History, Play, ChevronDown, ChevronUp } from "lucide-vue-next"
-import type { Config, ConfigColumns } from "datatables.net"
-import type DataTableRef from "datatables.net"
+import type { TableColumn } from "~/components/Blocks/DataTable.vue"
 
 const appConfig = useAppConfig()
-
-const tableRef = shallowRef<InstanceType<typeof DataTableRef<any[]>> | null>(null)
 
 const getLevelColor = (level: LogEntry["level"]) => {
   switch (level) {
@@ -204,18 +202,28 @@ const getStatusColor = (statusCode: number) => {
   return "text-gray-600 bg-gray-50 border-gray-200"
 }
 
+const getMethodColor = (method: string) => {
+  const methodColors = {
+    GET: "text-blue-600 bg-blue-50 border-blue-200",
+    POST: "text-green-600 bg-green-50 border-green-200",
+    PUT: "text-yellow-600 bg-yellow-50 border-yellow-200",
+    DELETE: "text-red-600 bg-red-50 border-red-200"
+  }
+  return methodColors[method as keyof typeof methodColors] || "text-gray-600 bg-gray-50 border-gray-200"
+}
+
 const searchQuery = ref("")
 const advancedQuery = ref("")
 const isExporting = ref(false)
 const showAdvancedQuery = ref(false)
 const queryHistory = ref<string[]>([])
-// KQL-like query parsing
+
+// KQL-like query parsing (same as original)
 const parseAdvancedQuery = (query: string) => {
   if (!query.trim()) return logData
 
   let filteredData = [...logData]
 
-  // Simple query parser for demo purposes
   const parts = query.split("|").map((p) => p.trim())
 
   for (const part of parts) {
@@ -226,16 +234,12 @@ const parseAdvancedQuery = (query: string) => {
       part.includes(">") ||
       part.includes("<")
     ) {
-      // Handle where clauses
       filteredData = applyWhereClause(filteredData, part)
     } else if (part.startsWith("order by ")) {
-      // Handle ordering
       filteredData = applyOrderBy(filteredData, part)
     } else if (part.startsWith("limit ") || part.startsWith("take ")) {
-      // Handle limit
       filteredData = applyLimit(filteredData, part)
     } else if (part.includes("contains")) {
-      // Handle contains operations
       filteredData = applyContains(filteredData, part)
     }
   }
@@ -319,55 +323,23 @@ const filteredLogData = computed(() => {
   if (showAdvancedQuery.value && advancedQuery.value.trim()) {
     return parseAdvancedQuery(advancedQuery.value)
   }
+
+  // Simple search functionality
+  if (searchQuery.value.trim()) {
+    return logData.filter(
+      (log) =>
+        log.message.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        log.application.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        log.requestId.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        log.tags.some((tag) => tag.toLowerCase().includes(searchQuery.value.toLowerCase()))
+    )
+  }
+
   return logData
 })
 
-const handleSearch = (query: string) => {
-  if (tableRef.value) {
-    tableRef.value.search(query).draw()
-  }
-}
-
-const handleExportCopy = () => {
-  if (tableRef.value) {
-    tableRef.value.buttons("copy:name").trigger()
-  }
-}
-
-const handleExportCSV = () => {
-  if (tableRef.value) {
-    tableRef.value.buttons("csv:name").trigger()
-  }
-}
-
-const handleExportExcel = () => {
-  if (tableRef.value) {
-    tableRef.value.buttons("excel:name").trigger()
-  }
-}
-
-const handleExportJSON = () => {
-  if (tableRef.value) {
-    isExporting.value = true
-    const data = tableRef.value.data().toArray()
-    const jsonData = JSON.stringify(data, null, 2)
-    const blob = new Blob([jsonData], { type: "application/json" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `logs-${new Date().toISOString().split("T")[0]}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-    isExporting.value = false
-  }
-}
-
-const handleClearFilters = () => {
-  searchQuery.value = ""
-  advancedQuery.value = ""
-  if (tableRef.value) {
-    tableRef.value.search("").columns().search("").draw()
-  }
+const loadHistoryQuery = (query: string) => {
+  advancedQuery.value = query
 }
 
 const handleRunQuery = () => {
@@ -381,310 +353,215 @@ const handleRunQuery = () => {
   }
 }
 
-const loadHistoryQuery = (query: string) => {
-  advancedQuery.value = query
+const handleClearFilters = () => {
+  searchQuery.value = ""
+  advancedQuery.value = ""
 }
 
-const formatExpandedRow = (data: LogEntry) => {
-  // Helper functions to generate colors inline
-  const getStatusColorInline = (statusCode: number) => {
-    if (statusCode >= 200 && statusCode < 300) {
-      return "text-green-600 bg-green-50 border-green-200"
-    } else if (statusCode >= 300 && statusCode < 400) {
-      return "text-blue-600 bg-blue-50 border-blue-200"
-    } else if (statusCode >= 400 && statusCode < 500) {
-      return "text-yellow-600 bg-yellow-50 border-yellow-200"
-    } else if (statusCode >= 500) {
-      return "text-red-600 bg-red-50 border-red-200"
-    }
-    return "text-gray-600 bg-gray-50 border-gray-200"
-  }
-
-  const getLevelColorInline = (level: LogEntry["level"]) => {
-    switch (level) {
-      case "error":
-        return "text-red-600 bg-red-50 border-red-200"
-      case "warn":
-        return "text-yellow-600 bg-yellow-50 border-yellow-200"
-      case "info":
-        return "text-blue-600 bg-blue-50 border-blue-200"
-      case "debug":
-        return "text-gray-600 bg-gray-50 border-gray-200"
-      default:
-        return "text-gray-600 bg-gray-50 border-gray-200"
-    }
-  }
-
-  const getMethodColor = (method: string) => {
-    const methodColors = {
-      GET: "text-blue-600 bg-blue-50 border-blue-200",
-      POST: "text-green-600 bg-green-50 border-green-200",
-      PUT: "text-yellow-600 bg-yellow-50 border-yellow-200",
-      DELETE: "text-red-600 bg-red-50 border-red-200"
-    }
-    return methodColors[method as keyof typeof methodColors] || "text-gray-600 bg-gray-50 border-gray-200"
-  }
-
-  return `
-    <div class="bg-slate-50 p-4 rounded-lg space-y-4 text-sm border">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div class="space-y-3">
-          <h4 class="font-semibold text-slate-900 border-b border-slate-200 pb-1">Request Details</h4>
-          <div class="space-y-2 text-xs">
-            <div><span class="font-medium text-slate-700">Request ID:</span> <code class="bg-white px-2 py-1 rounded text-slate-800 border">${data.requestId}</code></div>
-            <div><span class="font-medium text-slate-700">Method:</span> <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${getMethodColor(data.method)}">${data.method}</span></div>
-            <div><span class="font-medium text-slate-700">Endpoint:</span> <code class="bg-white px-2 py-1 rounded text-slate-800 border">${data.endpoint}</code></div>
-            <div><span class="font-medium text-slate-700">Status Code:</span> <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${getStatusColorInline(data.statusCode)}">${data.statusCode}</span></div>
-          </div>
-        </div>
-        
-        <div class="space-y-3">
-          <h4 class="font-semibold text-slate-900 border-b border-slate-200 pb-1">Application & User</h4>
-          <div class="space-y-2 text-xs">
-            <div><span class="font-medium text-slate-700">Application:</span> <span class="text-slate-900 font-medium">${data.application}</span></div>
-            <div><span class="font-medium text-slate-700">User ID:</span> <span class="text-slate-800">${data.userId || "N/A"}</span></div>
-            <div><span class="font-medium text-slate-700">Source:</span> <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium border bg-slate-100 border-slate-300 text-slate-700">${data.source}</span></div>
-            <div><span class="font-medium text-slate-700">Response Time:</span> <span class="font-mono ${data.responseTime > 2000 ? "text-red-600" : data.responseTime > 1000 ? "text-yellow-600" : "text-green-600"}">${data.responseTime}ms</span></div>
-          </div>
-        </div>
-        
-        <div class="space-y-3">
-          <h4 class="font-semibold text-slate-900 border-b border-slate-200 pb-1">Metadata</h4>
-          <div class="space-y-2 text-xs">
-            <div><span class="font-medium text-slate-700">Timestamp:</span> <span class="font-mono text-slate-800">${new Date(data.timestamp).toLocaleString()}</span></div>
-            <div><span class="font-medium text-slate-700">Level:</span> <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border ${getLevelColorInline(data.level)}"><div class="w-1.5 h-1.5 rounded-full bg-current opacity-70"></div>${data.level.toUpperCase()}</span></div>
-            <div><span class="font-medium text-slate-700">Tags:</span> 
-              <div class="flex flex-wrap gap-1 mt-1">
-                ${data.tags.map((tag) => `<span class="inline-flex items-center px-2 py-1 rounded text-xs bg-slate-200 text-slate-700 border border-slate-300">${tag}</span>`).join("")}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="space-y-3 pt-2 border-t border-slate-200">
-        <h4 class="font-semibold text-slate-900">Message</h4>
-        <div class="bg-white p-3 rounded border border-slate-200 font-mono text-xs leading-relaxed text-slate-800">
-          ${data.message}
-        </div>
-      </div>
-    </div>
-  `
+// Export functions
+const handleExportJSON = () => {
+  isExporting.value = true
+  const jsonData = JSON.stringify(filteredLogData.value, null, 2)
+  const blob = new Blob([jsonData], { type: "application/json" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `logs2-${new Date().toISOString().split("T")[0]}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+  isExporting.value = false
 }
 
-const handleRowExpansion = () => {
-  if (tableRef.value) {
-    const table = tableRef.value
-
-    table.on('click', 'tbody td.dt-control', function (e: Event) {
-      let tr = (e.target as HTMLElement).closest('tr')!
-      let row = table.row(tr)
-
-      if (row.child.isShown()) {
-        // This row is already open - close it
-        row.child.hide()
-      } else {
-        // Open this row
-        row.child(formatExpandedRow(row.data())).show()
-      }
-    })
-  }
-}
-
-watch(searchQuery, (newQuery) => {
-  if (!advancedQuery.value.trim()) {
-    handleSearch(newQuery)
-  }
-})
-
-const columns: ConfigColumns[] = [
+// Define table columns using TanStack Table format
+const columns: TableColumn<LogEntry>[] = [
   {
-    data: "timestamp",
-    title: "Timestamp",
-    width: "180px",
-    render(data, _, _row, ___) {
-      const date = new Date(data)
-      return `
-        <div class="text-xs font-mono leading-tight">
-          <div class="font-medium">${date.toLocaleDateString()}</div>
-          <div class="text-muted-foreground">${date.toLocaleTimeString()}</div>
-        </div>
-      `
+    accessorKey: "timestamp",
+    header: "Timestamp",
+    cell: ({ getValue }) => {
+      const date = new Date(getValue<string>())
+      return h("div", { class: "text-xs font-mono leading-tight" }, [
+        h("div", { class: "font-medium" }, date.toLocaleDateString()),
+        h("div", { class: "text-muted-foreground" }, date.toLocaleTimeString())
+      ])
+    },
+    size: 180
+  },
+  {
+    accessorKey: "level",
+    header: "Level",
+    cell: ({ getValue }) => {
+      const level = getValue<LogEntry["level"]>()
+      const colorClass = getLevelColor(level)
+      return h(
+        "div",
+        {
+          class: `inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium border ${colorClass}`
+        },
+        [h("div", { class: "size-1.5 rounded-full bg-current opacity-70" }), level.toUpperCase()]
+      )
+    },
+    size: 100
+  },
+  {
+    accessorKey: "source",
+    header: "Source",
+    cell: ({ getValue }) => {
+      const source = getValue<string>()
+      return h(
+        "div",
+        {
+          class: "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium border bg-muted/20 border-muted"
+        },
+        source
+      )
+    },
+    size: 100
+  },
+  {
+    accessorKey: "application",
+    header: "Application",
+    cell: ({ getValue }) => {
+      const app = getValue<string>()
+      return h(
+        "div",
+        {
+          class: "font-medium text-xs truncate",
+          title: app
+        },
+        app
+      )
+    },
+    size: 150
+  },
+  {
+    accessorKey: "message",
+    header: "Message",
+    cell: ({ getValue }) => {
+      const message = getValue<string>()
+      return h(
+        "div",
+        {
+          class: "text-xs max-w-md truncate leading-tight",
+          title: message
+        },
+        message
+      )
     }
   },
   {
-    data: "level",
-    title: "Level",
-    width: "100px",
-    render(data, _, _row, ___) {
-      const colorClass = getLevelColor(data)
-      return `
-        <div class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium border ${colorClass}">
-          <div class="size-1.5 rounded-full bg-current opacity-70"></div>
-          ${data.toUpperCase()}
-        </div>
-      `
-    }
+    accessorKey: "method",
+    header: "Method",
+    cell: ({ getValue }) => {
+      const method = getValue<string>()
+      const colorClass = getMethodColor(method)
+      return h(
+        "span",
+        {
+          class: `inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium border ${colorClass}`
+        },
+        method
+      )
+    },
+    size: 80
   },
   {
-    data: "source",
-    title: "Source",
-    width: "100px",
-    render(data, _, _row, ___) {
-      return `
-        <div class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium border bg-muted/20 border-muted">
-          ${data}
-        </div>
-      `
-    }
+    accessorKey: "statusCode",
+    header: "Status",
+    cell: ({ getValue }) => {
+      const status = getValue<number>()
+      const colorClass = getStatusColor(status)
+      return h(
+        "span",
+        {
+          class: `inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium border ${colorClass}`
+        },
+        status.toString()
+      )
+    },
+    size: 80
   },
   {
-    data: "application",
-    title: "Application",
-    width: "150px",
-    render(data, _, _row, ___) {
-      return `<div class="font-medium text-xs truncate" title="${data}">${data}</div>`
-    }
+    accessorKey: "responseTime",
+    header: "Response Time",
+    cell: ({ getValue }) => {
+      const time = getValue<number>()
+      const colorClass =
+        time > 2000
+          ? "text-red-600 bg-red-50"
+          : time > 1000
+            ? "text-yellow-600 bg-yellow-50"
+            : "text-green-600 bg-green-50"
+      return h(
+        "span",
+        {
+          class: `text-xs font-mono ${colorClass} px-1 py-0.5 rounded leading-none`
+        },
+        `${time}ms`
+      )
+    },
+    size: 120
   },
   {
-    data: "message",
-    title: "Message",
-    render(data, _, _row, ___) {
-      return `<div class="text-xs max-w-md truncate leading-tight" title="${data}">${data}</div>`
-    }
-  },
-  {
-    data: "method",
-    title: "Method",
-    width: "80px",
-    render(data, _, _row, ___) {
-      const methodColors = {
-        GET: "text-blue-600 bg-blue-50 border-blue-200",
-        POST: "text-green-600 bg-green-50 border-green-200",
-        PUT: "text-yellow-600 bg-yellow-50 border-yellow-200",
-        DELETE: "text-red-600 bg-red-50 border-red-200"
-      }
-      const colorClass = methodColors[data as keyof typeof methodColors] || "text-gray-600 bg-gray-50 border-gray-200"
-      return `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium border ${colorClass}">${data}</span>`
-    }
-  },
-  {
-    data: "statusCode",
-    title: "Status",
-    width: "80px",
-    render(data, _, _row, ___) {
-      const colorClass = getStatusColor(data)
-      return `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium border ${colorClass}">${data}</span>`
-    }
-  },
-  {
-    data: "responseTime",
-    title: "Response Time",
-    width: "120px",
-    render(data, _, _row, ___) {
-      const isSlowResponse = data > 2000
-      const colorClass = isSlowResponse
-        ? "text-red-600 bg-red-50"
-        : data > 1000
-          ? "text-yellow-600 bg-yellow-50"
-          : "text-green-600 bg-green-50"
-      return `<span class="text-xs font-mono ${colorClass} px-1 py-0.5 rounded leading-none">${data}ms</span>`
-    }
-  },
-  {
-    data: "tags",
-    title: "Tags",
-    width: "200px",
-    render(data, _, _row, ___) {
-      const tags = Array.isArray(data) ? data : []
+    accessorKey: "tags",
+    header: "Tags",
+    cell: ({ getValue }) => {
+      const tags = getValue<string[]>()
       const displayTags = tags.slice(0, 2)
       const remainingCount = Math.max(0, tags.length - 2)
 
-      let html = displayTags
-        .map(
-          (tag) =>
-            `<span class="inline-flex items-center px-1 py-0.5 rounded text-xs bg-secondary text-secondary-foreground border mr-1">${tag}</span>`
+      const tagElements = displayTags.map((tag) =>
+        h(
+          "span",
+          {
+            class:
+              "inline-flex items-center px-1 py-0.5 rounded text-xs bg-secondary text-secondary-foreground border mr-1"
+          },
+          tag
         )
-        .join("")
+      )
 
       if (remainingCount > 0) {
-        html += `<span class="text-xs text-muted-foreground">+${remainingCount}</span>`
+        tagElements.push(h("span", { class: "text-xs text-muted-foreground" }, `+${remainingCount}`))
       }
 
-      return `<div class="flex flex-wrap gap-0.5" title="${tags.join(", ")}">${html}</div>`
-    }
+      return h(
+        "div",
+        {
+          class: "flex flex-wrap gap-0.5",
+          title: tags.join(", ")
+        },
+        tagElements
+      )
+    },
+    size: 200
   },
   {
-    data: "requestId",
-    title: "Request ID",
-    width: "120px",
-    render(data, _, _row, ___) {
-      return `<code class="text-xs bg-muted px-1 py-0.5 rounded font-mono leading-none">${data}</code>`
-    }
-  },
-  {
-    className: "dt-control",
-    orderable: false,
-    data: null,
-    defaultContent: "",
-    width: "30px"
+    accessorKey: "requestId",
+    header: "Request ID",
+    cell: ({ getValue }) => {
+      const id = getValue<string>()
+      return h(
+        "code",
+        {
+          class: "text-xs bg-muted px-1 py-0.5 rounded font-mono leading-none"
+        },
+        id
+      )
+    },
+    size: 120
   }
 ]
 
-const options: Config = {
-  select: true,
-  autoWidth: true,
-  responsive: true,
-  colReorder: {
-    allowReorder: true
-  },
-  colResize: true,
-  order: [[0, "desc"]], // Order by timestamp descending (most recent first)
-  pageLength: 100,
-  lengthMenu: [
-    [50, 100, 200, 500],
-    [50, 100, 200, 500]
-  ],
-  searching: true,
-
-  buttons: [
-    {
-      extend: "colvis",
-      text: "Columns",
-      columns: ":not(.no-export)",
-    },
-    "copy",
-    "excel",
-    "pdf",
-    "print",
-    "csv",
-  ],
-
-  layout: {
-    top1Start: {
-      features: {
-        buttons: true,
-      },
-      className: "pb-5",
-    },
-    topStart: null,
-    topEnd: null,
-    bottomStart: null,
-    bottomEnd: {
-      features: [
-        {
-          paging: true,
-        },
-      ],
-      className: "pt-5",
-    },
-  },
-}
+// Table sorting - default to timestamp descending
+const sorting = ref([{ id: "timestamp", desc: true }])
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
-    <PageHeader title="Logs" :subtext="`Monitor and analyze ${appConfig.app.name} gateway logs in real-time`">
+    <PageHeader
+      title="Logs (TanStack Table)"
+      :subtext="`Monitor and analyze ${appConfig.app.name} gateway logs with TanStack Table`"
+    >
       <div class="flex items-center gap-2">
         <UiDropdownMenu>
           <UiDropdownMenuTrigger as-child>
@@ -694,18 +571,6 @@ const options: Config = {
             </UiButton>
           </UiDropdownMenuTrigger>
           <UiDropdownMenuContent align="end">
-            <UiDropdownMenuItem @click="handleExportCopy">
-              <Download class="mr-2 size-4" />
-              Copy to Clipboard
-            </UiDropdownMenuItem>
-            <UiDropdownMenuItem @click="handleExportCSV">
-              <Download class="mr-2 size-4" />
-              Export CSV
-            </UiDropdownMenuItem>
-            <UiDropdownMenuItem @click="handleExportExcel">
-              <Download class="mr-2 size-4" />
-              Export Excel
-            </UiDropdownMenuItem>
             <UiDropdownMenuItem @click="handleExportJSON" :disabled="isExporting">
               <Download class="mr-2 size-4" />
               {{ isExporting ? "Exporting..." : "Export JSON" }}
@@ -800,13 +665,106 @@ const options: Config = {
       </UiCardContent>
     </UiCard>
 
-    <!-- Logs Table -->
-    <UiDatatable 
-      :options="options" 
-      :columns="columns" 
-      :data="filteredLogData" 
-      @ready="(table) => { tableRef = table; handleRowExpansion(); }"
-      class="[&_tr.shown]:bg-muted/10 [&_.child_td]:!p-0 [&_.child]:!border-none"
-    />
+    <!-- Logs Table using TanStack Table -->
+    <BlocksDataTable :data="filteredLogData" :columns="columns" v-model:sorting="sorting" class="border rounded-lg">
+      <template #expanded="{ row }">
+        <div class="bg-slate-50 p-4 rounded-lg space-y-4 text-sm border">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="space-y-3">
+              <h4 class="font-semibold text-slate-900 border-b border-slate-200 pb-1">Request Details</h4>
+              <div class="space-y-2 text-xs">
+                <div>
+                  <span class="font-medium text-slate-700">Request ID:</span>
+                  <code class="bg-white px-2 py-1 rounded text-slate-800 border">{{ row.original.requestId }}</code>
+                </div>
+                <div>
+                  <span class="font-medium text-slate-700">Method:</span>
+                  <span
+                    :class="`inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${getMethodColor(row.original.method)}`"
+                    >{{ row.original.method }}</span
+                  >
+                </div>
+                <div>
+                  <span class="font-medium text-slate-700">Endpoint:</span>
+                  <code class="bg-white px-2 py-1 rounded text-slate-800 border">{{ row.original.endpoint }}</code>
+                </div>
+                <div>
+                  <span class="font-medium text-slate-700">Status Code:</span>
+                  <span
+                    :class="`inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${getStatusColor(row.original.statusCode)}`"
+                    >{{ row.original.statusCode }}</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <h4 class="font-semibold text-slate-900 border-b border-slate-200 pb-1">Application & User</h4>
+              <div class="space-y-2 text-xs">
+                <div>
+                  <span class="font-medium text-slate-700">Application:</span>
+                  <span class="text-slate-900 font-medium">{{ row.original.application }}</span>
+                </div>
+                <div>
+                  <span class="font-medium text-slate-700">User ID:</span>
+                  <span class="text-slate-800">{{ row.original.userId || "N/A" }}</span>
+                </div>
+                <div>
+                  <span class="font-medium text-slate-700">Source:</span>
+                  <span
+                    class="inline-flex items-center px-2 py-1 rounded text-xs font-medium border bg-slate-100 border-slate-300 text-slate-700"
+                    >{{ row.original.source }}</span
+                  >
+                </div>
+                <div>
+                  <span class="font-medium text-slate-700">Response Time:</span>
+                  <span
+                    :class="`font-mono ${row.original.responseTime > 2000 ? 'text-red-600' : row.original.responseTime > 1000 ? 'text-yellow-600' : 'text-green-600'}`"
+                    >{{ row.original.responseTime }}ms</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <h4 class="font-semibold text-slate-900 border-b border-slate-200 pb-1">Metadata</h4>
+              <div class="space-y-2 text-xs">
+                <div>
+                  <span class="font-medium text-slate-700">Timestamp:</span>
+                  <span class="font-mono text-slate-800">{{ new Date(row.original.timestamp).toLocaleString() }}</span>
+                </div>
+                <div>
+                  <span class="font-medium text-slate-700">Level:</span>
+                  <span
+                    :class="`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border ${getLevelColor(row.original.level)}`"
+                    ><div class="w-1.5 h-1.5 rounded-full bg-current opacity-70"></div>
+                    {{ row.original.level.toUpperCase() }}</span
+                  >
+                </div>
+                <div>
+                  <span class="font-medium text-slate-700">Tags:</span>
+                  <div class="flex flex-wrap gap-1 mt-1">
+                    <span
+                      v-for="tag in row.original.tags"
+                      :key="tag"
+                      class="inline-flex items-center px-2 py-1 rounded text-xs bg-slate-200 text-slate-700 border border-slate-300"
+                    >
+                      {{ tag }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-3 pt-2 border-t border-slate-200">
+            <h4 class="font-semibold text-slate-900">Message</h4>
+            <div class="bg-white p-3 rounded border border-slate-200 font-mono text-xs leading-relaxed text-slate-800">
+              {{ row.original.message }}
+            </div>
+          </div>
+        </div>
+      </template>
+    </BlocksDataTable>
   </div>
 </template>
