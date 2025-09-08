@@ -255,15 +255,14 @@ watch(dialogOpen, (isOpen) => {
               </p>
             </div>
 
-            <BlocksBaseSelectCard
+            <UiSelectableCard
               v-for="app in availableApplications"
               :key="app.id"
-              :item="app"
               :selected="selectedApplicationIds.includes(app.id)"
               :show-checkbox="true"
-              @toggle="toggleApplicationSelection(app.id)"
+              @click="toggleApplicationSelection(app.id)"
             >
-              <template #header="{ item }">
+              <template #header>
                 <div class="flex items-center gap-3">
                   <!-- App Icon -->
                   <div class="p-2 rounded-lg bg-primary/10">
@@ -274,31 +273,31 @@ watch(dialogOpen, (isOpen) => {
                   <div class="flex-1">
                     <div class="flex items-center gap-3">
                       <h4 class="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
-                        {{ item.name }}
+                        {{ app.name }}
                       </h4>
                       <div
                         class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border"
-                        :class="getEnvironmentColor(item.environment)"
+                        :class="getEnvironmentColor(app.environment)"
                       >
-                        {{ item.environment }}
+                        {{ app.environment }}
                       </div>
                     </div>
                   </div>
                 </div>
               </template>
 
-              <template #content="{ item }">
+              <template #content>
                 <p class="text-muted-foreground text-sm leading-relaxed">
-                  {{ item.description }}
+                  {{ app.description }}
                 </p>
 
                 <div class="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span>{{ item.team }}</span>
+                  <span>{{ app.team }}</span>
                   <span>•</span>
-                  <span class="capitalize">{{ item.status }}</span>
+                  <span class="capitalize">{{ app.status }}</span>
                 </div>
               </template>
-            </BlocksBaseSelectCard>
+            </UiSelectableCard>
           </div>
 
           <BlocksCallout

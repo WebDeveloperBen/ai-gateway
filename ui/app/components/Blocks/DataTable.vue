@@ -1,5 +1,3 @@
-<!-- Table.vue -->
-<!-- eslint-disable vue/block-tag-newline -->
 <script lang="ts">
 import type { Ref, WatchOptions } from "vue"
 import type { Cell, Header, RowData, TableMeta } from "@tanstack/table-core"

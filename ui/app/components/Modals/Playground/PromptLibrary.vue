@@ -194,151 +194,135 @@ function estimateTokens(text: string): number {
               <div class="p-6">
                 <div v-if="filteredPrompts.length > 0" class="space-y-4">
                   <!-- Prompt Cards Grid -->
-                  <div
+                  <UiSelectableCard
                     v-for="prompt in filteredPrompts"
                     :key="prompt.id"
-                    class="group relative border rounded-xl bg-card hover:shadow-lg transition-all duration-200 overflow-hidden"
-                    :class="
-                      formModel.promptId === prompt.id ? 'ring-2 ring-primary shadow-lg' : 'hover:border-primary/30'
-                    "
+                    :selected="formModel.promptId === prompt.id"
+                    :show-checkbox="true"
+                    @click="selectPrompt(prompt)"
                   >
-                    <!-- Card Header -->
-                    <div class="p-6 border-b cursor-pointer" @click="selectPrompt(prompt)">
-                      <div class="flex items-start justify-between">
-                        <div class="flex-1">
-                          <div class="flex items-center gap-3 mb-2">
-                            <h4
-                              class="font-semibold text-lg text-foreground group-hover:text-primary transition-colors"
-                            >
-                              {{ prompt.name }}
-                            </h4>
-                            <span
-                              class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
-                            >
-                              Live: v{{ prompt.currentVersion }}
-                            </span>
-                          </div>
+                    <template #header>
+                      <div class="flex items-center gap-3 mb-2">
+                        <h4
+                          class="font-semibold text-lg text-foreground group-hover:text-primary transition-colors"
+                        >
+                          {{ prompt.name }}
+                        </h4>
+                        <span
+                          class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
+                        >
+                          Live: v{{ prompt.currentVersion }}
+                        </span>
+                      </div>
+                    </template>
 
-                          <p v-if="prompt.description" class="text-muted-foreground text-sm mb-3 leading-relaxed">
-                            {{ prompt.description }}
-                          </p>
+                    <template #content>
+                      <p v-if="prompt.description" class="text-muted-foreground text-sm mb-3 leading-relaxed">
+                        {{ prompt.description }}
+                      </p>
 
-                          <!-- Tags -->
-                          <div class="flex flex-wrap gap-1 mb-3">
-                            <span
-                              v-for="tag in prompt.tags.slice(0, 3)"
-                              :key="tag"
-                              class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-primary/10 text-primary"
-                            >
-                              <Tag class="h-3 w-3" />
-                              {{ tag }}
-                            </span>
-                            <span
-                              v-if="prompt.tags.length > 3"
-                              class="inline-flex items-center px-2 py-1 text-xs rounded-md bg-muted text-muted-foreground"
-                            >
-                              +{{ prompt.tags.length - 3 }} more
-                            </span>
-                          </div>
+                      <!-- Tags -->
+                      <div class="flex flex-wrap gap-1 mb-3">
+                        <span
+                          v-for="tag in prompt.tags.slice(0, 3)"
+                          :key="tag"
+                          class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-primary/10 text-primary"
+                        >
+                          <Tag class="h-3 w-3" />
+                          {{ tag }}
+                        </span>
+                        <span
+                          v-if="prompt.tags.length > 3"
+                          class="inline-flex items-center px-2 py-1 text-xs rounded-md bg-muted text-muted-foreground"
+                        >
+                          +{{ prompt.tags.length - 3 }} more
+                        </span>
+                      </div>
 
-                          <!-- Metadata Row -->
-                          <div class="flex items-center gap-4 text-xs text-muted-foreground">
-                            <div class="flex items-center gap-1">
-                              <History class="h-3 w-3" />
-                              <span>{{ prompt.versions.length }} versions</span>
-                            </div>
-                            <div class="flex items-center gap-1">
-                              <Settings class="h-3 w-3" />
-                              <span>{{ prompt.applications.length }} apps</span>
-                            </div>
-                          </div>
+                      <!-- Metadata Row -->
+                      <div class="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div class="flex items-center gap-1">
+                          <History class="h-3 w-3" />
+                          <span>{{ prompt.versions.length }} versions</span>
                         </div>
-
-                        <!-- Selection Indicator -->
-                        <div class="ml-4">
-                          <div
-                            v-if="formModel.promptId === prompt.id"
-                            class="h-6 w-6 rounded-full bg-primary flex items-center justify-center"
-                          >
-                            <span class="text-white text-sm">✓</span>
-                          </div>
-                          <div
-                            v-else
-                            class="h-6 w-6 rounded-full border-2 border-muted group-hover:border-primary transition-colors"
-                          ></div>
+                        <div class="flex items-center gap-1">
+                          <Settings class="h-3 w-3" />
+                          <span>{{ prompt.applications.length }} apps</span>
                         </div>
                       </div>
-                    </div>
+                    </template>
 
-                    <!-- Version Selection (Shown when prompt is selected) -->
-                    <div v-if="formModel.promptId === prompt.id" class="border-b bg-muted/20">
-                      <div class="p-4">
-                        <h5 class="text-sm font-medium mb-3 flex items-center gap-2">
-                          <span>Select Version</span>
-                          <span class="text-xs text-muted-foreground">({{ prompt.versions.length }} available)</span>
-                        </h5>
-                        <div class="max-h-40 overflow-y-auto">
-                          <div class="space-y-2 pr-1">
-                            <div
-                              v-for="version in prompt.versions.slice().reverse()"
-                              :key="version.id"
-                              class="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-                              :class="
-                                formModel.versionId === version.id ? 'border-primary bg-primary/5' : 'border-border'
-                              "
-                              @click="selectVersion(version)"
-                            >
-                              <div class="flex-1">
-                                <div class="flex items-center gap-2 mb-1">
-                                  <span class="font-mono text-sm font-medium">{{ version.version }}</span>
-                                  <span class="text-sm text-foreground">{{ version.name }}</span>
-                                  <span
-                                    v-if="version.version === prompt.currentVersion"
-                                    class="inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
+                    <template #expandable>
+                      <!-- Version Selection (Shown when prompt is selected) -->
+                      <div v-if="formModel.promptId === prompt.id" class="border-b bg-muted/20">
+                        <div class="p-4">
+                          <h5 class="text-sm font-medium mb-3 flex items-center gap-2">
+                            <span>Select Version</span>
+                            <span class="text-xs text-muted-foreground">({{ prompt.versions.length }} available)</span>
+                          </h5>
+                          <div class="max-h-40 overflow-y-auto">
+                            <div class="space-y-2 pr-1">
+                              <div
+                                v-for="version in prompt.versions.slice().reverse()"
+                                :key="version.id"
+                                class="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                                :class="
+                                  formModel.versionId === version.id ? 'border-primary bg-primary/5' : 'border-border'
+                                "
+                                @click="selectVersion(version)"
+                              >
+                                <div class="flex-1">
+                                  <div class="flex items-center gap-2 mb-1">
+                                    <span class="font-mono text-sm font-medium">{{ version.version }}</span>
+                                    <span class="text-sm text-foreground">{{ version.name }}</span>
+                                    <span
+                                      v-if="version.version === prompt.currentVersion"
+                                      class="inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
+                                    >
+                                      Live
+                                    </span>
+                                  </div>
+                                  <div class="text-xs text-muted-foreground">
+                                    by {{ version.createdBy.split("@")[0] }} •
+                                    {{ new Date(version.createdAt).toLocaleDateString() }}
+                                  </div>
+                                </div>
+                                <div class="ml-3">
+                                  <div
+                                    v-if="formModel.versionId === version.id"
+                                    class="h-4 w-4 rounded-full bg-primary flex items-center justify-center"
                                   >
-                                    Live
-                                  </span>
+                                    <span class="text-white text-xs">✓</span>
+                                  </div>
+                                  <div v-else class="h-4 w-4 rounded-full border border-muted"></div>
                                 </div>
-                                <div class="text-xs text-muted-foreground">
-                                  by {{ version.createdBy.split("@")[0] }} •
-                                  {{ new Date(version.createdAt).toLocaleDateString() }}
-                                </div>
-                              </div>
-                              <div class="ml-3">
-                                <div
-                                  v-if="formModel.versionId === version.id"
-                                  class="h-4 w-4 rounded-full bg-primary flex items-center justify-center"
-                                >
-                                  <span class="text-white text-xs">✓</span>
-                                </div>
-                                <div v-else class="h-4 w-4 rounded-full border border-muted"></div>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    <!-- Content Preview (Shown when version is selected) -->
-                    <div v-if="formModel.promptId === prompt.id && selectedVersionInLibrary" class="bg-muted/10">
-                      <div class="p-4">
-                        <h5 class="text-sm font-medium mb-3 flex items-center justify-between">
-                          <span>Content Preview</span>
-                          <span class="text-xs text-muted-foreground">
-                            {{ (selectedVersionInLibrary.content || "").length.toLocaleString() }} chars • ~{{
-                              estimateTokens(selectedVersionInLibrary.content || "").toLocaleString()
-                            }}
-                            tokens
-                          </span>
-                        </h5>
-                        <div class="rounded-lg border bg-background/50 p-4 max-h-32 overflow-y-auto">
-                          <pre class="text-xs font-mono leading-relaxed whitespace-pre-wrap text-foreground">{{
-                            selectedVersionInLibrary.content || "No content available"
-                          }}</pre>
+                      <!-- Content Preview (Shown when version is selected) -->
+                      <div v-if="formModel.promptId === prompt.id && selectedVersionInLibrary" class="bg-muted/10">
+                        <div class="p-4">
+                          <h5 class="text-sm font-medium mb-3 flex items-center justify-between">
+                            <span>Content Preview</span>
+                            <span class="text-xs text-muted-foreground">
+                              {{ (selectedVersionInLibrary.content || "").length.toLocaleString() }} chars • ~{{
+                                estimateTokens(selectedVersionInLibrary.content || "").toLocaleString()
+                              }}
+                              tokens
+                            </span>
+                          </h5>
+                          <div class="rounded-lg border bg-background/50 p-4 max-h-32 overflow-y-auto">
+                            <pre class="text-xs font-mono leading-relaxed whitespace-pre-wrap text-foreground">{{
+                              selectedVersionInLibrary.content || "No content available"
+                            }}</pre>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    </template>
+                  </UiSelectableCard>
                 </div>
 
                 <!-- Empty State -->

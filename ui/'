@@ -380,7 +380,8 @@ function handleCloneEnvironment(data: {
       <CardsDataList title="Applications" :icon="Layers">
         <template #actions>
           <UiButton @click="navigateTo('/applications')" size="sm" variant="outline">
-            <Plus class="size-4" />
+            <Plus class="size-4 mr-2" />
+            Deploy
           </UiButton>
         </template>
 
@@ -411,6 +412,35 @@ function handleCloneEnvironment(data: {
               {{ app.status.charAt(0).toUpperCase() + app.status.slice(1) }}
             </div>
           </div>
+        </div>
+      </CardsDataList>
+
+      <!-- Team Members (Top Right) -->
+      <CardsDataList title="Team Members" :icon="Users">
+        <template #actions>
+          <UiButton size="sm" variant="outline">
+            <UserPlus class="size-4 mr-2" />
+            Add Member
+          </UiButton>
+        </template>
+
+        <div class="max-h-60 overflow-y-auto">
+          <UserRoleList
+            :assignments="
+              teamMembers.map((m) => ({
+                userId: m.id,
+                userName: m.name,
+                userEmail: m.email,
+                role: m.role,
+                team: m.team,
+                status: 'active' as const,
+                lastActive: m.lastActive,
+                assignedDate: '2024-12-01'
+              }))
+            "
+            :compact="true"
+            view-only
+          />
         </div>
       </CardsDataList>
 
@@ -446,6 +476,33 @@ function handleCloneEnvironment(data: {
                 :class="getStatusColor(key.status)"
               >
                 {{ key.status.charAt(0).toUpperCase() + key.status.slice(1) }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardsDataList>
+
+      <!-- Recent Activity (Bottom Right) -->
+      <CardsDataList title="Recent Activity" :icon="Clock">
+        <template #actions>
+          <UiButton variant="ghost" size="sm">
+            <RefreshCw class="size-4" />
+          </UiButton>
+        </template>
+
+        <div class="space-y-2 max-h-60 overflow-y-auto">
+          <div
+            v-for="activity in activityFeed"
+            :key="activity.id"
+            class="flex items-start gap-3 p-3 hover:bg-muted/50 rounded-lg transition-colors"
+          >
+            <div class="p-1 rounded-md bg-muted">
+              <component :is="getActivityIcon(activity.type)" class="size-3" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm">{{ activity.description }}</div>
+              <div class="text-xs text-muted-foreground">
+                {{ activity.user }} • {{ formatDate(activity.timestamp) }}
               </div>
             </div>
           </div>

@@ -20,7 +20,8 @@ const logData: LogEntry[] = [
     id: "log_001",
     timestamp: "2025-01-15T14:30:25.123Z",
     level: "error",
-    message: "Rate limit exceeded for application Customer Service Bot",
+    message:
+      "RRate limit exceeded for application Customer Service Botate limit exceeded for application Customer Service Bot",
     application: "Customer Service Bot",
     method: "POST",
     endpoint: "/v1/chat/completions",
