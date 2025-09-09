@@ -168,6 +168,9 @@ const activeEnvironment = ref(data.environments[0]!)
 // Environment context
 const { setEnvironment } = useEnvironment()
 
+// Global modals
+const { showCreateEnvironmentModal, openCreateEnvironmentModal, closeCreateEnvironmentModal } = useGlobalModals()
+
 // Set initial environment
 onMounted(() => {
   setEnvironment(activeEnvironment.value)
@@ -177,6 +180,19 @@ onMounted(() => {
 watch(activeEnvironment, (newEnv) => {
   setEnvironment(newEnv)
 })
+
+// Handle environment creation
+const onEnvironmentCreated = (environmentData: any) => {
+  console.log("Environment created:", environmentData)
+  // Add new environment to the list
+  data.environments.push({
+    name: environmentData.name,
+    logo: Globe, // Default icon, could be dynamic
+    description: environmentData.description,
+    status: "active"
+  })
+  closeCreateEnvironmentModal()
+}
 
 useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
 </script>
@@ -238,7 +254,7 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
                   </UiDropdownMenuItem>
                 </template>
                 <UiDropdownMenuSeparator />
-                <UiDropdownMenuItem class="gap-2 p-2">
+                <UiDropdownMenuItem class="gap-2 p-2" @click="openCreateEnvironmentModal">
                   <div class="flex size-6 items-center justify-center rounded-md border bg-background">
                     <component :is="Plus" class="size-4" />
                   </div>
@@ -486,5 +502,11 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
         <slot />
       </UiContainer>
     </UiSidebarInset>
+
+    <!-- Global Modals -->
+    <LazyModalsEnvironmentsCreate 
+      v-model:open="showCreateEnvironmentModal" 
+      @created="onEnvironmentCreated" 
+    />
   </UiSidebarProvider>
 </template>

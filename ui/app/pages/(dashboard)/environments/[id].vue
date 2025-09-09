@@ -279,6 +279,39 @@ function getUsagePercentage(current: number, limit: number): number {
 }
 
 const showCloneModal = ref(false)
+const showManageAccessModal = ref(false)
+
+// Helper functions for the new team members section
+function getInitials(name: string): string {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase()
+}
+
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+  
+  if (diffInHours < 1) return 'just now'
+  if (diffInHours < 24) return `${diffInHours}h ago`
+  const diffInDays = Math.floor(diffInHours / 24)
+  if (diffInDays < 7) return `${diffInDays}d ago`
+  return `${Math.floor(diffInDays / 7)}w ago`
+}
+
+function getRoleBadgeClass(role: string): string {
+  switch (role) {
+    case 'Owner':
+      return 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400'
+    case 'Admin':
+      return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400'
+    case 'Developer':
+      return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400'
+    case 'Viewer':
+      return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400'
+    default:
+      return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400'
+  }
+}
 
 function handleViewAnalytics() {
   navigateTo({
@@ -308,6 +341,23 @@ function handleCloneEnvironment(data: {
 
   // For now, just show success and redirect
   // navigateTo(`/environments/${newEnvironmentId}`)
+}
+
+function handleAccessUpdated(data: { environmentId: string, access: any[] }) {
+  console.log("Environment access updated:", data)
+  showManageAccessModal.value = false
+  
+  // In a real application, you would:
+  // 1. Call an API to update environment access
+  // 2. Refresh the team members data
+  // 3. Show a success message
+  
+  // For now, just update the member count (simplified)
+  environment.value.memberCount = data.access.filter(a => a.type === 'user').length + 
+    data.access.filter(a => a.type === 'team').reduce((sum, a) => {
+      const team = data.access.filter(t => t.type === 'team')
+      return sum + team.length // Simplified counting
+    }, 0)
 }
 </script>
 
@@ -451,6 +501,67 @@ function handleCloneEnvironment(data: {
           </div>
         </div>
       </CardsDataList>
+
+      <!-- Team Members (Top Right) -->
+      <CardsDataList title="Team Members" :icon="Users">
+        <template #actions>
+          <UiButton @click="showManageAccessModal = true" size="sm" variant="outline">
+            <UserPlus class="size-4" />
+          </UiButton>
+        </template>
+
+        <div class="space-y-3 max-h-60 overflow-y-auto">
+          <div
+            v-for="member in teamMembers"
+            :key="member.id"
+            class="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+          >
+            <div class="flex items-center gap-3">
+              <UiAvatar class="size-8">
+                <UiAvatarFallback>{{ getInitials(member.name) }}</UiAvatarFallback>
+              </UiAvatar>
+              <div>
+                <div class="font-medium">{{ member.name }}</div>
+                <div class="text-sm text-muted-foreground">{{ member.email }}</div>
+                <div class="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                  <span>{{ member.team }}</span>
+                  <span>•</span>
+                  <span>Active {{ formatTimeAgo(member.lastActive) }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <UiBadge 
+                variant="outline" 
+                :class="getRoleBadgeClass(member.role)"
+              >
+                {{ member.role }}
+              </UiBadge>
+            </div>
+          </div>
+        </div>
+      </CardsDataList>
+
+      <!-- Recent Activity (Bottom Right) -->
+      <CardsDataList title="Recent Activity" :icon="Activity">
+        <div class="space-y-3 max-h-60 overflow-y-auto">
+          <div
+            v-for="activity in recentActivity"
+            :key="activity.id"
+            class="flex items-start gap-3 p-3 border rounded-lg"
+          >
+            <div class="p-2 rounded-md bg-blue-100 dark:bg-blue-900/30 mt-1">
+              <Activity class="size-3 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium">{{ activity.description }}</div>
+              <div class="text-xs text-muted-foreground mt-1">
+                {{ formatTimeAgo(activity.timestamp) }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardsDataList>
     </div>
 
     <!-- Analytics Section - Full Width at Bottom for Lazy Loading -->
@@ -461,6 +572,12 @@ function handleCloneEnvironment(data: {
       v-model:open="showCloneModal"
       :source-environment="environment"
       @cloned="handleCloneEnvironment"
+    />
+
+    <ModalsEnvironmentsManageAccess
+      v-model:open="showManageAccessModal"
+      :environment="environment"
+      @updated="handleAccessUpdated"
     />
   </div>
 </template>

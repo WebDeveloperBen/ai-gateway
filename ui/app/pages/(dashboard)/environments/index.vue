@@ -91,9 +91,11 @@ useSeoMeta({ title: "Environments - LLM Gateway" })
 // Filter state for SearchFilter component
 const activeFilters = ref<Record<string, string>>({})
 
-const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const editingEnvironment = ref<EnvironmentData | null>(null)
+
+// Global modals
+const { openCreateEnvironmentModal } = useGlobalModals()
 
 // Delete modal state
 const showDeleteModal = ref(false)
@@ -228,14 +230,9 @@ const openTeamModal = (environment: EnvironmentData) => {
 const route = useRoute()
 onMounted(() => {
   if (route.query.create === "environment") {
-    showCreateModal.value = true
+    openCreateEnvironmentModal()
   }
 })
-
-const onEnvironmentCreated = (environmentData: any) => {
-  console.log("Environment created:", environmentData)
-  navigateTo("/environments", { replace: true })
-}
 
 const onTeamsAssigned = (data: { environmentId: string; teamIds: string[] }) => {
   console.log("Teams assigned:", data)
@@ -268,7 +265,7 @@ const availableTeams = [
   <div class="flex flex-col gap-6">
     <!-- Header -->
     <PageHeader title="Environments" subtext="Create and manage custom environments with team access controls">
-      <ButtonsCreate title="Create Environment" :action="() => (showCreateModal = true)" />
+      <ButtonsCreate title="Create Environment" :action="openCreateEnvironmentModal" />
     </PageHeader>
 
     <!-- Stats Cards -->
@@ -297,7 +294,7 @@ const availableTeams = [
     <!-- Environments List -->
     <CardsDataList title="All Environments" :icon="Globe">
       <template #actions>
-        <ButtonsCreate title="Create Environment" :action="() => (showCreateModal = true)" />
+        <ButtonsCreate title="Create Environment" :action="openCreateEnvironmentModal" />
       </template>
 
       <div class="space-y-4">
@@ -404,9 +401,6 @@ const availableTeams = [
         </div>
       </div>
     </CardsDataList>
-
-    <!-- Create Environment Modal -->
-    <LazyModalsEnvironmentsCreate v-model:open="showCreateModal" @created="onEnvironmentCreated" />
 
     <!-- Team Assignment Modal -->
     <LazyModalsTeamsAssign
