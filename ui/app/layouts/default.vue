@@ -14,7 +14,10 @@ import {
   Server,
   TriangleAlert,
   LineChart,
-  Activity
+  Activity,
+  Zap,
+  TestTube,
+  Globe
 } from "lucide-vue-next"
 
 // Dynamic breadcrumbs
@@ -41,6 +44,32 @@ const data = {
       plan: "Dev"
     }
   ],
+  environments: [
+    {
+      name: "Production",
+      logo: Zap,
+      description: "Live environment",
+      status: "active"
+    },
+    {
+      name: "Staging",
+      logo: TestTube,
+      description: "Pre-production testing",
+      status: "active"
+    },
+    {
+      name: "Development",
+      logo: Command,
+      description: "Development environment",
+      status: "active"
+    },
+    {
+      name: "Testing",
+      logo: Globe,
+      description: "QA testing environment",
+      status: "maintenance"
+    }
+  ],
   navMain: [
     {
       title: "Applications",
@@ -63,22 +92,12 @@ const data = {
     {
       title: "Prompts",
       icon: Layers,
-      isActive: true,
-      items: [
-        {
-          title: "Overview",
-          url: "/prompts"
-        },
-
-        {
-          title: "Catalog",
-          url: "/prompts/library"
-        }
-      ]
+      url: "/prompts",
+      isActive: true
     },
     {
       title: "Playground",
-      url: "/playground/testing",
+      url: "/playground",
       icon: Server
     }
   ],
@@ -144,15 +163,30 @@ const data = {
   ]
 }
 const activeTeam = ref(data.teams[0]!)
+const activeEnvironment = ref(data.environments[0]!)
+
+// Environment context
+const { setEnvironment } = useEnvironment()
+
+// Set initial environment
+onMounted(() => {
+  setEnvironment(activeEnvironment.value)
+})
+
+// Watch for environment changes and update global state
+watch(activeEnvironment, (newEnv) => {
+  setEnvironment(newEnv)
+})
+
 useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
 </script>
 <template>
   <UiSidebarProvider v-slot="{ isMobile }">
     <!-- App Sidebar -->
     <UiSidebar collapsible="icon">
-      <!-- Team switcher -->
       <UiSidebarHeader>
         <UiSidebarMenu>
+          <!-- Environment Selector -->
           <UiSidebarMenuItem>
             <UiDropdownMenu>
               <UiDropdownMenuTrigger as-child>
@@ -161,17 +195,16 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
                   class="group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-0 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
                   <div
-                    class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
+                    class="flex aspect-square size-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
                   >
-                    <component :is="activeTeam.logo" class="size-4" />
+                    <component :is="activeEnvironment.logo" class="size-4" />
                   </div>
                   <div class="grid flex-1 text-left text-sm leading-tight">
                     <span class="truncate font-semibold">
-                      {{ activeTeam.name }}
+                      {{ activeEnvironment.name }}
                     </span>
-                    <span class="truncate text-xs">{{ activeTeam.plan }}</span>
+                    <span class="truncate text-xs">{{ activeEnvironment.description }}</span>
                   </div>
-                  <component :is="" class="ml-auto" />
                   <component :is="ChevronsUpDown" class="ml-auto" />
                 </UiSidebarMenuButton>
               </UiDropdownMenuTrigger>
@@ -181,17 +214,26 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
                 :side="isMobile ? 'bottom' : 'right'"
                 :side-offset="4"
               >
-                <UiDropdownMenuLabel class="text-xs text-muted-foreground"> Teams </UiDropdownMenuLabel>
-                <template v-for="(team, index) in data.teams" :key="index">
+                <UiDropdownMenuLabel class="text-xs text-muted-foreground">Environments</UiDropdownMenuLabel>
+                <template v-for="(environment, index) in data.environments" :key="index">
                   <UiDropdownMenuItem
                     class="cursor-pointer gap-2 p-2"
-                    :class="[team.name == activeTeam.name && 'bg-muted']"
-                    @click="activeTeam = team"
+                    :class="[environment.name == activeEnvironment.name && 'bg-muted']"
+                    @click="activeEnvironment = environment"
                   >
                     <div class="flex size-6 items-center justify-center rounded-sm border">
-                      <component :is="team.logo" class="size-4 shrink-0" />
+                      <component :is="environment.logo" class="size-4 shrink-0" />
                     </div>
-                    {{ team.name }}
+                    <div class="flex-1">
+                      <div class="font-medium">{{ environment.name }}</div>
+                      <div class="text-xs text-muted-foreground">{{ environment.description }}</div>
+                    </div>
+                    <div
+                      :class="[
+                        'h-2 w-2 rounded-full',
+                        environment.status === 'active' ? 'bg-green-500' : 'bg-orange-500'
+                      ]"
+                    />
                     <UiDropdownMenuShortcut>⌘{{ index + 1 }}</UiDropdownMenuShortcut>
                   </UiDropdownMenuItem>
                 </template>
@@ -200,7 +242,7 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
                   <div class="flex size-6 items-center justify-center rounded-md border bg-background">
                     <component :is="Plus" class="size-4" />
                   </div>
-                  <div class="font-medium text-muted-foreground">Add team</div>
+                  <div class="font-medium text-muted-foreground">Add environment</div>
                 </UiDropdownMenuItem>
               </UiDropdownMenuContent>
             </UiDropdownMenu>
