@@ -58,6 +58,7 @@
 # Prompt tags
 
 - [ ] Let users tag their prompts to enhance filtering, organisation, and improve user interface styling, user defined through strings, no impact in the application just for user experience purpose and should feed into filtering
+- [ ] use this component to implement it
 
 # Budgets
 
@@ -84,6 +85,17 @@
 
 - [ ] add the ability to add custom models
 - [ ] add ability to add fine tuned models
+- [ ] create mapping for each provider and their required options in the create card
+- [ ] make it so environments are sourced from the api not hard coded
+
+# Playground
+
+- [ ] add splitter to the playround/testing.vue page
+
+# Governance
+
+- [ ] Audit page display a changelog of significant events that occured in the dashboard use this: <https://ui-thing.behonbaker.com/components/timeline#time-bottom>
+- [ ] create tool to log all activities
 
 # Research
 
@@ -95,3 +107,5 @@ When it comes to do sass use this:
 - [ ] add <https://ui-thing.behonbaker.com/goodies/terminal#usage>
 - [ ] add <https://ui-thing.behonbaker.com/goodies/tip-tap> (or reuse monaco editor)
 - [ ] explore replacing native select with this: <https://ui-thing.behonbaker.com/components/listbox#objects>
+- [ ] explore mcp server
+- [ ] explore self registry to the proxy

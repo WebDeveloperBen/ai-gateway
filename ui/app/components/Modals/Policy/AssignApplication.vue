@@ -255,7 +255,7 @@ watch(dialogOpen, (isOpen) => {
               </p>
             </div>
 
-            <UiSelectableCard
+            <BlocksBaseSelectCard
               v-for="app in availableApplications"
               :key="app.id"
               :selected="selectedApplicationIds.includes(app.id)"
@@ -297,7 +297,7 @@ watch(dialogOpen, (isOpen) => {
                   <span class="capitalize">{{ app.status }}</span>
                 </div>
               </template>
-            </UiSelectableCard>
+            </BlocksBaseSelectCard>
           </div>
 
           <BlocksCallout

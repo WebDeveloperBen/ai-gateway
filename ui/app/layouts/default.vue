@@ -12,12 +12,16 @@ import {
   Shield,
   FileText,
   Server,
-  TriangleAlert
+  TriangleAlert,
+  LineChart,
+  Activity
 } from "lucide-vue-next"
 
 // Dynamic breadcrumbs
 const { breadcrumbItems } = useBreadcrumbs()
-
+const {
+  app: { name }
+} = useAppConfig()
 // This is sample data.
 const data = {
   user: {
@@ -27,7 +31,7 @@ const data = {
   },
   teams: [
     {
-      name: "LLM Gateway",
+      name,
       logo: GalleryVerticalEnd,
       plan: "Production"
     },
@@ -42,44 +46,67 @@ const data = {
       title: "Applications",
       url: "/applications",
       icon: Layers,
-      isActive: true,
-      items: [
-        {
-          title: "Overview",
-          url: "/applications"
-        }
-      ]
+      isActive: true
     },
     {
       title: "Environments",
       url: "/environments",
-      icon: Server,
-      items: [
-        {
-          title: "Overview",
-          url: "/environments"
-        }
-      ]
+      icon: Server
     },
     {
       title: "Models",
       url: "/models",
-      icon: Bot,
+      icon: Bot
+    }
+  ],
+  navPlayground: [
+    {
+      title: "Prompts",
+      icon: Layers,
+      isActive: true,
       items: [
         {
           title: "Overview",
-          url: "/models"
+          url: "/prompts"
         },
+
         {
-          title: "Deployments",
-          url: "/models/deployments"
-        },
-        {
-          title: "Providers",
-          url: "/models/providers"
+          title: "Catalog",
+          url: "/prompts/library"
         }
       ]
     },
+    {
+      title: "Playground",
+      url: "/playground/testing",
+      icon: Server
+    }
+  ],
+  navObservability: [
+    { title: "Analytics", url: "/observability/analytics", icon: LineChart },
+    {
+      title: "Monitoring",
+      icon: Activity,
+      isActive: true,
+      items: [
+        { title: "Logs", url: "/observability/logs", icon: FileText },
+        { title: "Alerts", url: "/observability/alerts", icon: TriangleAlert }
+      ]
+    }
+  ],
+  navGovernance: [
+    {
+      title: "Policies",
+      url: "/governance/policy",
+      icon: Shield
+    },
+    {
+      title: "Audit",
+      url: "/governance/audit",
+      icon: FileText
+    }
+  ],
+  navAdmin: [
     {
       title: "Users",
       url: "/users",
@@ -98,61 +125,7 @@ const data = {
           url: "/users/roles"
         }
       ]
-    }
-  ],
-  navPlayground: [
-    {
-      title: "Prompts",
-      icon: Layers,
-      isActive: true,
-      items: [
-        {
-          title: "Overview",
-          url: "/prompts"
-        },
-
-        {
-          title: "Library",
-          url: "/prompts/library"
-        }
-      ]
     },
-    {
-      title: "Playground",
-      url: "/playground/testing",
-      icon: Server
-    }
-  ],
-  navObservability: [
-    {
-      title: "Analytics",
-      url: "/observability/analytics",
-      icon: Shield
-    },
-    {
-      title: "Alerts",
-      url: "/observability/alerts",
-      icon: TriangleAlert
-    },
-    {
-      title: "Logs",
-      url: "/observability/logs",
-      icon: FileText
-    }
-  ],
-  navGovernance: [
-    {
-      title: "Policies",
-      url: "/governance/policy",
-      icon: Shield
-    },
-    {
-      title: "Audit Logs",
-      url: "/governance/audit",
-      icon: FileText
-    }
-  ],
-  navAdmin: [
     {
       title: "Settings",
       url: "/settings",
@@ -168,8 +141,7 @@ const data = {
         }
       ]
     }
-  ],
-  projects: []
+  ]
 }
 const activeTeam = ref(data.teams[0]!)
 useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
@@ -240,48 +212,18 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
         <UiSidebarGroup>
           <UiSidebarGroupLabel label="Platform" />
           <UiSidebarMenu>
-            <template v-for="(item, index) in data.navMain" :key="index">
-              <!-- Items with sub-items -->
-              <UiCollapsible v-if="item.items" v-slot="{ open }" as-child :default-open="item.isActive">
-                <UiSidebarMenuItem>
-                  <UiCollapsibleTrigger as-child>
-                    <UiSidebarMenuButton :tooltip="item.title">
-                      <component :is="item.icon" />
-                      <span>{{ item.title }}</span>
-                      <component
-                        :is="ChevronRight"
-                        class="ml-auto transition-transform duration-200"
-                        :class="[open && 'rotate-90']"
-                      />
-                    </UiSidebarMenuButton>
-                  </UiCollapsibleTrigger>
-                  <UiCollapsibleContent>
-                    <UiSidebarMenuSub>
-                      <UiSidebarMenuSubItem v-for="subItem in item.items" :key="subItem.title">
-                        <UiSidebarMenuSubButton as-child>
-                          <NuxtLink :href="subItem.url">
-                            <span>{{ subItem.title }}</span>
-                          </NuxtLink>
-                        </UiSidebarMenuSubButton>
-                      </UiSidebarMenuSubItem>
-                    </UiSidebarMenuSub>
-                  </UiCollapsibleContent>
-                </UiSidebarMenuItem>
-              </UiCollapsible>
-              <!-- Items without sub-items -->
-              <UiSidebarMenuItem v-else>
-                <UiSidebarMenuButton as-child :tooltip="item.title">
-                  <NuxtLink :href="item.url">
-                    <component :is="item.icon" />
-                    <span>{{ item.title }}</span>
-                  </NuxtLink>
-                </UiSidebarMenuButton>
-              </UiSidebarMenuItem>
-            </template>
+            <UiSidebarMenuItem v-for="(item, index) in data.navMain" :key="index">
+              <UiSidebarMenuButton as-child :tooltip="item.title">
+                <NuxtLink :href="item.url">
+                  <component :is="item.icon" />
+                  <span>{{ item.title }}</span>
+                </NuxtLink>
+              </UiSidebarMenuButton>
+            </UiSidebarMenuItem>
           </UiSidebarMenu>
         </UiSidebarGroup>
 
-        <!--Playgrouds -->
+        <!--Engineering -->
         <UiSidebarGroup>
           <UiSidebarGroupLabel label="Engineering" />
           <UiSidebarMenu>
@@ -344,17 +286,46 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
         <UiSidebarGroup>
           <UiSidebarGroupLabel label="Observability" />
           <UiSidebarMenu>
-            <UiSidebarMenuItem v-for="(item, index) in data.navObservability" :key="index">
-              <UiSidebarMenuButton as-child :tooltip="item.title">
-                <NuxtLink :href="item.url">
-                  <component :is="item.icon" />
-                  <span>{{ item.title }}</span>
-                </NuxtLink>
-              </UiSidebarMenuButton>
-            </UiSidebarMenuItem>
+            <template v-for="(item, index) in data.navObservability" :key="index">
+              <!-- Items with sub-items -->
+              <UiCollapsible v-if="item.items" v-slot="{ open }" as-child :default-open="item.isActive">
+                <UiSidebarMenuItem>
+                  <UiCollapsibleTrigger as-child>
+                    <UiSidebarMenuButton :tooltip="item.title">
+                      <component :is="item.icon" />
+                      <span>{{ item.title }}</span>
+                      <component
+                        :is="ChevronRight"
+                        class="ml-auto transition-transform duration-200"
+                        :class="[open && 'rotate-90']"
+                      />
+                    </UiSidebarMenuButton>
+                  </UiCollapsibleTrigger>
+                  <UiCollapsibleContent>
+                    <UiSidebarMenuSub>
+                      <UiSidebarMenuSubItem v-for="subItem in item.items" :key="subItem.title">
+                        <UiSidebarMenuSubButton as-child>
+                          <NuxtLink :href="subItem.url">
+                            <span>{{ subItem.title }}</span>
+                          </NuxtLink>
+                        </UiSidebarMenuSubButton>
+                      </UiSidebarMenuSubItem>
+                    </UiSidebarMenuSub>
+                  </UiCollapsibleContent>
+                </UiSidebarMenuItem>
+              </UiCollapsible>
+              <!-- Items without sub-items -->
+              <UiSidebarMenuItem v-else>
+                <UiSidebarMenuButton as-child :tooltip="item.title">
+                  <NuxtLink :href="item.url">
+                    <component :is="item.icon" />
+                    <span>{{ item.title }}</span>
+                  </NuxtLink>
+                </UiSidebarMenuButton>
+              </UiSidebarMenuItem>
+            </template>
           </UiSidebarMenu>
         </UiSidebarGroup>
-        <!-- Settings -->
         <UiSidebarGroup>
           <UiSidebarGroupLabel label="Administration" />
           <UiSidebarMenu>
@@ -469,9 +440,9 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
           <ThemeToggle />
         </div>
       </UiNavbar>
-      <PageContainer>
+      <UiContainer>
         <slot />
-      </PageContainer>
+      </UiContainer>
     </UiSidebarInset>
   </UiSidebarProvider>
 </template>

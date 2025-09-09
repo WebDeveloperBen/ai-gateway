@@ -12,6 +12,7 @@ interface ProviderOption {
   icon: string
   popular?: boolean
 }
+type AuthOptions = "api-key" | "managed-identity" | "entra-id"
 
 interface CreateProviderData {
   service: string
@@ -19,7 +20,7 @@ interface CreateProviderData {
   name: string
   slug: string
   // Authentication
-  authType: "api-key" | "managed-identity" | "entra-id"
+  authType: AuthOptions
   apiKey?: string
   tenantId?: string
   clientId?: string
@@ -70,29 +71,30 @@ const environments = [
 ]
 
 // Azure authentication types
-const azureAuthTypes = [
-  {
-    value: "api-key",
-    label: "API Key",
-    description: "Simple API key authentication",
-    icon: "🔑",
-    recommended: true
-  },
-  {
-    value: "managed-identity",
-    label: "Managed Identity",
-    description: "Azure managed identity (no secrets)",
-    icon: "🛡️",
-    recommended: false
-  },
-  {
-    value: "entra-id",
-    label: "Entra ID (Service Principal)",
-    description: "Service principal with client credentials",
-    icon: "🏢",
-    recommended: false
-  }
-]
+const azureAuthTypes: { value: AuthOptions; label: string; description: string; icon: string; recommended: boolean }[] =
+  [
+    {
+      value: "api-key",
+      label: "API Key",
+      description: "Simple API key authentication",
+      icon: "🔑",
+      recommended: true
+    },
+    {
+      value: "managed-identity",
+      label: "Managed Identity",
+      description: "Azure managed identity (no secrets)",
+      icon: "🛡️",
+      recommended: false
+    },
+    {
+      value: "entra-id",
+      label: "Entra ID (Service Principal)",
+      description: "Service principal with client credentials",
+      icon: "🏢",
+      recommended: false
+    }
+  ]
 
 const providers: ProviderOption[] = [
   {
@@ -381,9 +383,6 @@ const grabApiKey = () => {
           <div class="p-6 border-b">
             <div class="flex items-center justify-between mb-2">
               <h1 class="text-xl font-bold">Add Provider</h1>
-              <UiButton variant="ghost" size="sm" @click="closeModal" :disabled="loading">
-                <X class="w-4 h-4" />
-              </UiButton>
             </div>
             <p class="text-sm text-muted-foreground">Connect your AI service to the gateway</p>
           </div>

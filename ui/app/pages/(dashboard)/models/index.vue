@@ -1,85 +1,75 @@
 <script lang="ts">
-interface ModelData {
+interface ProviderData {
   id: string
   name: string
-  provider: string
-  deployment: string
-  endpoint: string
+  type: string
   status: "active" | "inactive" | "error"
-  modelType: string
-  version: string
-  maxTokens: number
+  endpoint: string
+  modelsCount: number
   requestCount: number
   lastUsed: string
-  applications: string[]
-  costPerToken: number
+  apiKeyMasked: string
+  scope: "organization" | "workspace"
+  createdAt: string
 }
 
-const models = ref<ModelData[]>([
+const providers = ref<ProviderData[]>([
   {
-    id: "model_1",
-    name: "GPT-4 Production",
-    provider: "OpenAI",
-    deployment: "gpt-4-deployment-prod",
-    endpoint: "https://api.openai.com/v1",
+    id: "provider_1",
+    name: "OpenAI Production",
+    type: "OpenAI",
     status: "active" as const,
-    modelType: "gpt-4",
-    version: "gpt-4-0613",
-    maxTokens: 8192,
-    requestCount: 12450,
+    endpoint: "https://api.openai.com/v1",
+    modelsCount: 4,
+    requestCount: 15420,
     lastUsed: "2025-01-15T14:30:00Z",
-    applications: ["Customer Service Bot", "Content Generator"],
-    costPerToken: 0.00003
+    apiKeyMasked: "sk-...J2k9",
+    scope: "organization",
+    createdAt: "2024-12-01T10:00:00Z"
   },
   {
-    id: "model_2", 
-    name: "GPT-3.5 Turbo Dev",
-    provider: "Azure OpenAI",
-    deployment: "gpt-35-turbo-dev",
-    endpoint: "https://myorg.openai.azure.com/",
+    id: "provider_2",
+    name: "Azure OpenAI Dev",
+    type: "Azure OpenAI", 
     status: "active" as const,
-    modelType: "gpt-3.5-turbo",
-    version: "gpt-3.5-turbo-0613",
-    maxTokens: 4096,
+    endpoint: "https://myorg.openai.azure.com/",
+    modelsCount: 2,
     requestCount: 8920,
     lastUsed: "2025-01-15T10:15:00Z",
-    applications: ["Code Assistant"],
-    costPerToken: 0.000002
+    apiKeyMasked: "abc...xyz",
+    scope: "workspace",
+    createdAt: "2024-11-15T14:20:00Z"
   },
   {
-    id: "model_3",
-    name: "Claude-3 Sonnet",
-    provider: "Anthropic",
-    deployment: "claude-3-sonnet",
-    endpoint: "https://api.anthropic.com/v1",
+    id: "provider_3",
+    name: "Anthropic Claude",
+    type: "Anthropic",
     status: "inactive" as const,
-    modelType: "claude-3-sonnet",
-    version: "20240229",
-    maxTokens: 200000,
+    endpoint: "https://api.anthropic.com/v1",
+    modelsCount: 1,
     requestCount: 0,
     lastUsed: "2024-12-28T16:45:00Z",
-    applications: [],
-    costPerToken: 0.000015
+    apiKeyMasked: "sk-ant...abc",
+    scope: "organization", 
+    createdAt: "2024-12-20T09:30:00Z"
   },
   {
-    id: "model_4",
-    name: "GPT-4 Error Test",
-    provider: "Azure OpenAI",
-    deployment: "gpt-4-error-test",
-    endpoint: "https://test.openai.azure.com/",
+    id: "provider_4",
+    name: "Custom AI Endpoint",
+    type: "Custom",
     status: "error" as const,
-    modelType: "gpt-4",
-    version: "gpt-4-0613",
-    maxTokens: 8192,
+    endpoint: "https://api.custom.ai/v1",
+    modelsCount: 0,
     requestCount: 156,
     lastUsed: "2025-01-14T09:22:00Z",
-    applications: [],
-    costPerToken: 0.00003
+    apiKeyMasked: "key...789",
+    scope: "workspace",
+    createdAt: "2025-01-10T11:45:00Z"
   }
 ])
 </script>
 <script setup lang="ts">
-import { Plus, Cpu, CheckCircle, XCircle, AlertTriangle, Activity, DollarSign, Zap, Layers } from "lucide-vue-next"
+import { Plus, Server, CheckCircle, XCircle, AlertTriangle, Activity, Layers, Eye, Settings, Trash2, MoreVertical } from "lucide-vue-next"
 import type { StatsCardProps } from "@/components/Cards/Stats.vue"
 import SearchFilter from "@/components/SearchFilter.vue"
 import type { FilterConfig, SearchConfig, DisplayConfig } from "@/components/SearchFilter.vue"
@@ -88,40 +78,42 @@ const showCreateModal = ref(false)
 const activeFilters = ref<Record<string, string>>({})
 const appConfig = useAppConfig()
 
-const handleModelSelect = (model: ModelData) => {
-  navigateTo(`/models/${model.id}`)
+const handleProviderSelect = (provider: ProviderData) => {
+  navigateTo(`/models/providers/${provider.id}`)
 }
 
-const onModelCreated = (modelId: string) => {
-  console.log("Model created:", modelId)
-  navigateTo("/models", { replace: true })
+const onProviderCreated = (providerId: string) => {
+  console.log("Provider created:", providerId)
+  navigateTo("/models/providers", { replace: true })
 }
 
 const route = useRoute()
 onMounted(() => {
-  if (route.query.create === "model") {
+  if (route.query.create === "provider") {
     showCreateModal.value = true
   }
 })
 
-const providers = [...new Set(models.value.map((model) => model.provider))]
-const modelTypes = [...new Set(models.value.map((model) => model.modelType))]
+const providerTypes = [...new Set(providers.value.map((provider) => provider.type))]
 
 const filterConfigs: FilterConfig[] = [
   {
     key: "name",
-    label: "Model",
-    options: models.value.map((model) => ({ value: model.name, label: model.name, icon: Cpu }))
-  },
-  {
-    key: "provider", 
     label: "Provider",
-    options: providers.map((provider) => ({ value: provider, label: provider, icon: Layers }))
+    options: providers.value.map((provider) => ({ value: provider.name, label: provider.name, icon: Server }))
   },
   {
-    key: "modelType",
-    label: "Model Type", 
-    options: modelTypes.map((type) => ({ value: type, label: type, icon: Cpu }))
+    key: "type",
+    label: "Type",
+    options: providerTypes.map((type) => ({ value: type, label: type, icon: Layers }))
+  },
+  {
+    key: "scope",
+    label: "Scope", 
+    options: [
+      { value: "organization", label: "Organization", icon: Layers },
+      { value: "workspace", label: "Workspace", icon: Server }
+    ]
   },
   {
     key: "status",
@@ -134,70 +126,68 @@ const filterConfigs: FilterConfig[] = [
   }
 ]
 
-const searchConfig: SearchConfig<ModelData> = {
-  fields: ["name", "provider", "modelType", "deployment"],
-  placeholder: "Search models, filter by provider, type, status..."
+const searchConfig: SearchConfig<ProviderData> = {
+  fields: ["name", "type", "endpoint"],
+  placeholder: "Search providers, filter by type, status, scope..."
 }
 
-const displayConfig: DisplayConfig<ModelData> = {
-  getItemText: (model) => `${model.name} - ${model.provider} ${model.modelType}`,
-  getItemValue: (model) => model.name,
-  getItemIcon: () => Cpu
+const displayConfig: DisplayConfig<ProviderData> = {
+  getItemText: (provider) => `${provider.name} - ${provider.type}`,
+  getItemValue: (provider) => provider.name,
+  getItemIcon: () => Server
 }
 
 function handleFiltersChanged(filters: Record<string, string>) {
   activeFilters.value = filters
 }
 
-function handleItemSelected(model: ModelData) {
-  navigateTo(`/models/${model.id}`)
+function handleItemSelected(provider: ProviderData) {
+  navigateTo(`/models/providers/${provider.id}`)
 }
 
-const filteredModels = computed(() => {
-  let filtered = models.value
+const filteredProviders = computed(() => {
+  let filtered = providers.value
 
   if (activeFilters.value.name && activeFilters.value.name !== "all") {
-    filtered = filtered.filter((model) => model.name === activeFilters.value.name)
+    filtered = filtered.filter((provider) => provider.name === activeFilters.value.name)
   }
-  if (activeFilters.value.provider && activeFilters.value.provider !== "all") {
-    filtered = filtered.filter((model) => model.provider === activeFilters.value.provider)
+  if (activeFilters.value.type && activeFilters.value.type !== "all") {
+    filtered = filtered.filter((provider) => provider.type === activeFilters.value.type)
   }
-  if (activeFilters.value.modelType && activeFilters.value.modelType !== "all") {
-    filtered = filtered.filter((model) => model.modelType === activeFilters.value.modelType)
+  if (activeFilters.value.scope && activeFilters.value.scope !== "all") {
+    filtered = filtered.filter((provider) => provider.scope === activeFilters.value.scope)
   }
   if (activeFilters.value.status && activeFilters.value.status !== "all") {
-    filtered = filtered.filter((model) => model.status === activeFilters.value.status)
+    filtered = filtered.filter((provider) => provider.status === activeFilters.value.status)
   }
 
   return filtered
 })
 
-const statsIcons = [Cpu, CheckCircle, Activity, DollarSign]
+const statsIcons = [Server, CheckCircle, Activity, Layers]
 const statsVariants: StatsCardProps["variant"][] = ["default", "chart-2", "chart-1", "chart-3"]
 
 const statsCards = computed(() => {
-  const totalCost = models.value.reduce((sum, model) => sum + (model.requestCount * model.costPerToken), 0)
-  
   return [
     {
-      title: "Total Models",
-      value: models.value.length,
-      description: "Registered model deployments"
+      title: "Total Providers",
+      value: providers.value.length,
+      description: "Registered AI service providers"
     },
     {
-      title: "Active Models", 
-      value: models.value.filter((model) => model.status === "active").length,
-      description: "Currently available for routing"
+      title: "Active Providers",
+      value: providers.value.filter((provider) => provider.status === "active").length,
+      description: "Currently operational"
     },
     {
       title: "Total Requests",
-      value: models.value.reduce((sum, model) => sum + model.requestCount, 0),
-      description: "Across all model deployments"
+      value: providers.value.reduce((sum, provider) => sum + provider.requestCount, 0),
+      description: "Across all providers"
     },
     {
-      title: "Estimated Cost",
-      value: `$${totalCost.toFixed(2)}`,
-      description: "Based on token usage"
+      title: "Available Models",
+      value: providers.value.reduce((sum, provider) => sum + provider.modelsCount, 0),
+      description: "Total model deployments"
     }
   ].map((stat, index) => ({
     ...stat,
@@ -205,17 +195,52 @@ const statsCards = computed(() => {
     variant: statsVariants[index]
   }))
 })
+
+const getProviderIcon = (type: string) => {
+  const icons: Record<string, string> = {
+    'OpenAI': '🤖',
+    'Azure OpenAI': '☁️', 
+    'Anthropic': '🧠',
+    'Google AI': '🔍',
+    'Cohere': '⚡',
+    'Custom': '🔧'
+  }
+  return icons[type] || '🔧'
+}
+
+const getStatusBadgeClass = (status: string) => {
+  switch (status) {
+    case 'active':
+      return '!bg-chart-2/10 !text-chart-2 !border-chart-2/20'
+    case 'error':
+      return '!bg-destructive/10 !text-destructive !border-destructive/20'
+    case 'inactive':
+    default:
+      return '!bg-muted !text-muted-foreground !border-border'
+  }
+}
+
+const getTypeBadgeClass = (type: string) => {
+  const classes: Record<string, string> = {
+    'OpenAI': 'bg-primary/10 text-primary border border-primary/20',
+    'Azure OpenAI': 'bg-chart-1/10 text-chart-1 border border-chart-1/20',
+    'Anthropic': 'bg-chart-3/10 text-chart-3 border border-chart-3/20',
+    'Google AI': 'bg-chart-4/10 text-chart-4 border border-chart-4/20',
+    'Cohere': 'bg-chart-2/10 text-chart-2 border border-chart-2/20'
+  }
+  return classes[type] || 'bg-muted/10 text-muted-foreground border border-border'
+}
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
     <PageHeader
-      title="Models"
-      :subtext="`Manage your AI model deployments and ${appConfig.app.name} routing configuration`"
+      title="Providers" 
+      :subtext="`Manage AI service providers and their integration with ${appConfig.app.name}`"
     >
       <UiButton @click="showCreateModal = true" class="gap-2">
         <Plus class="h-4 w-4" />
-        Register Model
+        Add Provider
       </UiButton>
     </PageHeader>
 
@@ -232,7 +257,7 @@ const statsCards = computed(() => {
     </div>
 
     <SearchFilter
-      :items="models"
+      :items="providers"
       :filters="filterConfigs"
       :search-config="searchConfig"
       :display-config="displayConfig"
@@ -240,8 +265,105 @@ const statsCards = computed(() => {
       @item-selected="handleItemSelected"
     />
 
-    <ModelsList :models="filteredModels" @select-model="handleModelSelect" />
+    <div class="flex flex-col gap-4">
+      <div v-if="filteredProviders.length === 0" class="text-center py-12">
+        <AlertTriangle class="mx-auto h-12 w-12 text-muted-foreground" />
+        <h3 class="mt-4 text-lg font-medium">No providers found</h3>
+        <p class="text-muted-foreground">Try adjusting your search or add a new provider.</p>
+      </div>
 
-    <LazyModalsModelsCreate v-model:open="showCreateModal" @created="onModelCreated" />
+      <UiCard v-for="provider in filteredProviders" :key="provider.id" interactive @click="handleProviderSelect(provider)">
+        <UiCardHeader>
+          <div class="flex items-start justify-between">
+            <div class="space-y-1 flex-1">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">{{ getProviderIcon(provider.type) }}</span>
+                <UiCardTitle class="text-lg">{{ provider.name }}</UiCardTitle>
+                <UiBadge variant="outline" :class="getStatusBadgeClass(provider.status)">
+                  {{ provider.status }}
+                </UiBadge>
+              </div>
+              <UiCardDescription class="text-sm">
+                {{ provider.endpoint }}
+              </UiCardDescription>
+              <div class="flex items-center gap-4 text-xs">
+                <div class="flex items-center gap-1">
+                  <span class="text-muted-foreground">Type:</span>
+                  <UiBadge :class="getTypeBadgeClass(provider.type)" class="text-xs">
+                    {{ provider.type }}
+                  </UiBadge>
+                </div>
+                <span class="text-muted-foreground">•</span>
+                <div class="flex items-center gap-1">
+                  <span class="text-muted-foreground">Scope:</span>
+                  <span class="font-medium text-foreground capitalize">{{ provider.scope }}</span>
+                </div>
+                <span class="text-muted-foreground">•</span>
+                <div class="flex items-center gap-1">
+                  <span class="text-muted-foreground">API Key:</span>
+                  <span class="font-mono text-foreground">{{ provider.apiKeyMasked }}</span>
+                </div>
+              </div>
+            </div>
+            <UiDropdownMenu>
+              <UiDropdownMenuTrigger as-child>
+                <UiButton variant="ghost" size="sm" @click.stop>
+                  <MoreVertical class="h-4 w-4" />
+                </UiButton>
+              </UiDropdownMenuTrigger>
+              <UiDropdownMenuContent align="end" class="w-48">
+                <UiDropdownMenuItem @click="navigateTo(`/models/providers/${provider.id}`)">
+                  <Eye class="mr-2 size-4" />
+                  View Details
+                </UiDropdownMenuItem>
+                <UiDropdownMenuItem @click="navigateTo(`/models/providers/${provider.id}/config`)">
+                  <Settings class="mr-2 size-4" />
+                  Configure
+                </UiDropdownMenuItem>
+                <UiDropdownMenuItem @click="navigateTo(`/models/providers/${provider.id}/models`)">
+                  <Layers class="mr-2 size-4" />
+                  Manage Models
+                </UiDropdownMenuItem>
+                <UiDropdownMenuSeparator />
+                <UiDropdownMenuItem class="text-destructive">
+                  <Trash2 class="mr-2 size-4" />
+                  Remove Provider
+                </UiDropdownMenuItem>
+              </UiDropdownMenuContent>
+            </UiDropdownMenu>
+          </div>
+        </UiCardHeader>
+        <UiCardContent>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div class="flex items-center gap-2">
+              <Layers class="h-4 w-4 text-chart-3" />
+              <div>
+                <p class="text-muted-foreground">Models</p>
+                <p class="font-medium">{{ provider.modelsCount }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <Activity class="h-4 w-4 text-chart-1" />
+              <div>
+                <p class="text-muted-foreground">Requests</p>
+                <p class="font-medium">{{ formatNumber(provider.requestCount) }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <CheckCircle class="h-4 w-4 text-chart-2" />
+              <div>
+                <p class="text-muted-foreground">Last Used</p>
+                <p class="font-medium">
+                  {{ new Date(provider.lastUsed).toLocaleDateString() }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </UiCardContent>
+      </UiCard>
+    </div>
+
+    <!-- Provider Creation Wizard Modal -->
+    <LazyModalsProvidersCreate v-model:open="showCreateModal" @created="onProviderCreated" />
   </div>
 </template>
