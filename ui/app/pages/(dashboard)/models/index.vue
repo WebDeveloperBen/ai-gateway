@@ -16,7 +16,7 @@ interface ProviderData {
 const providers = ref<ProviderData[]>([
   {
     id: "provider_1",
-    name: "OpenAI Production",
+    name: "OpenAI",
     type: "OpenAI",
     status: "active" as const,
     endpoint: "https://api.openai.com/v1",
@@ -29,8 +29,8 @@ const providers = ref<ProviderData[]>([
   },
   {
     id: "provider_2",
-    name: "Azure OpenAI Dev",
-    type: "Azure OpenAI", 
+    name: "Azure OpenAI",
+    type: "Azure OpenAI",
     status: "active" as const,
     endpoint: "https://myorg.openai.azure.com/",
     modelsCount: 2,
@@ -39,19 +39,6 @@ const providers = ref<ProviderData[]>([
     apiKeyMasked: "abc...xyz",
     scope: "workspace",
     createdAt: "2024-11-15T14:20:00Z"
-  },
-  {
-    id: "provider_3",
-    name: "Anthropic Claude",
-    type: "Anthropic",
-    status: "inactive" as const,
-    endpoint: "https://api.anthropic.com/v1",
-    modelsCount: 1,
-    requestCount: 0,
-    lastUsed: "2024-12-28T16:45:00Z",
-    apiKeyMasked: "sk-ant...abc",
-    scope: "organization", 
-    createdAt: "2024-12-20T09:30:00Z"
   },
   {
     id: "provider_4",
@@ -69,7 +56,19 @@ const providers = ref<ProviderData[]>([
 ])
 </script>
 <script setup lang="ts">
-import { Plus, Server, CheckCircle, XCircle, AlertTriangle, Activity, Layers, Eye, Settings, Trash2, MoreVertical } from "lucide-vue-next"
+import {
+  Plus,
+  Server,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Activity,
+  Layers,
+  Eye,
+  Settings,
+  Trash2,
+  MoreVertical
+} from "lucide-vue-next"
 import type { StatsCardProps } from "@/components/Cards/Stats.vue"
 import SearchFilter from "@/components/SearchFilter.vue"
 import type { FilterConfig, SearchConfig, DisplayConfig } from "@/components/SearchFilter.vue"
@@ -109,7 +108,7 @@ const filterConfigs: FilterConfig[] = [
   },
   {
     key: "scope",
-    label: "Scope", 
+    label: "Scope",
     options: [
       { value: "organization", label: "Organization", icon: Layers },
       { value: "workspace", label: "Workspace", icon: Server }
@@ -198,44 +197,44 @@ const statsCards = computed(() => {
 
 const getProviderIcon = (type: string) => {
   const icons: Record<string, string> = {
-    'OpenAI': '🤖',
-    'Azure OpenAI': '☁️', 
-    'Anthropic': '🧠',
-    'Google AI': '🔍',
-    'Cohere': '⚡',
-    'Custom': '🔧'
+    OpenAI: "🤖",
+    "Azure OpenAI": "☁️",
+    Anthropic: "🧠",
+    "Google AI": "🔍",
+    Cohere: "⚡",
+    Custom: "🔧"
   }
-  return icons[type] || '🔧'
+  return icons[type] || "🔧"
 }
 
 const getStatusBadgeClass = (status: string) => {
   switch (status) {
-    case 'active':
-      return '!bg-chart-2/10 !text-chart-2 !border-chart-2/20'
-    case 'error':
-      return '!bg-destructive/10 !text-destructive !border-destructive/20'
-    case 'inactive':
+    case "active":
+      return "!bg-chart-2/10 !text-chart-2 !border-chart-2/20"
+    case "error":
+      return "!bg-destructive/10 !text-destructive !border-destructive/20"
+    case "inactive":
     default:
-      return '!bg-muted !text-muted-foreground !border-border'
+      return "!bg-muted !text-muted-foreground !border-border"
   }
 }
 
 const getTypeBadgeClass = (type: string) => {
   const classes: Record<string, string> = {
-    'OpenAI': 'bg-primary/10 text-primary border border-primary/20',
-    'Azure OpenAI': 'bg-chart-1/10 text-chart-1 border border-chart-1/20',
-    'Anthropic': 'bg-chart-3/10 text-chart-3 border border-chart-3/20',
-    'Google AI': 'bg-chart-4/10 text-chart-4 border border-chart-4/20',
-    'Cohere': 'bg-chart-2/10 text-chart-2 border border-chart-2/20'
+    OpenAI: "bg-primary/10 text-primary border border-primary/20",
+    "Azure OpenAI": "bg-chart-1/10 text-chart-1 border border-chart-1/20",
+    Anthropic: "bg-chart-3/10 text-chart-3 border border-chart-3/20",
+    "Google AI": "bg-chart-4/10 text-chart-4 border border-chart-4/20",
+    Cohere: "bg-chart-2/10 text-chart-2 border border-chart-2/20"
   }
-  return classes[type] || 'bg-muted/10 text-muted-foreground border border-border'
+  return classes[type] || "bg-muted/10 text-muted-foreground border border-border"
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
     <PageHeader
-      title="Providers" 
+      title="Providers"
       :subtext="`Manage AI service providers and their integration with ${appConfig.app.name}`"
     >
       <UiButton @click="showCreateModal = true" class="gap-2">
@@ -272,7 +271,12 @@ const getTypeBadgeClass = (type: string) => {
         <p class="text-muted-foreground">Try adjusting your search or add a new provider.</p>
       </div>
 
-      <UiCard v-for="provider in filteredProviders" :key="provider.id" interactive @click="handleProviderSelect(provider)">
+      <UiCard
+        v-for="provider in filteredProviders"
+        :key="provider.id"
+        interactive
+        @click="handleProviderSelect(provider)"
+      >
         <UiCardHeader>
           <div class="flex items-start justify-between">
             <div class="space-y-1 flex-1">
@@ -367,3 +371,4 @@ const getTypeBadgeClass = (type: string) => {
     <LazyModalsProvidersCreate v-model:open="showCreateModal" @created="onProviderCreated" />
   </div>
 </template>
+

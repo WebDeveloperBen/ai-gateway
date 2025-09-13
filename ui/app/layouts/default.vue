@@ -17,7 +17,9 @@ import {
   Activity,
   Zap,
   TestTube,
-  Globe
+  Globe,
+  GitPullRequest,
+  Database
 } from "lucide-vue-next"
 
 // Dynamic breadcrumbs
@@ -86,6 +88,11 @@ const data = {
       title: "Models",
       url: "/models",
       icon: Bot
+    },
+    {
+      title: "Storage",
+      url: "/storage",
+      icon: Database
     }
   ],
   navPlayground: [
@@ -119,10 +126,15 @@ const data = {
       url: "/governance/policy",
       icon: Shield
     },
+    // {
+    //   title: "Audit",
+    //   url: "/governance/audit",
+    //   icon: FileText
+    // },
     {
-      title: "Audit",
-      url: "/governance/audit",
-      icon: FileText
+      title: "Create",
+      url: "/governance/policy/create",
+      icon: GitPullRequest
     }
   ],
   navAdmin: [
@@ -504,9 +516,6 @@ useSeoMeta({ title: "LLM Gateway - Admin Dashboard" })
     </UiSidebarInset>
 
     <!-- Global Modals -->
-    <LazyModalsEnvironmentsCreate 
-      v-model:open="showCreateEnvironmentModal" 
-      @created="onEnvironmentCreated" 
-    />
+    <LazyModalsEnvironmentsCreate v-model:open="showCreateEnvironmentModal" @created="onEnvironmentCreated" />
   </UiSidebarProvider>
 </template>

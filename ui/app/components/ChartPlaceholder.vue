@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center justify-center h-64 rounded-lg border-2 border-dashed border-muted">
+  <div class="flex items-center justify-center max-h-64 rounded-lg border-2 border-dashed border-muted">
     <div class="text-center space-y-3">
       <component :is="icon" class="h-12 w-12 text-muted-foreground mx-auto" />
       <div>
@@ -13,7 +13,7 @@
 <script setup lang="ts">
 import { Activity } from "lucide-vue-next"
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     /** The icon to display */
     icon?: any
@@ -29,3 +29,4 @@ const props = withDefaults(
   }
 )
 </script>
+

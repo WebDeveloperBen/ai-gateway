@@ -112,24 +112,6 @@ const providers: ProviderOption[] = [
     popular: true
   },
   {
-    id: "anthropic",
-    name: "Anthropic",
-    description: "Claude 3 and other Anthropic models",
-    icon: "🧠"
-  },
-  {
-    id: "google",
-    name: "Google AI",
-    description: "Gemini and PaLM models from Google",
-    icon: "🔍"
-  },
-  {
-    id: "cohere",
-    name: "Cohere",
-    description: "Command and Embed models from Cohere",
-    icon: "⚡"
-  },
-  {
     id: "custom",
     name: "Custom Provider",
     description: "Connect to your own API endpoint",
