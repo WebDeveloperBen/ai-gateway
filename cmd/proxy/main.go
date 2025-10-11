@@ -43,10 +43,15 @@ func main() {
 		Backend:   kv.KvStoreType(cfg.KVBackend),
 		RedisAddr: cfg.RedisAddr,
 		RedisPW:   cfg.RedisPW,
-		RedisDB:   0, // use first database - change if necessary
+		RedisDB:   0,
 	})
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if cfg.EnableRedisCircuitBreaker && cfg.KVBackend == "redis" {
+		kvStore = kv.NewCircuitBreakerStore(kvStore, kv.DefaultCircuitBreakerConfig())
+		log.Println("Redis circuit breaker enabled")
 	}
 
 	pg, err := dbdriver.NewPostgresDriver(ctx, cfg.DBConnectionString)
@@ -131,9 +136,9 @@ func main() {
 	transport := gateway.Chain(
 		http.DefaultTransport,
 		gateway.WithAuth(authn),
-		requestBuffer.Middleware,      // Buffer request body once
-		policyEnforcer.Middleware,     // Policy enforcement (pre-check)
-		usageRecorder.Middleware,      // Usage recording (post-check, async)
+		requestBuffer.Middleware,  // Buffer request body once
+		policyEnforcer.Middleware, // Policy enforcement (pre-check)
+		usageRecorder.Middleware,  // Usage recording (post-check, async)
 		// TODO: add the load balancer
 	)
 	core := gateway.NewCoreWithRegistry(transport, authn, reg)

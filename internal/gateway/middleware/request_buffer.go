@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -40,7 +41,7 @@ func (rb *RequestBuffer) Middleware(next http.RoundTripper) http.RoundTripper {
 		r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 
 		// Parse request ONCE and extract all needed data
-		parsed := rb.parseRequest(bodyBytes)
+		parsed := rb.parseRequest(r.Context(), bodyBytes)
 
 		// Store parsed request in context (small struct, not full body)
 		ctx := auth.WithParsedRequest(r.Context(), parsed)
@@ -51,7 +52,7 @@ func (rb *RequestBuffer) Middleware(next http.RoundTripper) http.RoundTripper {
 }
 
 // parseRequest parses the LLM request body and extracts all needed information
-func (rb *RequestBuffer) parseRequest(body []byte) *auth.ParsedRequest {
+func (rb *RequestBuffer) parseRequest(ctx context.Context, body []byte) *auth.ParsedRequest {
 	parsed := &auth.ParsedRequest{
 		RequestSize: len(body),
 	}
@@ -93,7 +94,7 @@ func (rb *RequestBuffer) parseRequest(body []byte) *auth.ParsedRequest {
 	parsed.Prompt = req.Prompt
 
 	// Estimate tokens using the parsed data
-	estimatedTokens, err := rb.estimator.EstimateRequest(parsed.Model, body)
+	estimatedTokens, err := rb.estimator.EstimateRequest(ctx, parsed.Model, body)
 	if err == nil {
 		parsed.EstimatedTokens = estimatedTokens
 	}

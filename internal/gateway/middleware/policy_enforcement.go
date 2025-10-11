@@ -44,6 +44,10 @@ func (pe *PolicyEnforcer) Middleware(next http.RoundTripper) http.RoundTripper {
 			return deny(500, "failed to load policies"), nil
 		}
 
+		// Store policies in context for usage recording middleware
+		ctx = auth.WithPolicies(ctx, policyList)
+		r = r.WithContext(ctx)
+
 		// Get pre-parsed request data from context
 		// No more JSON unmarshaling, no more body access!
 		parsedReq := auth.GetParsedRequest(ctx)

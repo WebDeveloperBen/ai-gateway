@@ -11,6 +11,7 @@ import (
 	"github.com/WebDeveloperBen/ai-gateway/internal/drivers/kv"
 	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
+	"github.com/WebDeveloperBen/ai-gateway/internal/observability"
 	"github.com/google/uuid"
 	lru "github.com/hashicorp/golang-lru/v2"
 )
@@ -58,15 +59,18 @@ func (e *Engine) LoadPolicies(ctx context.Context, appID string) ([]Policy, erro
 		if time.Now().Before(entry.expiresAt) {
 			policies := entry.policies
 			e.cacheMu.RUnlock()
+			observability.FromContext(ctx).RecordPolicyCacheHit(ctx, "memory")
 			return policies, nil
 		}
 		// Entry expired, will reload
 	}
 	e.cacheMu.RUnlock()
+	observability.FromContext(ctx).RecordPolicyCacheMiss(ctx, "memory")
 
 	// Tier 2: Check Redis cache (medium - network RTT but cached)
 	cachedPolicies, found, err := GetCachedPolicies(ctx, e.cache, appID)
 	if err == nil && found {
+		observability.FromContext(ctx).RecordPolicyCacheHit(ctx, "redis")
 		// Reconstruct policies from cached data
 		policies := make([]Policy, 0, len(cachedPolicies))
 		for _, cached := range cachedPolicies {
@@ -93,10 +97,13 @@ func (e *Engine) LoadPolicies(ctx context.Context, appID string) ([]Policy, erro
 
 		return policies, nil
 	}
+	observability.FromContext(ctx).RecordPolicyCacheMiss(ctx, "redis")
 
 	// Tier 3: Load from database (slowest - network + query)
+	observability.FromContext(ctx).RecordPolicyCacheMiss(ctx, "db")
 	dbPolicies, err := e.db.ListEnabledPolicies(ctx, appUUID)
 	if err != nil {
+		observability.FromContext(ctx).RecordPolicyLoadError(ctx, appID, err)
 		return nil, fmt.Errorf("failed to load policies: %w", err)
 	}
 
@@ -143,7 +150,14 @@ func (e *Engine) LoadPolicies(ctx context.Context, appID string) ([]Policy, erro
 // Returns error if any policy check fails
 func (e *Engine) CheckPreRequest(ctx context.Context, policies []Policy, req *PreRequestContext) error {
 	for _, policy := range policies {
-		if err := policy.PreCheck(ctx, req); err != nil {
+		start := time.Now()
+		err := policy.PreCheck(ctx, req)
+		duration := time.Since(start)
+
+		obs := observability.FromContext(ctx)
+		obs.RecordPolicyCheck(ctx, string(policy.Type()), duration, err != nil)
+
+		if err != nil {
 			return fmt.Errorf("policy %s failed: %w", policy.Type(), err)
 		}
 	}

@@ -2,9 +2,12 @@
 package tokens
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
+	"github.com/WebDeveloperBen/ai-gateway/internal/observability"
 	lru "github.com/hashicorp/golang-lru/v2"
 	tiktoken "github.com/pkoukk/tiktoken-go"
 )
@@ -28,7 +31,12 @@ func NewEstimator() *Estimator {
 }
 
 // EstimateRequest estimates tokens for a request body
-func (e *Estimator) EstimateRequest(model string, body []byte) (int, error) {
+func (e *Estimator) EstimateRequest(ctx context.Context, model string, body []byte) (int, error) {
+	start := time.Now()
+	defer func() {
+		duration := time.Since(start)
+		observability.FromContext(ctx).RecordTokenEstimation(ctx, model, duration, 0)
+	}()
 	// Parse request body to extract messages/prompt
 	var req struct {
 		Messages []struct {

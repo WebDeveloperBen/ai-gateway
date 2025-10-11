@@ -13,6 +13,7 @@ import (
 	"github.com/WebDeveloperBen/ai-gateway/internal/gateway/tokens"
 	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
+	"github.com/WebDeveloperBen/ai-gateway/internal/observability"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -186,13 +187,28 @@ func (ur *UsageRecorder) recordAsync(ctx context.Context, params *asyncRecordPar
 		return
 	}
 
-	// Load policies and run post-checks
-	policyList, err := ur.engine.LoadPolicies(ctx, appID)
-	if err != nil {
+	// Get policies from context (already loaded in enforcement middleware)
+	policyListInterface := auth.GetPolicies(ctx)
+	if policyListInterface == nil {
+		// Fallback: load policies if not in context
+		// This shouldn't normally happen but provides safety
+		var err error
+		policyListInterface, err = ur.engine.LoadPolicies(ctx, appID)
+		if err != nil {
+			logger.GetLogger(ctx).Error().
+				Err(err).
+				Str("app_id", appID).
+				Msg("Failed to load policies for post-check")
+			return
+		}
+	}
+
+	// Type assert to policy list
+	policyList, ok := policyListInterface.([]policies.Policy)
+	if !ok {
 		logger.GetLogger(ctx).Error().
-			Err(err).
 			Str("app_id", appID).
-			Msg("Failed to load policies for post-check")
+			Msg("Invalid policy list type in context")
 		return
 	}
 
@@ -210,6 +226,16 @@ func (ur *UsageRecorder) recordAsync(ctx context.Context, params *asyncRecordPar
 		ResponseSizeBytes: responseSizeBytes,
 		LatencyMs:         params.latencyMs,
 	}
+
+	// Record LLM token metrics
+	observability.FromContext(ctx).RecordLLMTokens(
+		ctx,
+		params.provider,
+		params.modelName,
+		tokenUsage.PromptTokens,
+		tokenUsage.CompletionTokens,
+		tokenUsage.TotalTokens,
+	)
 
 	// Run post-checks (non-blocking, for logging/metrics)
 	for _, policy := range policyList {

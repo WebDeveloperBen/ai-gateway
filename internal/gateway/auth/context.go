@@ -6,12 +6,13 @@ import "context"
 type contextKey string
 
 const (
-	contextKeyKeyID      contextKey = "api_key_id"
-	contextKeyOrgID      contextKey = "org_id"
-	contextKeyAppID      contextKey = "app_id"
+	contextKeyKeyID    contextKey = "api_key_id"
+	contextKeyOrgID    contextKey = "org_id"
+	contextKeyAppID    contextKey = "app_id"
 	contextKeyUserID   contextKey = "user_id"
 	contextKeyProvider contextKey = "provider"
 	contextKeyModel    contextKey = "model_name"
+	contextKeyPolicies contextKey = "policies"
 )
 
 // KeyData contains authenticated key information
@@ -110,4 +111,14 @@ func GetModelName(ctx context.Context) string {
 		}
 	}
 	return ""
+}
+
+// WithPolicies adds loaded policies to context
+func WithPolicies(ctx context.Context, policies interface{}) context.Context {
+	return context.WithValue(ctx, contextKeyPolicies, policies)
+}
+
+// GetPolicies retrieves loaded policies from context
+func GetPolicies(ctx context.Context) interface{} {
+	return ctx.Value(contextKeyPolicies)
 }

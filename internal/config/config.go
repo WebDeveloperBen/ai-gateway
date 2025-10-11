@@ -35,6 +35,7 @@ type Config struct {
 	AppRegistrationClientSecret string
 	AppRegistrationTenantID     string
 	AppRegistrationRedirectURL  string
+	EnableRedisCircuitBreaker   bool
 }
 
 // Loads all environment variables from the .env file
@@ -63,6 +64,7 @@ func loadConfig() Config {
 		AppRegistrationClientSecret: os.Getenv("AZURE_APP_REGISTRATION_CLIENT_SECRET"),
 		AppRegistrationTenantID:     os.Getenv("AZURE_APP_REGISTRATION_TENANT_ID"),
 		AppRegistrationRedirectURL:  getEnv("AZURE_APP_REGISTRATION_REDIRECT_URL", "http://localhost:3000/auth/callback"),
+		EnableRedisCircuitBreaker:   getEnvAsBoolean("REDIS_CIRCUIT_BREAKER_ENABLED", true),
 	}
 }
 

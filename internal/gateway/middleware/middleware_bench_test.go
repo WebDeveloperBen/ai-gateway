@@ -123,8 +123,9 @@ func BenchmarkRequestParsing(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
+			ctx := context.Background()
 			for i := 0; i < b.N; i++ {
-				parsed := buffer.parseRequest(bodyBytes)
+				parsed := buffer.parseRequest(ctx, bodyBytes)
 				if parsed.Model != "gpt-4" {
 					b.Fatalf("expected gpt-4, got %s", parsed.Model)
 				}
@@ -146,8 +147,9 @@ func BenchmarkTokenEstimation(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
+			ctx := context.Background()
 			for i := 0; i < b.N; i++ {
-				_, err := estimator.EstimateRequest(model, bodyBytes)
+				_, err := estimator.EstimateRequest(ctx, model, bodyBytes)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -247,7 +249,9 @@ func BenchmarkJSONUnmarshal(b *testing.B) {
 				b.ReportAllocs()
 				for i := 0; i < b.N; i++ {
 					// Simulate current behavior: unmarshal 3 times
-					var req1 struct{ Model string `json:"model"` }
+					var req1 struct {
+						Model string `json:"model"`
+					}
 					json.Unmarshal(bodyBytes, &req1)
 
 					var req2 struct {
@@ -257,7 +261,9 @@ func BenchmarkJSONUnmarshal(b *testing.B) {
 					}
 					json.Unmarshal(bodyBytes, &req2)
 
-					var req3 struct{ Model string `json:"model"` }
+					var req3 struct {
+						Model string `json:"model"`
+					}
 					json.Unmarshal(bodyBytes, &req3)
 				}
 			})

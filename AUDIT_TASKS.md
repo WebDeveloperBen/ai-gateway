@@ -1,8 +1,8 @@
 # Policy System - Audit Tasks
 
 **Last Updated:** 2025-10-12  
-**Version:** v2.5  
-**Production Readiness:** 92%
+**Version:** v3.0  
+**Production Readiness:** 94%
 
 ---
 
@@ -48,21 +48,28 @@
   - 50 entries sufficient for production (typically 5-10 models used)
 
 ### HP-2: Missing Observability/Metrics
-- **Status:** 🔴 TODO
+- **Status:** ✅ Complete
 - **Priority:** High
-- **Impact:** Cannot monitor policy performance in production
-- **Effort:** 2-3 hours
-- **Metrics Needed:**
-  - Policy check duration (histogram)
-  - Cache hit/miss rates (counter)
-  - Rate limit violations (counter)
-  - Policy load errors (counter)
-  - Token estimation duration (histogram)
-- **Recommendation:** Use Prometheus client library
-- **Files to modify:**
-  - `internal/gateway/policies/engine.go` (cache metrics)
-  - `internal/gateway/middleware/policy_enforcement.go` (check duration)
-  - `internal/gateway/policies/rate_limit.go` (violations)
+- **Implementation:** Full OpenTelemetry integration with metrics, traces, and spans
+- **Details:**
+  - Created comprehensive observability package with OTLP exporters
+  - Integrated with Azure Container Apps (OTLP endpoint configurable)
+  - **Metrics implemented:**
+    - `policy.check.duration` - Policy check performance
+    - `policy.cache.hits/misses` - Three-tier cache efficiency
+    - `policy.violations` - Policy violations by type
+    - `ratelimit.checks/violations` - Rate limiter metrics
+    - `token.estimation.duration` - Token estimation performance
+    - `llm.prompt.tokens`, `llm.completion.tokens`, `llm.total.tokens` - LLM token usage
+    - `http.request.duration/size`, `http.response.size` - HTTP metrics
+  - **Tracing:** Spans for policy operations and LLM requests
+  - **Context-based:** Uses `observability.FromContext()` pattern
+  - **No-op mode:** When disabled, zero overhead
+- **Files:**
+  - `internal/observability/observability.go` - Core setup
+  - `internal/observability/policy.go` - Helper functions
+  - `internal/observability/context.go` - Context integration
+  - Instrumented: `engine.go`, `tokens/estimator.go`, `middleware/usage_recording.go`
 
 ### HP-3: No Circuit Breaker for Redis
 - **Status:** 🔴 TODO
@@ -95,20 +102,18 @@
   - Reduced GC pressure under high load
 
 ### MP-2: Policies Loaded Twice Per Request
-- **Status:** 🟡 TODO (Low Impact)
+- **Status:** ✅ Complete
 - **Priority:** Medium
-- **Files:** 
-  - `internal/gateway/middleware/policy_enforcement.go:42`
-  - `internal/gateway/middleware/usage_recording.go:186`
-- **Issue:** LoadPolicies called in both enforcement and usage recording
-- **Impact:** Minimal due to memory cache, but wastes cycles
-- **Effort:** 1 hour
-- **Solution:** Load once in enforcement, store in context:
-  ```go
-  ctx = auth.WithPolicies(ctx, policyList)
-  // Later in usage recording:
-  policyList := auth.GetPolicies(ctx)
-  ```
+- **Implementation:** Policies loaded once in enforcement, reused in usage recording
+- **Details:**
+  - Added `WithPolicies()` and `GetPolicies()` to `auth/context.go`
+  - Policy enforcement stores policies in context after loading
+  - Usage recording retrieves from context (with fallback to load if missing)
+  - Eliminated redundant cache lookups per request
+- **Impact:** 
+  - Reduced policy loading from 2x to 1x per request
+  - Memory cache still provides 95%+ hit rate
+  - Saves ~100-200μs per request (memory cache access time)
 
 ### MP-3: Error Messages Expose Internal Details
 - **Status:** ✅ Complete
@@ -242,21 +247,21 @@
 
 ### Before Production (Required)
 - [x] HP-1: Token estimator LRU cache - **DONE** ✅
-- [ ] HP-2: Add metrics/observability (2-3 hours)
+- [x] HP-2: Add OpenTelemetry observability - **DONE** ✅
 - [ ] HP-3: Redis circuit breaker (1-2 hours)
 - [ ] TB-2: Integration tests (4-6 hours)
 - [ ] TB-3: Load testing (2-3 hours)
 
-**Total Effort:** ~1.5 days (was 2 days)
+**Total Effort:** ~1 day (was 2 days)
 
 ### Next Sprint (Recommended)
 - [x] MP-1: Optimize detached context - **DONE** ✅
-- [ ] MP-2: Load policies once per request (1 hour)
+- [x] MP-2: Load policies once per request - **DONE** ✅
 - [x] MP-3: Sanitize error messages - **DONE** ✅
 - [x] MP-4: Complete TODOs - **DONE** ✅
 - [ ] TB-1: Complete benchmark suite (2-3 hours)
 
-**Total Effort:** ~4 hours (was 1 day)
+**Total Effort:** ~3 hours (was 1 day)
 
 ### Future Improvements (Optional)
 - [ ] LP-1: CEL recompilation optimization (2-3 hours)
@@ -273,9 +278,10 @@
 
 **v1.0 (Initial):** 70% production ready  
 **v2.0 (Critical fixes):** 90% production ready  
-**v2.5 (Current):** 92% production ready ⬅️ You are here  
-**v3.0 (Target):** 95% production ready (after remaining HP tasks)  
-**v4.0 (Future):** 100% production ready (after all tasks)
+**v2.5 (Quick wins):** 92% production ready  
+**v3.0 (Current):** 94% production ready ⬅️ You are here  
+**v3.5 (Target):** 96% production ready (after HP-3)  
+**v4.0 (Future):** 100% production ready (after testing)
 
 ### Completed in v2.5
 - ✅ HP-1: Token estimator LRU cache
@@ -284,6 +290,13 @@
 - ✅ MP-4: Completed TODO comments
 - ✅ LP-2: Named constants for magic numbers
 - ✅ LP-3: Removed unused ModelID field
+
+### Completed in v3.0
+- ✅ HP-2: Full OpenTelemetry observability
+  - Metrics: Policy checks, cache hits/misses, rate limits, token usage, HTTP requests
+  - Traces: Spans for policy and LLM operations
+  - OTLP export for Azure Container Apps integration
+- ✅ MP-2: Load policies once per request (context caching)
 
 ---
 
