@@ -25,10 +25,21 @@ func Chain(base http.RoundTripper, mws ...func(http.RoundTripper) http.RoundTrip
 func WithAuth(a auth.KeyAuthenticator) func(http.RoundTripper) http.RoundTripper {
 	return func(next http.RoundTripper) http.RoundTripper {
 		return RTFunc(func(r *http.Request) (*http.Response, error) {
-			_, _, err := a.Authenticate(r)
+			keyID, keyData, err := a.Authenticate(r)
 			if err != nil {
 				return deny(401, "unauthorized"), nil
 			}
+
+			// Populate context with auth information
+			ctx := r.Context()
+			ctx = auth.WithKeyID(ctx, keyID)
+			ctx = auth.WithOrgID(ctx, keyData.OrgID)
+			ctx = auth.WithAppID(ctx, keyData.AppID)
+			ctx = auth.WithUserID(ctx, keyData.UserID)
+
+			// Update request with enriched context
+			r = r.WithContext(ctx)
+
 			return next.RoundTrip(r)
 		})
 	}

@@ -29,6 +29,38 @@ tasks:
       - go test -v ./...
 
   # -------------------
+  # Benchmarking tasks
+  # -------------------
+
+  bench:
+    desc: Run all benchmarks
+    cmds:
+      - go test -bench=. -benchmem -benchtime=1s ./internal/gateway/middleware
+      - go test -bench=. -benchmem -benchtime=1s ./internal/gateway/policies
+
+  bench:middleware:
+    desc: Benchmark middleware components
+    cmds:
+      - go test -bench=. -benchmem -benchtime=1s ./internal/gateway/middleware
+
+  bench:policies:
+    desc: Benchmark policy engine
+    cmds:
+      - go test -bench=. -benchmem -benchtime=1s ./internal/gateway/policies
+
+  bench:compare:
+    desc: Compare benchmarks before/after changes (requires old.txt baseline)
+    cmds:
+      - go test -bench=. -benchmem ./internal/gateway/middleware > new.txt
+      - benchstat old.txt new.txt
+
+  bench:save:
+    desc: Save current benchmark results as baseline
+    cmds:
+      - go test -bench=. -benchmem ./internal/gateway/middleware > old.txt
+      - echo "Baseline saved to old.txt"
+
+  # -------------------
   # Atlas database tasks
   # -------------------
 

@@ -14,6 +14,18 @@ type KvStore interface {
 	Del(ctx context.Context, key string) error
 	Exists(ctx context.Context, key string) (bool, error)
 
+	// Incr atomically increments the value at key by 1 and returns the new value
+	// If key doesn't exist, it's set to 0 before incrementing (returns 1)
+	Incr(ctx context.Context, key string) (int64, error)
+
+	// IncrBy atomically increments the value at key by amount and returns the new value
+	// If key doesn't exist, it's set to 0 before incrementing (returns amount)
+	IncrBy(ctx context.Context, key string, amount int64) (int64, error)
+
+	// Expire sets a TTL on an existing key
+	// Returns true if TTL was set, false if key doesn't exist
+	Expire(ctx context.Context, key string, ttl time.Duration) (bool, error)
+
 	ScanGetAll(ctx context.Context, pattern string, count int64) (map[string]string, error)
 	ScanAll(ctx context.Context, pattern string, count int64) ([]string, error)
 

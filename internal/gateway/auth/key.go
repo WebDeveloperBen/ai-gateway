@@ -20,37 +20,48 @@ func NewDefaultAPIKeyAuthenticator(store keys.Reader) *APIKeyAuthenticator {
 	return &APIKeyAuthenticator{Keys: store, Hasher: hasher}
 }
 
-func (a *APIKeyAuthenticator) Authenticate(r *http.Request) (tenant, app string, err error) {
+func (a *APIKeyAuthenticator) Authenticate(r *http.Request) (keyID string, keyData *KeyData, err error) {
 	tok := getHeaderToken(r)
 	keyID, secret := splitToken(tok)
 	if keyID == "" || secret == "" {
 		_ = padWork(a.Hasher)
-		return "", "", errors.New("unauthorized")
+		return "", nil, errors.New("unauthorized")
 	}
 
 	rec, err := a.Keys.GetByKeyID(r.Context(), keyID)
 	if err != nil || rec == nil {
 		_ = padWork(a.Hasher)
-		return "", "", errors.New("unauthorized")
+		return "", nil, errors.New("unauthorized")
 	}
 
 	if rec.Status != model.KeyActive {
-		return "", "", errors.New("unauthorized")
+		return "", nil, errors.New("unauthorized")
 	}
 	if rec.ExpiresAt != nil && time.Now().After(*rec.ExpiresAt) {
-		return "", "", errors.New("unauthorized")
+		return "", nil, errors.New("unauthorized")
 	}
 
 	phc, err := a.Keys.GetPHCByKeyID(r.Context(), keyID)
 	if err != nil {
 		_ = padWork(a.Hasher)
-		return "", "", errors.New("unauthorized")
+		return "", nil, errors.New("unauthorized")
 	}
 	ok, _ := a.Hasher.Verify(phc, []byte(secret))
 	if !ok {
-		return "", "", errors.New("unauthorized")
+		return "", nil, errors.New("unauthorized")
 	}
 
 	_ = a.Keys.TouchLastUsed(r.Context(), keyID)
-	return rec.Tenant, rec.App, nil
+
+	// Build KeyData from record
+	// Note: For now, using Tenant as OrgID and App as AppID (legacy fields)
+	// TODO: Once api_keys schema has proper org_id/app_id/user_id UUIDs, update this
+	data := &KeyData{
+		KeyID:  keyID,
+		OrgID:  rec.Tenant, // Legacy field mapping
+		AppID:  rec.App,    // Legacy field mapping
+		UserID: "",         // Not available in current schema
+	}
+
+	return keyID, data, nil
 }

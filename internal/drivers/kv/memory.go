@@ -2,7 +2,9 @@ package kv
 
 import (
 	"context"
+	"fmt"
 	"path"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -56,6 +58,53 @@ func (m *MemoryStore) Exists(ctx context.Context, key string) (bool, error) {
 	item, ok := m.store[key]
 	m.mu.RUnlock()
 	return ok && (item.expires.IsZero() || time.Now().Before(item.expires)), nil
+}
+
+func (m *MemoryStore) Incr(ctx context.Context, key string) (int64, error) {
+	return m.IncrBy(ctx, key, 1)
+}
+
+func (m *MemoryStore) IncrBy(ctx context.Context, key string, amount int64) (int64, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	item, ok := m.store[key]
+	if !ok || (item.expires.After(time.Time{}) && time.Now().After(item.expires)) {
+		// Key doesn't exist or expired, set to 0 and increment
+		m.store[key] = memoryItem{value: strconv.FormatInt(amount, 10), expires: time.Time{}}
+		return amount, nil
+	}
+
+	// Parse existing value as integer
+	val, err := strconv.ParseInt(item.value, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("value is not an integer")
+	}
+
+	newVal := val + amount
+	item.value = strconv.FormatInt(newVal, 10)
+	m.store[key] = item
+
+	return newVal, nil
+}
+
+func (m *MemoryStore) Expire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	item, ok := m.store[key]
+	if !ok || (item.expires.After(time.Time{}) && time.Now().After(item.expires)) {
+		return false, nil // Key doesn't exist
+	}
+
+	if ttl > 0 {
+		item.expires = time.Now().Add(ttl)
+	} else {
+		item.expires = time.Time{} // No expiration
+	}
+	m.store[key] = item
+
+	return true, nil
 }
 
 func (m *MemoryStore) Keys(ctx context.Context, pattern string) ([]string, error) {

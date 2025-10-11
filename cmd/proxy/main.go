@@ -18,6 +18,8 @@ import (
 	"github.com/WebDeveloperBen/ai-gateway/internal/drivers/kv"
 	"github.com/WebDeveloperBen/ai-gateway/internal/gateway"
 	"github.com/WebDeveloperBen/ai-gateway/internal/gateway/auth"
+	gwmiddleware "github.com/WebDeveloperBen/ai-gateway/internal/gateway/middleware"
+	"github.com/WebDeveloperBen/ai-gateway/internal/gateway/policies"
 	"github.com/WebDeveloperBen/ai-gateway/internal/migrate"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 	"github.com/WebDeveloperBen/ai-gateway/internal/provider"
@@ -87,6 +89,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// ---------- Policy Engine -------- //
+	policyEngine := policies.NewEngine(pg.Queries, kvStore)
+	requestBuffer := gwmiddleware.NewRequestBuffer()
+	policyEnforcer := gwmiddleware.NewPolicyEnforcer(policyEngine)
+	usageRecorder := gwmiddleware.NewUsageRecorder(pg.Queries, policyEngine)
+
 	// ------------- Services ------------ //
 	orgSvc := apiauth.NewOrganisationService(orgRepo, userRepo)
 	keysSvc := keys.NewService(keyRepo, hasher)
@@ -123,8 +131,9 @@ func main() {
 	transport := gateway.Chain(
 		http.DefaultTransport,
 		gateway.WithAuth(authn),
-		// TODO: add the ratelimiter
-		// TODO: add the policies
+		requestBuffer.Middleware,      // Buffer request body once
+		policyEnforcer.Middleware,     // Policy enforcement (pre-check)
+		usageRecorder.Middleware,      // Usage recording (post-check, async)
 		// TODO: add the load balancer
 	)
 	core := gateway.NewCoreWithRegistry(transport, authn, reg)

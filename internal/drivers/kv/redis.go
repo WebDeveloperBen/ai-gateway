@@ -40,6 +40,18 @@ func (r *RedisStore) Exists(ctx context.Context, key string) (bool, error) {
 	return res > 0, err // support passing multiple keys
 }
 
+func (r *RedisStore) Incr(ctx context.Context, key string) (int64, error) {
+	return r.client.Incr(ctx, key).Result()
+}
+
+func (r *RedisStore) IncrBy(ctx context.Context, key string, amount int64) (int64, error) {
+	return r.client.IncrBy(ctx, key, amount).Result()
+}
+
+func (r *RedisStore) Expire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+	return r.client.Expire(ctx, key, ttl).Result()
+}
+
 // ScanAll is a Non-blocking, incremental SCAN over a pattern.
 // 'count' is a hint; 512–2048 is a good starting range.
 func (r *RedisStore) ScanAll(ctx context.Context, key string, count int64) ([]string, error) {

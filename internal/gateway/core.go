@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/WebDeveloperBen/ai-gateway/internal/gateway/auth"
 	"github.com/WebDeveloperBen/ai-gateway/internal/provider"
 )
 
@@ -131,14 +132,21 @@ func (c *Core) makeDirector(ctx context.Context, hctx huma.Context) func(*http.R
 		// If you ever had an inbound Content-Encoding, drop it; we’re sending raw JSON upstream.
 		req.Header.Del("Content-Encoding")
 
+		model := extractModel(raw)
+
 		info := provider.ReqInfo{
 			Method: hctx.Method(),
 			Path:   suffix,
 			Query:  req.URL.RawQuery,
-			Model:  extractModel(raw),
+			Model:  model,
 			Tenant: TenantFrom(ctx),
 			App:    AppFrom(ctx),
 		}
+
+		// Set provider and model in context for middleware
+		ctx = auth.WithProvider(ctx, getProviderName(ad))
+		ctx = auth.WithModelName(ctx, model)
+		req = req.WithContext(ctx)
 
 		// 4) Let the adapter rewrite to the real upstream.
 		if err := ad.Rewrite(req, suffix, info); err != nil {
@@ -259,4 +267,18 @@ func escape(s string) string {
 		return string(b[1 : len(b)-1])
 	}
 	return s
+}
+
+// getProviderName extracts provider name from adapter prefix
+func getProviderName(ad provider.Adapter) string {
+	prefix := ad.Prefix()
+	// Remove leading/trailing slashes and extract provider name
+	// e.g., "/azure/openai" -> "azureopenai"
+	// e.g., "/openai" -> "openai"
+	parts := strings.Split(strings.Trim(prefix, "/"), "/")
+	if len(parts) == 0 {
+		return "unknown"
+	}
+	// Join parts without slashes for provider name
+	return strings.Join(parts, "")
 }

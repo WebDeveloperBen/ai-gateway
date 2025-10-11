@@ -1,0 +1,228 @@
+package policies
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"sync"
+	"time"
+
+	"github.com/WebDeveloperBen/ai-gateway/internal/db"
+	"github.com/WebDeveloperBen/ai-gateway/internal/drivers/kv"
+	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
+	"github.com/google/uuid"
+	lru "github.com/hashicorp/golang-lru/v2"
+)
+
+// policyCacheEntry holds compiled policies with expiration time
+type policyCacheEntry struct {
+	policies  []Policy
+	expiresAt time.Time
+}
+
+// Engine is the main policy engine that loads and executes policies
+type Engine struct {
+	db          *db.Queries
+	cache       kv.KvStore
+	memoryCache *lru.Cache[string, *policyCacheEntry]
+	cacheMu     sync.RWMutex
+	cacheTTL    time.Duration
+}
+
+// NewEngine creates a new policy engine
+func NewEngine(queries *db.Queries, cache kv.KvStore) *Engine {
+	// Create in-memory LRU cache with 1000 entries (supports ~1000 concurrent apps)
+	memCache, _ := lru.New[string, *policyCacheEntry](1000)
+
+	return &Engine{
+		db:          queries,
+		cache:       cache,
+		memoryCache: memCache,
+		cacheTTL:    30 * time.Second, // Short TTL to keep policies fresh
+	}
+}
+
+// LoadPolicies loads all enabled policies for an application
+// Uses three-tier cache: memory (30s TTL) -> Redis (5m TTL) -> DB
+func (e *Engine) LoadPolicies(ctx context.Context, appID string) ([]Policy, error) {
+	appUUID, err := uuid.Parse(appID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid app ID: %w", err)
+	}
+
+	// Tier 1: Check in-memory cache first (fastest - no network RTT)
+	e.cacheMu.RLock()
+	if entry, found := e.memoryCache.Get(appID); found {
+		// Check if entry is still valid
+		if time.Now().Before(entry.expiresAt) {
+			policies := entry.policies
+			e.cacheMu.RUnlock()
+			return policies, nil
+		}
+		// Entry expired, will reload
+	}
+	e.cacheMu.RUnlock()
+
+	// Tier 2: Check Redis cache (medium - network RTT but cached)
+	cachedPolicies, found, err := GetCachedPolicies(ctx, e.cache, appID)
+	if err == nil && found {
+		// Reconstruct policies from cached data
+		policies := make([]Policy, 0, len(cachedPolicies))
+		for _, cached := range cachedPolicies {
+			policy, err := e.NewPolicy(cached.Type, cached.Config)
+			if err != nil {
+				// Log error but continue with other policies
+				logger.GetLogger(ctx).Error().
+					Err(err).
+					Str("app_id", appID).
+					Str("policy_type", string(cached.Type)).
+					Msg("Failed to reconstruct cached policy")
+				continue
+			}
+			policies = append(policies, policy)
+		}
+
+		// Store in memory cache for next request
+		e.cacheMu.Lock()
+		e.memoryCache.Add(appID, &policyCacheEntry{
+			policies:  policies,
+			expiresAt: time.Now().Add(e.cacheTTL),
+		})
+		e.cacheMu.Unlock()
+
+		return policies, nil
+	}
+
+	// Tier 3: Load from database (slowest - network + query)
+	dbPolicies, err := e.db.ListEnabledPolicies(ctx, appUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load policies: %w", err)
+	}
+
+	// Convert DB policies to Policy interfaces
+	// Store original configs for caching
+	policies := make([]Policy, 0, len(dbPolicies))
+	policiesToCache := make([]CachedPolicy, 0, len(dbPolicies))
+
+	for _, dbPolicy := range dbPolicies {
+		policy, err := e.NewPolicy(model.PolicyType(dbPolicy.PolicyType), dbPolicy.Config)
+		if err != nil {
+			// Log error but continue with other policies
+			logger.GetLogger(ctx).Error().
+				Err(err).
+				Str("app_id", appID).
+				Str("policy_type", string(dbPolicy.PolicyType)).
+				Msg("Failed to create policy from database")
+			continue
+		}
+		policies = append(policies, policy)
+
+		// Store for cache
+		policiesToCache = append(policiesToCache, CachedPolicy{
+			Type:   model.PolicyType(dbPolicy.PolicyType),
+			Config: dbPolicy.Config,
+		})
+	}
+
+	// Cache in Redis (ignore errors - cache failures shouldn't break requests)
+	_ = SetCachedPoliciesRaw(ctx, e.cache, appID, policiesToCache)
+
+	// Cache in memory
+	e.cacheMu.Lock()
+	e.memoryCache.Add(appID, &policyCacheEntry{
+		policies:  policies,
+		expiresAt: time.Now().Add(e.cacheTTL),
+	})
+	e.cacheMu.Unlock()
+
+	return policies, nil
+}
+
+// CheckPreRequest runs all pre-request checks for the given policies
+// Returns error if any policy check fails
+func (e *Engine) CheckPreRequest(ctx context.Context, policies []Policy, req *PreRequestContext) error {
+	for _, policy := range policies {
+		if err := policy.PreCheck(ctx, req); err != nil {
+			return fmt.Errorf("policy %s failed: %w", policy.Type(), err)
+		}
+	}
+	return nil
+}
+
+// RecordPostRequest runs all post-request checks asynchronously
+// This should be called in a goroutine with a detached context
+func (e *Engine) RecordPostRequest(ctx context.Context, policies []Policy, req *PostRequestContext) {
+	for _, policy := range policies {
+		policy.PostCheck(ctx, req)
+	}
+}
+
+// NewPolicy creates a new policy instance based on the policy type and config
+// This is a method on Engine so it has access to cache for rate limiting
+func (e *Engine) NewPolicy(policyType model.PolicyType, config []byte) (Policy, error) {
+	switch policyType {
+	case model.PolicyTypeRateLimit:
+		var cfg model.RateLimitConfig
+		if err := json.Unmarshal(config, &cfg); err != nil {
+			return nil, fmt.Errorf("invalid rate limit config: %w", err)
+		}
+		return NewRateLimitPolicy(cfg, e.cache), nil
+
+	case model.PolicyTypeTokenLimit:
+		var cfg model.TokenLimitConfig
+		if err := json.Unmarshal(config, &cfg); err != nil {
+			return nil, fmt.Errorf("invalid token limit config: %w", err)
+		}
+		return NewTokenLimitPolicy(cfg), nil
+
+	case model.PolicyTypeModelAllowlist:
+		var cfg model.ModelAllowlistConfig
+		if err := json.Unmarshal(config, &cfg); err != nil {
+			return nil, fmt.Errorf("invalid model allowlist config: %w", err)
+		}
+		return NewModelAllowlistPolicy(cfg), nil
+
+	case model.PolicyTypeRequestSize:
+		var cfg model.RequestSizeConfig
+		if err := json.Unmarshal(config, &cfg); err != nil {
+			return nil, fmt.Errorf("invalid request size config: %w", err)
+		}
+		return NewRequestSizePolicy(cfg), nil
+
+	case model.PolicyTypeCustomCEL:
+		// Custom CEL policy - admin defines their own expressions
+		return NewCELPolicy(policyType, config)
+
+	default:
+		// Unknown policy type - treat as custom CEL
+		// This allows flexibility for new policy types without code changes
+		return NewCELPolicy(policyType, config)
+	}
+}
+
+// InvalidateCache removes an application's policies from all cache tiers
+// Call this when policies are updated/created/deleted for an application
+func (e *Engine) InvalidateCache(ctx context.Context, appID string) error {
+	// Remove from memory cache
+	e.cacheMu.Lock()
+	e.memoryCache.Remove(appID)
+	e.cacheMu.Unlock()
+
+	// Remove from Redis cache
+	return InvalidatePolicyCache(ctx, e.cache, appID)
+}
+
+// InvalidateAllCache clears the entire policy cache (all applications)
+// Use sparingly - mainly for testing or system-wide policy changes
+func (e *Engine) InvalidateAllCache(ctx context.Context) error {
+	// Clear memory cache
+	e.cacheMu.Lock()
+	e.memoryCache.Purge()
+	e.cacheMu.Unlock()
+
+	// Clear Redis cache (policies are stored with prefix "cache:policies:")
+	// We don't have a bulk delete in KvStore interface, so just log
+	logger.GetLogger(ctx).Info().Msg("Cleared in-memory policy cache")
+	return nil
+}

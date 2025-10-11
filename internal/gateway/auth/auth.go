@@ -9,7 +9,7 @@ import (
 )
 
 type KeyAuthenticator interface {
-	Authenticate(r *http.Request) (tenant, app string, err error)
+	Authenticate(r *http.Request) (keyID string, keyData *KeyData, err error)
 }
 
 type APIKeyAuthenticator struct {

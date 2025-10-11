@@ -5,10 +5,13 @@ import (
 	"net/http"
 )
 
-// NoopAuthenticator is for local testing/developlemnt usage only it removes authentication at the proxy
 type NoopAuthenticator struct{}
 
-func (a *NoopAuthenticator) Authenticate(r *http.Request) (string, string, error) {
-	fmt.Printf("[AnyAPIKeyAuthenticator] called. Returning tenant=default app=default\n")
-	return "default", "default", nil // always allows requests, returns dummy tenant/app
+func (a *NoopAuthenticator) Authenticate(r *http.Request) (string, *KeyData, error) {
+	fmt.Printf("[NoopAuthenticator] called. Returning default key data\n")
+	return "default-key-id", &KeyData{
+		OrgID:  "default-org",
+		AppID:  "default-app",
+		UserID: "default-user",
+	}, nil
 }
