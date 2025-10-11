@@ -1,22 +1,108 @@
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      ssh:
+        - default
+
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount source code for hot reload (excludes heavy directories)
+      - ./:/app:cached
+      - /app/ui/node_modules
+      - /app/.venv
+      - /app/log
+      - /app/public # Exclude public folder to preserve built frontend files
+    develop:
+      watch:
+        # Watch Python files and restart the container
+        - path: ./**/*.py
+          action: rebuild
+        # Watch config files
+        - path: ./pyproject.toml
+          action: rebuild
+        - path: ./.env
+          action: rebuild
+    env_file:
+      - .env
+    environment:
+      ENV: "development"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_INSECURE: "true"
+      OTEL_SERVICE_NAME: "bot-builder-api"
+      OTEL_SERVICE_VERSION: "dev"
+      DATABASE_HOST: "postgres"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    working_dir: /app
+
   postgres:
-    image: postgres:16
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: system
+      POSTGRES_USER: system
+      POSTGRES_PASSWORD: mypassword
     ports:
       - "5432:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: my_database
     volumes:
-      - data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U system -d system"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
-    image: redis:7
+    image: redis:8-alpine
     ports:
       - "6379:6379"
-    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
-  # TODO: add proxy app
-  # TODO: add admin app
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    depends_on:
+      jaeger:
+        condition: service_healthy
+    ports:
+      - "8889:8889"
+    expose:
+      - "4317"
+      - "4318"
+
+  # Jaeger for trace visualization
+  jaeger:
+    image: cr.jaegertracing.io/jaegertracing/jaeger:2.10.0
+    command:
+      - "--set"
+      - "receivers.otlp.protocols.grpc.endpoint=0.0.0.0:4317"
+      - "--set"
+      - "receivers.otlp.protocols.http.endpoint=0.0.0.0:4318"
+    ports:
+      - "16686:16686" # UI
+    expose:
+      - "4317"
+      - "4318"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:16686 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
-  data:
+  mssql_data:
+  postgres_data:
+  redis_data:

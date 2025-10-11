@@ -5,9 +5,9 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/insurgence-ai/llm-gateway/internal/config"
-	"github.com/insurgence-ai/llm-gateway/internal/logger"
-	"github.com/insurgence-ai/llm-gateway/internal/model"
+	"github.com/WebDeveloperBen/ai-gateway/internal/config"
+	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 )
 
 // AuthCookieMiddleware authenticates requests by verifying a JWT stored in an HttpOnly, Secure cookie.

@@ -9,10 +9,8 @@
         :disabled="copied"
         @click="handleCopy"
       >
-        <TransitionScale mode="out-in">
-          <component v-if="!copied" :is="Copy" class="size-4" aria-hidden="true" />
-          <component v-else :is="Check" aria-hidden="true" class="size-4 text-emerald-500" />
-        </TransitionScale>
+        <component v-if="!copied" :is="Copy" class="size-4" aria-hidden="true" />
+        <component v-else :is="Check" aria-hidden="true" class="size-4 text-emerald-500" />
 
         <span v-if="showLabel">
           {{ copied ? "Copied!" : "Copy" }}

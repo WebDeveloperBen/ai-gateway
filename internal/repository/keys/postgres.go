@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/insurgence-ai/llm-gateway/internal/model"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

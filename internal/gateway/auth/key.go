@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/insurgence-ai/llm-gateway/internal/model"
-	"github.com/insurgence-ai/llm-gateway/internal/repository/keys"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
+	"github.com/WebDeveloperBen/ai-gateway/internal/repository/keys"
 )
 
 // NewAPIKeyAuthenticator Constructor with explicit dependencies.

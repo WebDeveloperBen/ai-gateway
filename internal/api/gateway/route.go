@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/insurgence-ai/llm-gateway/internal/gateway"
+	"github.com/WebDeveloperBen/ai-gateway/internal/gateway"
 )
 
 var openAIPaths = []string{

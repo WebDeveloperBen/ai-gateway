@@ -9,9 +9,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/insurgence-ai/llm-gateway/internal/gateway/loadbalancing"
-	"github.com/insurgence-ai/llm-gateway/internal/provider"
-	openai "github.com/insurgence-ai/llm-gateway/internal/provider/openai"
+	"github.com/WebDeveloperBen/ai-gateway/internal/gateway/loadbalancing"
+	"github.com/WebDeveloperBen/ai-gateway/internal/provider"
+	openai "github.com/WebDeveloperBen/ai-gateway/internal/provider/openai"
 )
 
 func TestRewrite_ForwardsPathQuery_AndSetsBearerAndOrg(t *testing.T) {

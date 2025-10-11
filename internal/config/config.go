@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/insurgence-ai/llm-gateway/internal/model"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 	"github.com/joho/godotenv"
 )
 
@@ -21,6 +21,7 @@ type Config struct {
 	AdminPort                   string
 	AuthSecret                  string
 	DBConnectionString          string
+	DBManagedIdentityConfig     string
 	JWTExpiration               time.Duration
 	IsProd                      bool
 	ApplicationName             string
@@ -49,6 +50,7 @@ func loadConfig() Config {
 		JWTExpiration:               getEnvAsDuration("JWT_EXPIRATION_IN_SECONDS", time.Hour),
 		IsProd:                      getEnvAsBoolean("IS_PROD", false),
 		DBConnectionString:          getEnv("POSTGRES_DSN", ""),
+		DBManagedIdentityConfig:     getEnv("AZURE_DB_CONFIG", ""),
 		AuthSecret:                  getEnv("AUTH_SECRET", "superSecretNeedsToBeChanged"),
 		ApplicationName:             getEnv("APPLICATION_NAME", "LLM Gateway"),
 		Version:                     getEnv("VERSION", "v1.0.0"),
@@ -100,4 +102,13 @@ func getEnvAsBoolean(key string, fallback bool) bool {
 		}
 	}
 	return fallback
+}
+
+// GetDatabaseConnection returns the appropriate database connection string
+// Prioritizes managed identity config over connection string for Azure deployments
+func (c *Config) GetDatabaseConnection() string {
+	if c.DBManagedIdentityConfig != "" {
+		return c.DBManagedIdentityConfig
+	}
+	return c.DBConnectionString
 }

@@ -29,33 +29,65 @@ tasks:
       - go test -v ./...
 
   # -------------------
-  # Goose database tasks
+  # Atlas database tasks
   # -------------------
 
   db:status:
-    desc: Show migration status
+    desc: Show schema status and diff
     cmds:
-      - goose -dir ./sqlc/migrations postgres "$POSTGRES_DSN" status
+      - atlas schema diff --from "$ATLAS_DATABASE_URL" --to file://db/schema
 
-  db:up:
-    desc: Apply all up migrations
+  db:apply:
+    desc: Apply schema changes directly (DEV ONLY - non-versioned)
     cmds:
-      - goose -dir ./sqlc/migrations postgres "$POSTGRES_DSN" up
+      - psql "$POSTGRES_DSN" -f db/schema_pre.sql
+      - atlas schema apply --to file://db/schema --url "$ATLAS_DATABASE_URL" --auto-approve
+      - psql "$POSTGRES_DSN" -f db/schema_post.sql
 
-  db:down:
-    desc: Roll back the last migration
+  db:migrate:diff:
+    desc: Generate Goose migration from schema changes
     cmds:
-      - goose -dir ./sqlc/migrations postgres "$POSTGRES_DSN" down
+      - atlas migrate diff --env local {{.CLI_ARGS | default "auto_migration"}}
+
+  db:migrate:apply:
+    desc: Apply pending Goose migrations (what your app runs)
+    cmds:
+      - psql "$POSTGRES_DSN" -f db/schema_pre.sql
+      - goose -dir ./db/migrations postgres "$POSTGRES_DSN" up
+      - psql "$POSTGRES_DSN" -f db/schema_post.sql
+
+  db:migrate:new:
+    desc: Create and apply new Goose migration from schema changes
+    cmds:
+      - atlas migrate diff --env local {{.CLI_ARGS | default "auto_migration"}}
+      - psql "$POSTGRES_DSN" -f db/schema_pre.sql
+      - goose -dir ./db/migrations postgres "$POSTGRES_DSN" up
+      - psql "$POSTGRES_DSN" -f db/schema_post.sql
+
+  db:migrate:status:
+    desc: Show Goose migration status
+    cmds:
+      - goose -dir ./db/migrations postgres "$POSTGRES_DSN" status
+
+  db:plan:
+    desc: Plan schema changes (dry run)
+    cmds:
+      - atlas schema plan --from "$ATLAS_DATABASE_URL" --to file://db/schema
+
+  db:inspect:
+    desc: Inspect current database schema
+    cmds:
+      - atlas schema inspect --url "$ATLAS_DATABASE_URL"
 
   db:reset:
-    desc: Reset the database (rollback all, then migrate up)
+    desc: Reset database and apply schema
     cmds:
-      - goose -dir ./sqlc/migrations postgres "$POSTGRES_DSN" reset
-
-  db:create:
-    desc: Create a new migration file
-    cmds:
-      - goose -dir ./sqlc/migrations create {{.CLI_ARGS | default "new_migration"}} sql
+      - docker-compose down -v
+      - docker-compose up -d postgres
+      - sleep 3
+      - psql "$POSTGRES_DSN" -f db/schema_pre.sql
+      - atlas schema apply --to file://db/schema --url "$ATLAS_DATABASE_URL" --auto-approve
+      - psql "$POSTGRES_DSN" -f db/schema_post.sql
 
   # -------------------
   # SQLC generation
@@ -64,7 +96,13 @@ tasks:
   generate:
     desc: Generate SQLC code from queries
     cmds:
-      - rm -rf ./internal/repository/postgres && sqlc generate
+      - atlas schema inspect --url "$ATLAS_DATABASE_URL" --exclude goose_db_version --format '{{ sql . "  " }}' > db/schema.sql
+      - rm -rf ./internal/db && sqlc generate -f ./db/sqlc.yml
+
+  generate:sqlc:
+    desc: Generate only SQLC code (without schema update)
+    cmds:
+      - rm -rf ./internal/db && sqlc generate -f ./db/sqlc.yml
 
   clean:migrations:
     desc: Remove all migration files (careful!)

@@ -7,11 +7,11 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/insurgence-ai/llm-gateway/internal/db"
-	"github.com/insurgence-ai/llm-gateway/internal/model"
-	"github.com/insurgence-ai/llm-gateway/internal/repository"
-	"github.com/insurgence-ai/llm-gateway/internal/repository/organisations"
-	"github.com/insurgence-ai/llm-gateway/internal/repository/users"
+	"github.com/WebDeveloperBen/ai-gateway/internal/db"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
+	"github.com/WebDeveloperBen/ai-gateway/internal/repository"
+	"github.com/WebDeveloperBen/ai-gateway/internal/repository/organisations"
+	"github.com/WebDeveloperBen/ai-gateway/internal/repository/users"
 )
 
 type OrganisationServiceInterface interface {

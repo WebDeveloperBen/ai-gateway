@@ -12,9 +12,9 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/insurgence-ai/llm-gateway/internal/api/middleware"
-	"github.com/insurgence-ai/llm-gateway/internal/config"
-	"github.com/insurgence-ai/llm-gateway/internal/exceptions"
+	"github.com/WebDeveloperBen/ai-gateway/internal/api/middleware"
+	"github.com/WebDeveloperBen/ai-gateway/internal/config"
+	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions"
 )
 
 type AuthService struct {

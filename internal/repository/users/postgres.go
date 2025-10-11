@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/WebDeveloperBen/ai-gateway/internal/db"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
+	"github.com/WebDeveloperBen/ai-gateway/internal/repository"
 	"github.com/google/uuid"
-	"github.com/insurgence-ai/llm-gateway/internal/db"
-	"github.com/insurgence-ai/llm-gateway/internal/model"
-	"github.com/insurgence-ai/llm-gateway/internal/repository"
 )
 
 type postgresRepo struct {

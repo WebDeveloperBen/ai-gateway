@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/insurgence-ai/llm-gateway/internal/db"
+	"github.com/WebDeveloperBen/ai-gateway/internal/db"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )

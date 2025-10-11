@@ -1,5 +1,5 @@
 // Package exceptions provides error handling and database driver
-// integration for the llm-gateway service.
+// integration for the ai-gateway service.
 package exceptions
 
 import (

@@ -9,8 +9,8 @@ import (
 
 	"github.com/oklog/ulid/v2"
 
-	"github.com/insurgence-ai/llm-gateway/internal/model"
-	"github.com/insurgence-ai/llm-gateway/internal/repository/keys"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
+	"github.com/WebDeveloperBen/ai-gateway/internal/repository/keys"
 )
 
 type KeysService interface {

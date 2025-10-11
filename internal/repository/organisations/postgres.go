@@ -6,11 +6,11 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/insurgence-ai/llm-gateway/internal/db"
-	"github.com/insurgence-ai/llm-gateway/internal/exceptions/pg"
-	"github.com/insurgence-ai/llm-gateway/internal/model"
-	repository "github.com/insurgence-ai/llm-gateway/internal/repository"
-	"github.com/insurgence-ai/llm-gateway/internal/repository/roles"
+	"github.com/WebDeveloperBen/ai-gateway/internal/db"
+	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions/pg"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
+	repository "github.com/WebDeveloperBen/ai-gateway/internal/repository"
+	"github.com/WebDeveloperBen/ai-gateway/internal/repository/roles"
 )
 
 type postgresRepo struct {

@@ -5,11 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/insurgence-ai/llm-gateway/internal/config"
-	"github.com/insurgence-ai/llm-gateway/internal/gateway/auth"
-	"github.com/insurgence-ai/llm-gateway/internal/gateway/loadbalancing"
-	"github.com/insurgence-ai/llm-gateway/internal/provider"
-	"github.com/insurgence-ai/llm-gateway/internal/provider/azureopenai"
+	"github.com/WebDeveloperBen/ai-gateway/internal/config"
+	"github.com/WebDeveloperBen/ai-gateway/internal/gateway/auth"
+	"github.com/WebDeveloperBen/ai-gateway/internal/gateway/loadbalancing"
+	"github.com/WebDeveloperBen/ai-gateway/internal/provider"
+	"github.com/WebDeveloperBen/ai-gateway/internal/provider/azureopenai"
 )
 
 type AOAITest struct {

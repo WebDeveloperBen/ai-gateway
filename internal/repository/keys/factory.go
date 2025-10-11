@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/insurgence-ai/llm-gateway/internal/model"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 )
 
 func NewKeyRepository(ctx context.Context, cfg model.RepositoryConfig) (KeyRepository, error) {

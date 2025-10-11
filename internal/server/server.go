@@ -7,8 +7,8 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-	"github.com/insurgence-ai/llm-gateway/internal/config"
-	"github.com/insurgence-ai/llm-gateway/internal/logger"
+	"github.com/WebDeveloperBen/ai-gateway/internal/config"
+	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
 
 	chi_middleware "github.com/go-chi/chi/v5/middleware"
 )

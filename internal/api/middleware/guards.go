@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/insurgence-ai/llm-gateway/internal/exceptions"
-	"github.com/insurgence-ai/llm-gateway/internal/logger"
+	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions"
+	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
 )
 
 func RequireCookieAuth() RequireFunc {

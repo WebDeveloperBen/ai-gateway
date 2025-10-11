@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/insurgence-ai/llm-gateway/internal/drivers/kv"
-	"github.com/insurgence-ai/llm-gateway/internal/model"
+	"github.com/WebDeveloperBen/ai-gateway/internal/drivers/kv"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 )
 
 type Registry struct {

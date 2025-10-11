@@ -6,8 +6,8 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/insurgence-ai/llm-gateway/internal/exceptions"
-	"github.com/insurgence-ai/llm-gateway/internal/model"
+	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 	"golang.org/x/oauth2"
 )
 

@@ -5,7 +5,7 @@ package auth
 import (
 	"net/http"
 
-	"github.com/insurgence-ai/llm-gateway/internal/repository/keys"
+	"github.com/WebDeveloperBen/ai-gateway/internal/repository/keys"
 )
 
 type KeyAuthenticator interface {

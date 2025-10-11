@@ -8,24 +8,25 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 
-	apiauth "github.com/insurgence-ai/llm-gateway/internal/api/auth"
-	"github.com/insurgence-ai/llm-gateway/internal/api/docs"
-	apigw "github.com/insurgence-ai/llm-gateway/internal/api/gateway"
-	"github.com/insurgence-ai/llm-gateway/internal/api/health"
-	"github.com/insurgence-ai/llm-gateway/internal/api/middleware"
-	"github.com/insurgence-ai/llm-gateway/internal/config"
-	dbdriver "github.com/insurgence-ai/llm-gateway/internal/drivers/db"
-	"github.com/insurgence-ai/llm-gateway/internal/drivers/kv"
-	"github.com/insurgence-ai/llm-gateway/internal/gateway"
-	"github.com/insurgence-ai/llm-gateway/internal/gateway/auth"
-	"github.com/insurgence-ai/llm-gateway/internal/model"
-	"github.com/insurgence-ai/llm-gateway/internal/provider"
+	apiauth "github.com/WebDeveloperBen/ai-gateway/internal/api/auth"
+	"github.com/WebDeveloperBen/ai-gateway/internal/api/docs"
+	apigw "github.com/WebDeveloperBen/ai-gateway/internal/api/gateway"
+	"github.com/WebDeveloperBen/ai-gateway/internal/api/health"
+	"github.com/WebDeveloperBen/ai-gateway/internal/api/middleware"
+	"github.com/WebDeveloperBen/ai-gateway/internal/config"
+	dbdriver "github.com/WebDeveloperBen/ai-gateway/internal/drivers/db"
+	"github.com/WebDeveloperBen/ai-gateway/internal/drivers/kv"
+	"github.com/WebDeveloperBen/ai-gateway/internal/gateway"
+	"github.com/WebDeveloperBen/ai-gateway/internal/gateway/auth"
+	"github.com/WebDeveloperBen/ai-gateway/internal/migrate"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
+	"github.com/WebDeveloperBen/ai-gateway/internal/provider"
 
-	"github.com/insurgence-ai/llm-gateway/internal/api/admin/keys"
-	keyrepo "github.com/insurgence-ai/llm-gateway/internal/repository/keys"
-	orgrepo "github.com/insurgence-ai/llm-gateway/internal/repository/organisations"
-	userrepo "github.com/insurgence-ai/llm-gateway/internal/repository/users"
-	"github.com/insurgence-ai/llm-gateway/internal/server"
+	"github.com/WebDeveloperBen/ai-gateway/internal/api/admin/keys"
+	keyrepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/keys"
+	orgrepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/organisations"
+	userrepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/users"
+	"github.com/WebDeveloperBen/ai-gateway/internal/server"
 )
 
 func main() {
@@ -51,6 +52,11 @@ func main() {
 		log.Fatal(err)
 	}
 	defer pg.Pool.Close()
+
+	// Run database migrations on startup
+	if err := migrate.InitDatabase(ctx, config.Envs.GetDatabaseConnection()); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
 
 	// --------------- Registry ------------- //
 	reg := gateway.NewRegistry(ctx, kvStore)

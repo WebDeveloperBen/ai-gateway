@@ -3,8 +3,8 @@ package middleware
 import (
 	"context"
 
-	"github.com/insurgence-ai/llm-gateway/internal/logger"
-	"github.com/insurgence-ai/llm-gateway/internal/model"
+	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 )
 
 func GetOrgQueries(ctx context.Context) *OrgQueries {

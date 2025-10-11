@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/insurgence-ai/llm-gateway/internal/logger"
+	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
 )
 
 type HandlerFunc[In any, Out any] func(ctx context.Context, input *In) (*Out, error)
