@@ -5,28 +5,142 @@ dotenv: [".env"]
 tasks:
   default:
     cmds:
-      - task run
+      - task dev
 
   build:
     desc: Build the Go application binary
     cmds:
-      - go build -o ./bin/api ./cmd/api
+      - go build -o ./bin/proxy ./cmd/proxy
+
+  dev:
+    desc: Run the application in development mode with migrations and Air hot reloading (requires docker compose to be running)
+    cmds:
+      - task migrate
+      - air
 
   run:
-    desc: Run the application using Docker Compose and Air for hot reloading
+    desc: Run the application binary (production mode)
     cmds:
-      - docker-compose up -d
-      - air
+      - ./bin/proxy
+
+  migrate:
+    desc: Run database migrations
+    cmds:
+      - go run ./cmd/migrate/main.go
+
+  wait-for-db:
+    desc: Wait for database to be ready
+    cmds:
+      - |
+        echo "Waiting for database to be ready..."
+        for i in {1..30}; do
+          if pg_isready -h localhost -p 5432 -U system -d system >/dev/null 2>&1; then
+            echo "Database is ready!"
+            exit 0
+          fi
+          echo "Waiting for database... ($i/30)"
+          sleep 2
+        done
+        echo "Database failed to start"
+        exit 1
 
   stop:
     desc: Stop the Docker Compose environment
     cmds:
-      - docker-compose down
+      - docker compose down
 
   tests:
     desc: Run all Go tests
     cmds:
       - go test -v ./...
+
+  # -------------------
+  # Coverage tasks
+  # -------------------
+
+  coverage:
+    desc: Run tests with coverage for all packages
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+
+  coverage:html:
+    desc: Generate HTML coverage report
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o coverage.html
+      - 'echo "Coverage report generated: coverage.html"'
+
+  coverage:func:
+    desc: Show function-level coverage report
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out
+
+  coverage:check:
+    desc: Check if coverage meets minimum threshold (80%)
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+      - |
+        COVERAGE=$(go tool cover -func=coverage.out | grep "total:" | awk '{print $3}' | sed 's/%//')
+        echo "Total coverage: ${COVERAGE}%"
+        if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+          echo "❌ Coverage below 80% threshold"
+          exit 1
+        else
+          echo "✅ Coverage meets 80% threshold"
+        fi
+
+  coverage:internal:
+    desc: Run coverage on internal packages only (excludes cmd/ and generated code)
+    cmds:
+      - go test -coverprofile=coverage-internal.out ./internal/...
+      - go tool cover -func=coverage-internal.out
+
+  coverage:internal:check:
+    desc: Check if internal package coverage meets 80% threshold
+    cmds:
+      - go test -coverprofile=coverage-internal.out ./internal/...
+      - |
+        COVERAGE=$(go tool cover -func=coverage-internal.out | grep "total:" | awk '{print $3}' | sed 's/%//')
+        echo "Internal coverage: ${COVERAGE}%"
+        if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+          echo "❌ Internal coverage below 80% threshold"
+          exit 1
+        else
+          echo "✅ Internal coverage meets 80% threshold"
+        fi
+
+  coverage:business:
+    desc: Run coverage on business logic packages (excludes generated/db/infra code)
+    cmds:
+      - |
+        go test -coverprofile=coverage-business.out \
+          ./internal/api/gateway \
+          ./internal/gateway/middleware \
+          ./internal/gateway/policies \
+          ./internal/provider/azureopenai \
+          ./internal/provider/openai
+      - go tool cover -func=coverage-business.out
+
+  coverage:business:check:
+    desc: Check if business logic coverage meets 80% threshold
+    cmds:
+      - |
+        go test -coverprofile=coverage-business.out \
+          ./internal/api/gateway \
+          ./internal/gateway/middleware \
+          ./internal/gateway/policies \
+          ./internal/provider/azureopenai \
+          ./internal/provider/openai
+      - |
+        COVERAGE=$(go tool cover -func=coverage-business.out | grep "total:" | awk '{print $3}' | sed 's/%//')
+        echo "Business logic coverage: ${COVERAGE}%"
+        if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+          echo "❌ Business logic coverage below 80% threshold"
+          exit 1
+        else
+          echo "✅ Business logic coverage meets 80% threshold"
+        fi
 
   # -------------------
   # Benchmarking tasks
@@ -114,8 +228,8 @@ tasks:
   db:reset:
     desc: Reset database and apply schema
     cmds:
-      - docker-compose down -v
-      - docker-compose up -d postgres
+      - docker compose down -v
+      - docker compose up -d postgres
       - sleep 3
       - psql "$POSTGRES_DSN" -f db/schema_pre.sql
       - atlas schema apply --to file://db/schema --url "$ATLAS_DATABASE_URL" --auto-approve

@@ -20,13 +20,18 @@ import (
 	"github.com/WebDeveloperBen/ai-gateway/internal/gateway/auth"
 	gwmiddleware "github.com/WebDeveloperBen/ai-gateway/internal/gateway/middleware"
 	"github.com/WebDeveloperBen/ai-gateway/internal/gateway/policies"
-	"github.com/WebDeveloperBen/ai-gateway/internal/migrate"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 	"github.com/WebDeveloperBen/ai-gateway/internal/provider"
 
+	"github.com/WebDeveloperBen/ai-gateway/internal/api/admin/applications"
 	"github.com/WebDeveloperBen/ai-gateway/internal/api/admin/keys"
+	adminpolicies "github.com/WebDeveloperBen/ai-gateway/internal/api/admin/policies"
+	adminusage "github.com/WebDeveloperBen/ai-gateway/internal/api/admin/usage"
+	apprepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/applications"
 	keyrepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/keys"
 	orgrepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/organisations"
+	policiesrepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/policies"
+	usagerepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/usage"
 	userrepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/users"
 	"github.com/WebDeveloperBen/ai-gateway/internal/server"
 )
@@ -60,11 +65,6 @@ func main() {
 	}
 	defer pg.Pool.Close()
 
-	// Run database migrations on startup
-	if err := migrate.InitDatabase(ctx, config.Envs.GetDatabaseConnection()); err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
-	}
-
 	// --------------- Registry ------------- //
 	reg := gateway.NewRegistry(ctx, kvStore)
 	_ = gateway.EnsureRegistryPopulated(reg, loadAllModelDeploymentsFromDatabase)
@@ -78,20 +78,32 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	appRepo := apprepo.NewPostgresRepo(pg.Queries)
 	orgRepo := orgrepo.NewPostgresRepo(pg.Queries)
+	policiesRepo := policiesrepo.NewPostgresRepo(pg.Queries)
+	usageRepo := usagerepo.NewPostgresRepo(pg.Queries)
 	userRepo := userrepo.NewPostgresRepo(pg.Queries)
 
 	// ---------- Middleware Utilities -------- //
 	authn := auth.NewDefaultAPIKeyAuthenticator(keyRepo)
-	oidcService, err := apiauth.NewOIDCService(ctx,
-		apiauth.OIDCConfig{
-			ClientID:     cfg.AppRegistrationClientID,
-			ClientSecret: cfg.AppRegistrationClientSecret,
-			TenantID:     cfg.AppRegistrationTenantID,
-			RedirectURL:  cfg.AppRegistrationRedirectURL,
-		})
-	if err != nil {
-		log.Fatal(err)
+
+	// OIDC Service (use mock for development/testing)
+	var oidcService apiauth.OIDCServiceInterface
+	if cfg.AppRegistrationTenantID != "dummy-tenant-id" {
+		var err error
+		oidcService, err = apiauth.NewOIDCService(ctx,
+			apiauth.OIDCConfig{
+				ClientID:     cfg.AppRegistrationClientID,
+				ClientSecret: cfg.AppRegistrationClientSecret,
+				TenantID:     cfg.AppRegistrationTenantID,
+				RedirectURL:  cfg.AppRegistrationRedirectURL,
+			})
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		log.Println("Using mock OIDC service for development/testing")
+		oidcService = apiauth.NewMockOIDCService()
 	}
 
 	// ---------- Policy Engine -------- //
@@ -103,6 +115,9 @@ func main() {
 	// ------------- Services ------------ //
 	orgSvc := apiauth.NewOrganisationService(orgRepo, userRepo)
 	keysSvc := keys.NewService(keyRepo, hasher)
+	appsSvc := applications.NewService(appRepo)
+	policiesSvc := adminpolicies.NewService(policiesRepo)
+	usageSvc := adminusage.NewService(usageRepo)
 
 	// ----------- API Router Setup ---------- //
 	router, humaCfg := server.New(cfg)
@@ -131,6 +146,9 @@ func main() {
 	// ------------ Register API Routers ----------- //
 	apiauth.NewRouter(oidcService, orgSvc).RegisterRoutes(authgrp)
 	keys.NewRouter(keysSvc).RegisterRoutes(authgrp)
+	applications.NewRouter(appsSvc).RegisterRoutes(admingrp)
+	adminpolicies.NewRouter(policiesSvc).RegisterRoutes(admingrp)
+	adminusage.NewRouter(usageSvc).RegisterRoutes(admingrp)
 
 	// ------------ Gateway Proxy Setup ----------- //
 	transport := gateway.Chain(

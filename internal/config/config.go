@@ -60,9 +60,9 @@ func loadConfig() Config {
 		RedisAddr:                   getEnv("REDIS_ADDR", ""),
 		RedisPW:                     getEnv("REDIS_PASSWORD", ""),
 		DBBackend:                   model.RepositoryBackend(getEnv("DB_BACKEND", "postgres")),
-		AppRegistrationClientID:     os.Getenv("AZURE_APP_REGISTRATION_CLIENT_ID"),
-		AppRegistrationClientSecret: os.Getenv("AZURE_APP_REGISTRATION_CLIENT_SECRET"),
-		AppRegistrationTenantID:     os.Getenv("AZURE_APP_REGISTRATION_TENANT_ID"),
+		AppRegistrationClientID:     getEnv("AZURE_APP_REGISTRATION_CLIENT_ID", "dummy-client-id"),
+		AppRegistrationClientSecret: getEnv("AZURE_APP_REGISTRATION_CLIENT_SECRET", "dummy-client-secret"),
+		AppRegistrationTenantID:     getEnv("AZURE_APP_REGISTRATION_TENANT_ID", "dummy-tenant-id"),
 		AppRegistrationRedirectURL:  getEnv("AZURE_APP_REGISTRATION_REDIRECT_URL", "http://localhost:3000/auth/callback"),
 		EnableRedisCircuitBreaker:   getEnvAsBoolean("REDIS_CIRCUIT_BREAKER_ENABLED", true),
 	}

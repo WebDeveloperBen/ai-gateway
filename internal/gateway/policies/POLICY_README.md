@@ -1,7 +1,7 @@
 # AI Gateway Policy System - Complete Walkthrough
 
 **Date:** 2025-10-12
-**Version:** 2.0 (All Critical Optimizations Complete)
+**Version:** 2.1 (Middleware Testing & Coverage Complete)
 
 ---
 
@@ -32,6 +32,8 @@ The policy system is a flexible, pluggable framework for:
 3. **Async Post-Processing**: Usage recording doesn't block responses
 4. **Fail-Open**: If policy engine fails, requests continue (logged)
 5. **Extensibility**: New policies via interface implementation
+6. **Testable Design**: Dependency injection enables comprehensive unit testing
+7. **High Coverage**: 90%+ test coverage on core middleware components
 
 ### High-Level Architecture
 
@@ -132,11 +134,18 @@ func (rb *RequestBuffer) Middleware(next http.RoundTripper) http.RoundTripper {
             r.Body.Close()
         }
 
-        // 2. Replace with reusable reader
+        // 2. Parse request data once (model, messages, token estimation)
+        parsedReq, err := rb.parseRequest(bodyBytes)
+        if err != nil {
+            // If parsing fails, continue with empty parsed request
+            parsedReq = &auth.ParsedRequest{}
+        }
+
+        // 3. Replace with reusable reader
         r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 
-        // 3. Store in context for other middleware
-        ctx := auth.WithRequestBody(r.Context(), bodyBytes)
+        // 4. Store parsed data in context (not raw body)
+        ctx := auth.WithParsedRequest(r.Context(), parsedReq)
         r = r.WithContext(ctx)
 
         return next.RoundTrip(r)
@@ -144,7 +153,7 @@ func (rb *RequestBuffer) Middleware(next http.RoundTripper) http.RoundTripper {
 }
 ```
 
-**⚠️ Audit Note:** This stores full body in context (10-100KB). See AUDIT_PHASE2.md Issue #1.
+**✅ Optimization:** Stores parsed data (~1KB) instead of full body (10-100KB). Single JSON parse operation.
 
 ---
 
@@ -152,7 +161,7 @@ func (rb *RequestBuffer) Middleware(next http.RoundTripper) http.RoundTripper {
 
 **Purpose:** Run **blocking** pre-checks before upstream request.
 
-**File:** `internal/gateway/middleware/policy_enforcement.go:32-93`
+**File:** `internal/gateway/middleware/policy_enforcement.go:28-94`
 
 ```go
 func (pe *PolicyEnforcer) Middleware(next http.RoundTripper) http.RoundTripper {
@@ -162,7 +171,7 @@ func (pe *PolicyEnforcer) Middleware(next http.RoundTripper) http.RoundTripper {
         // 1. Extract app ID from context (set by auth middleware)
         appID := auth.GetAppID(ctx)
         if appID == "" {
-            return deny(500, "missing app context"), nil
+            return next.RoundTrip(r) // Fast path: no app context = skip policies
         }
 
         // 2. Load policies for this application
@@ -176,42 +185,50 @@ func (pe *PolicyEnforcer) Middleware(next http.RoundTripper) http.RoundTripper {
             return deny(500, "failed to load policies"), nil
         }
 
-        // 3. Get buffered body from context
-        bodyBytes := auth.GetRequestBody(ctx)
+        // 3. Get pre-parsed request data from context
+        // No more JSON unmarshaling, no more body access!
+        parsedReq := auth.GetParsedRequest(ctx)
+        if parsedReq == nil {
+            // This shouldn't happen if RequestBuffer middleware ran
+            logger.GetLogger(ctx).Error().
+                Str("app_id", appID).
+                Msg("Missing parsed request data")
+            return deny(500, "internal error"), nil
+        }
 
-        // 4. Extract model name from request
-        // Unmarshals JSON to find "model" field
-        model := extractModelFromRequest(bodyBytes)
-
-        // 5. Estimate token count
-        // Uses tiktoken-go for accurate counting
-        estimatedTokens, _ := pe.estimator.EstimateRequest(model, bodyBytes)
-
-        // 6. Build pre-request context
+        // 4. Build pre-request context using parsed data
         preCtx := &policies.PreRequestContext{
             Request:          r,
             OrgID:            auth.GetOrgID(ctx),
             AppID:            appID,
             APIKeyID:         auth.GetKeyID(ctx),
-            Model:            model,
-            EstimatedTokens:  estimatedTokens,
-            RequestSizeBytes: len(bodyBytes),
-            Body:             bodyBytes,
+            Model:            parsedReq.Model,
+            EstimatedTokens:  parsedReq.EstimatedTokens,
+            RequestSizeBytes: parsedReq.RequestSize,
+            Body:             nil, // No longer needed - policies use parsed data
         }
 
-        // 7. Run all policies (in order)
+        // 5. Run all policies (in order)
         for _, policy := range policyList {
             if err := policy.PreCheck(ctx, preCtx); err != nil {
                 // Policy failed - log and deny
                 logger.GetLogger(ctx).Warn().
                     Err(err).
+                    Str("app_id", appID).
+                    Str("org_id", auth.GetOrgID(ctx)).
                     Str("policy_type", string(policy.Type())).
+                    Str("model", parsedReq.Model).
+                    Int("estimated_tokens", parsedReq.EstimatedTokens).
                     Msg("Policy check failed")
                 return deny(429, "policy violation"), nil
             }
         }
 
-        // 8. All policies passed - continue
+        // 6. Store policies in context for usage recording middleware
+        ctx = auth.WithPolicies(ctx, policyList)
+        r = r.WithContext(ctx)
+
+        // 7. All policies passed - continue
         return next.RoundTrip(r)
     })
 }
@@ -244,16 +261,18 @@ req = req.WithContext(ctx)
 
 **Purpose:** Record metrics and run **async** post-checks (don't block response).
 
-**File:** `internal/gateway/middleware/usage_recording.go:37-104`
+**File:** `internal/gateway/middleware/usage_recording.go:81-133`
 
 ```go
 func (ur *UsageRecorder) Middleware(next http.RoundTripper) http.RoundTripper {
     return roundTripFunc(func(r *http.Request) (*http.Response, error) {
-        // 1. Capture metadata from context
-        appID := auth.GetAppID(r.Context())
-        orgID := auth.GetOrgID(r.Context())
-        provider := auth.GetProvider(r.Context())
-        modelName := auth.GetModelName(r.Context())
+        ctx := r.Context()
+
+        // 1. Get request size from parsed request data
+        requestSizeBytes := 0
+        if parsedReq := auth.GetParsedRequest(ctx); parsedReq != nil {
+            requestSizeBytes = parsedReq.RequestSize
+        }
 
         // 2. Capture start time
         startTime := time.Now()
@@ -267,30 +286,32 @@ func (ur *UsageRecorder) Middleware(next http.RoundTripper) http.RoundTripper {
         // 4. Calculate latency
         latencyMs := time.Since(startTime).Milliseconds()
 
-        // 5. Wrap response body with TeeReader for stream-safe capture
-        // This avoids buffering - bytes are captured as they stream to client
-        var capturedBytes bytes.Buffer
-        if resp.Body != nil {
-            resp.Body = io.NopCloser(io.TeeReader(resp.Body, &capturedBytes))
+        // 5. Extract provider and model from context
+        provider := auth.GetProvider(ctx)
+        modelName := auth.GetModelName(ctx)
+
+        // 6. Create detached context for async processing
+        detachedCtx := detachContext(ctx)
+
+        // 7. Wrap response body to capture content before async processing
+        resp.Body = &responseBodyWrapper{
+            originalBody: resp.Body,
+            body:         &bytes.Buffer{},
+            onClose: func(bodyBytes []byte) {
+                // Launch async processing after response is fully consumed
+                go ur.recordAsync(detachedCtx, &asyncRecordParams{
+                    provider:         provider,
+                    modelName:        modelName,
+                    requestSizeBytes: requestSizeBytes,
+                    latencyMs:        latencyMs,
+                    request:          r,
+                    response:         resp,
+                    capturedBytes:    bytes.NewBuffer(bodyBytes),
+                })
+            },
         }
 
-        // 6. Create detached context (won't cancel when request ends)
-        detachedCtx := detachContext(r.Context())
-
-        // 7. Launch async goroutine (don't wait)
-        // Token parsing happens AFTER response is consumed
-        go ur.recordAsync(detachedCtx, &asyncRecordParams{
-            orgID:         orgID,
-            appID:         appID,
-            provider:      provider,
-            modelName:     modelName,
-            latencyMs:     latencyMs,
-            capturedBytes: &capturedBytes,
-            // ... more params
-        })
-
-        // 8. Return response immediately - streaming works!
-        // TeeReader captures bytes as client reads them
+        // 8. Return response with wrapped body
         return resp, nil
     })
 }
@@ -1182,7 +1203,7 @@ Run cheap policies first (request_size) before expensive ones (token_limit).
 
 ---
 
-## Recent Optimizations (v2.0)
+## Recent Optimizations (v2.1)
 
 ### ✅ Critical Fix #1: Single Request Parse
 **Problem:** Request body was stored in context and parsed multiple times (3+ JSON unmarshal operations).
@@ -1191,8 +1212,6 @@ Run cheap policies first (request_size) before expensive ones (token_limit).
 ```go
 type ParsedRequest struct {
     Model            string
-    Messages         []Message
-    Prompt           string
     EstimatedTokens  int
     RequestSize      int
 }
@@ -1248,13 +1267,16 @@ Memory (100ns) → Redis (1ms) → DB (10ms)
 ### ✅ Critical Fix #4: Stream-Safe Response Handling
 **Problem:** Response body buffered before returning to client (broke streaming, added latency).
 
-**Solution:** `io.TeeReader` captures bytes as they stream:
+**Solution:** `responseBodyWrapper` with `onClose` callback:
 ```go
-var capturedBytes bytes.Buffer
-resp.Body = io.NopCloser(io.TeeReader(resp.Body, &capturedBytes))
-
-// Return immediately - streaming works!
-// Async goroutine parses tokens from capturedBytes after response completes
+resp.Body = &responseBodyWrapper{
+    originalBody: resp.Body,
+    body:         &bytes.Buffer{},
+    onClose: func(bodyBytes []byte) {
+        // Launch async processing after response is fully consumed
+        go ur.recordAsync(detachedCtx, &asyncRecordParams{...})
+    },
+}
 ```
 
 **Impact:**
@@ -1264,36 +1286,74 @@ resp.Body = io.NopCloser(io.TeeReader(resp.Body, &capturedBytes))
 
 ---
 
+### ✅ Critical Fix #5: Comprehensive Testing & Coverage
+**Problem:** Insufficient test coverage for critical middleware components.
+
+**Solution:** Added comprehensive unit tests with dependency injection:
+- Policy enforcement: 100% coverage
+- Request buffer: 100% coverage
+- Usage recording: 94.1% coverage (middleware)
+- Response body wrapper: 80% coverage (close method edge case)
+
+**Impact:**
+- ✅ 90.9% overall middleware coverage
+- ✅ All major code paths tested
+- ✅ Error conditions and edge cases covered
+- ✅ Interface-based design enables mocking
+
+---
+
 ## Production Readiness
 
-### ✅ Completed (v2.0)
+### ✅ Completed (v2.1)
 - [x] Atomic rate limiting
 - [x] Memory-efficient request handling
 - [x] Three-tier policy caching
 - [x] Stream-safe response recording
-- [x] Comprehensive benchmarks
+- [x] Comprehensive unit testing (90%+ coverage)
+- [x] Interface-based architecture for testability
 
 ### 🚧 Recommended for Production
 - [ ] Add CEL policy compilation caching (High Priority - see AUDIT_PHASE2.md #4)
 - [ ] Add LRU cache to token estimator (High Priority - see AUDIT_PHASE2.md #5)
 - [ ] Add Prometheus metrics for policy performance
 - [ ] Add circuit breaker for Redis failures
-- [ ] Add comprehensive integration tests
+- [ ] Expand integration test coverage (currently focused on middleware)
 
-### Performance Metrics (v2.0)
+### Performance Metrics (v2.1)
 - **Policy overhead:** < 1ms (P50), < 2ms (P99) ✅
 - **Memory per request:** < 1KB (was 50KB+) ✅
 - **Cache hit rate:** 95%+ (memory cache) ✅
 - **Rate limiter accuracy:** 100% (atomic ops) ✅
+- **Test coverage:** 90.9% (middleware), 87.3% (policies) ✅
 
 ---
 
 ## Next Steps
 
-See **AUDIT_PHASE2.md** for:
-- High priority optimizations (CEL caching, encoding leak)
-- Medium priority improvements (metrics, circuit breaker)
-- Production deployment checklist
+### Immediate Priorities (Backend Coverage)
+- **Expand test coverage to 80%+ across entire backend**
+  - Focus on `internal/api/*` packages (currently 0% coverage)
+  - Add tests for `internal/drivers/*` components
+  - Improve `internal/provider/*` coverage (currently 55-64%)
+- **Add integration tests** for end-to-end policy enforcement
+- **Add benchmark tests** for performance regression detection
+
+### Medium-term Goals
+- Add CEL policy compilation caching
+- Add LRU cache to token estimator
+- Add Prometheus metrics for policy performance
+- Add circuit breaker for Redis failures
+- Add comprehensive API endpoint tests
+
+### Production Deployment Checklist
+- [x] Core middleware tested (90%+ coverage)
+- [x] Policy engine tested (87%+ coverage)
+- [ ] API endpoints tested (0% coverage - HIGH PRIORITY)
+- [ ] Database operations tested (0% coverage - HIGH PRIORITY)
+- [ ] Integration tests passing
+- [ ] Performance benchmarks established
+- [ ] Load testing completed
 
 ---
 

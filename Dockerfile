@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # --- Build Stage ---
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Set build-time environment (only for this stage)
 ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
@@ -16,7 +16,7 @@ RUN go mod download
 COPY . .
 
 # Build the application binary
-RUN go build -trimpath -ldflags="-s -w" -o /main ./cmd/api/main.go
+RUN go build -trimpath -ldflags="-s -w" -o /main ./cmd/proxy/main.go
 
 # --- Final Stage ---
 FROM scratch
