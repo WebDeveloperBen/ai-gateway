@@ -2,7 +2,6 @@ package policies
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -173,46 +172,22 @@ func (e *Engine) RecordPostRequest(ctx context.Context, policies []Policy, req *
 }
 
 // NewPolicy creates a new policy instance based on the policy type and config
-// This is a method on Engine so it has access to cache for rate limiting
+// Uses the policy registry to look up the appropriate factory function
 func (e *Engine) NewPolicy(policyType model.PolicyType, config []byte) (Policy, error) {
-	switch policyType {
-	case model.PolicyTypeRateLimit:
-		var cfg model.RateLimitConfig
-		if err := json.Unmarshal(config, &cfg); err != nil {
-			return nil, fmt.Errorf("invalid rate limit config: %w", err)
-		}
-		return NewRateLimitPolicy(cfg, e.cache), nil
+	// Try registry first (built-in policies registered via init())
+	factory, exists := GetFactory(policyType)
+	if exists {
+		deps := PolicyDependencies{Cache: e.cache}
+		return factory(config, deps)
+	}
 
-	case model.PolicyTypeTokenLimit:
-		var cfg model.TokenLimitConfig
-		if err := json.Unmarshal(config, &cfg); err != nil {
-			return nil, fmt.Errorf("invalid token limit config: %w", err)
-		}
-		return NewTokenLimitPolicy(cfg), nil
-
-	case model.PolicyTypeModelAllowlist:
-		var cfg model.ModelAllowlistConfig
-		if err := json.Unmarshal(config, &cfg); err != nil {
-			return nil, fmt.Errorf("invalid model allowlist config: %w", err)
-		}
-		return NewModelAllowlistPolicy(cfg), nil
-
-	case model.PolicyTypeRequestSize:
-		var cfg model.RequestSizeConfig
-		if err := json.Unmarshal(config, &cfg); err != nil {
-			return nil, fmt.Errorf("invalid request size config: %w", err)
-		}
-		return NewRequestSizePolicy(cfg), nil
-
-	case model.PolicyTypeCustomCEL:
-		// Custom CEL policy - admin defines their own expressions
-		return NewCELPolicy(policyType, config)
-
-	default:
-		// Unknown policy type - treat as custom CEL
-		// This allows flexibility for new policy types without code changes
+	// Fallback to CEL policy for custom policies
+	if policyType == model.PolicyTypeCustomCEL {
 		return NewCELPolicy(policyType, config)
 	}
+
+	// Unknown policy type
+	return nil, fmt.Errorf("unknown policy type: %s", policyType)
 }
 
 // InvalidateCache removes an application's policies from all cache tiers

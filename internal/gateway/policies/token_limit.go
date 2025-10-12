@@ -2,11 +2,22 @@ package policies
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 )
+
+func init() {
+	Register(model.PolicyTypeTokenLimit, func(config []byte, deps PolicyDependencies) (Policy, error) {
+		var cfg model.TokenLimitConfig
+		if err := json.Unmarshal(config, &cfg); err != nil {
+			return nil, fmt.Errorf("invalid token limit config: %w", err)
+		}
+		return NewTokenLimitPolicy(cfg), nil
+	})
+}
 
 // TokenLimitPolicy enforces maximum token limits per request
 type TokenLimitPolicy struct {

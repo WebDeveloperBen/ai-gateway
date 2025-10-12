@@ -2,12 +2,23 @@ package policies
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
 
 	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 )
+
+func init() {
+	Register(model.PolicyTypeModelAllowlist, func(config []byte, deps PolicyDependencies) (Policy, error) {
+		var cfg model.ModelAllowlistConfig
+		if err := json.Unmarshal(config, &cfg); err != nil {
+			return nil, fmt.Errorf("invalid model allowlist config: %w", err)
+		}
+		return NewModelAllowlistPolicy(cfg), nil
+	})
+}
 
 // ModelAllowlistPolicy restricts which models an application can use
 type ModelAllowlistPolicy struct {

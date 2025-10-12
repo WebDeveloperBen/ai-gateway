@@ -2,11 +2,22 @@ package policies
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 )
+
+func init() {
+	Register(model.PolicyTypeRequestSize, func(config []byte, deps PolicyDependencies) (Policy, error) {
+		var cfg model.RequestSizeConfig
+		if err := json.Unmarshal(config, &cfg); err != nil {
+			return nil, fmt.Errorf("invalid request size config: %w", err)
+		}
+		return NewRequestSizePolicy(cfg), nil
+	})
+}
 
 // RequestSizePolicy enforces maximum request body size
 type RequestSizePolicy struct {

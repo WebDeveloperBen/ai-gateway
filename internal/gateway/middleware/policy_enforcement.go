@@ -27,11 +27,13 @@ func NewPolicyEnforcer(engine *policies.Engine) *PolicyEnforcer {
 // Middleware returns a RoundTripper middleware that enforces policies
 func (pe *PolicyEnforcer) Middleware(next http.RoundTripper) http.RoundTripper {
 	return roundTripFunc(func(r *http.Request) (*http.Response, error) {
-		// Extract auth info from context
 		ctx := r.Context()
+
+		// Fast path: Skip policy enforcement if app context is missing
+		// This indicates the request is not an LLM request (auth middleware not applied)
 		appID := auth.GetAppID(ctx)
 		if appID == "" {
-			return deny(500, "missing app context"), nil
+			return next.RoundTrip(r)
 		}
 
 		// Load policies for this app

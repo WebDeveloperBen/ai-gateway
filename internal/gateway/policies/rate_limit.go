@@ -2,6 +2,7 @@ package policies
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -9,6 +10,16 @@ import (
 	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 )
+
+func init() {
+	Register(model.PolicyTypeRateLimit, func(config []byte, deps PolicyDependencies) (Policy, error) {
+		var cfg model.RateLimitConfig
+		if err := json.Unmarshal(config, &cfg); err != nil {
+			return nil, fmt.Errorf("invalid rate limit config: %w", err)
+		}
+		return NewRateLimitPolicy(cfg, deps.Cache), nil
+	})
+}
 
 // RateLimitPolicy enforces rate limits on requests and tokens per minute
 type RateLimitPolicy struct {

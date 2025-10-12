@@ -230,3 +230,79 @@ func BenchmarkRequestSizePolicy(b *testing.B) {
 		}
 	}
 }
+
+// Benchmark: Full policy chain (all policies except rate limit)
+func BenchmarkFullPolicyChain(b *testing.B) {
+	ctx := context.Background()
+	cache := kv.NewMemoryStore()
+	engine := NewEngine(nil, cache)
+
+	policies := []Policy{
+		NewTokenLimitPolicy(model.TokenLimitConfig{MaxPromptTokens: 4000, MaxTotalTokens: 8000}),
+		NewModelAllowlistPolicy(model.ModelAllowlistConfig{AllowedModelIDs: []string{"gpt-4", "gpt-3.5-turbo"}}),
+		NewRequestSizePolicy(model.RequestSizeConfig{MaxRequestBytes: 51200}),
+	}
+
+	preCtx := &PreRequestContext{
+		AppID:            "bench-app",
+		Model:            "gpt-4",
+		EstimatedTokens:  1000,
+		RequestSizeBytes: 10240,
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		if err := engine.CheckPreRequest(ctx, policies, preCtx); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// Benchmark: Concurrent rate limit checks (simulates multiple apps)
+func BenchmarkConcurrentRateLimits(b *testing.B) {
+	ctx := context.Background()
+	cache := kv.NewMemoryStore()
+	config := model.RateLimitConfig{RequestsPerMinute: 1000}
+	policy := NewRateLimitPolicy(config, cache)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	b.RunParallel(func(pb *testing.PB) {
+		i := 0
+		for pb.Next() {
+			preCtx := &PreRequestContext{
+				AppID: "app-" + string(rune(i%10)), // 10 different apps
+			}
+			_ = policy.PreCheck(ctx, preCtx)
+			i++
+		}
+	})
+}
+
+// Benchmark: Policy loading under concurrent load
+func BenchmarkConcurrentPolicyLoading(b *testing.B) {
+	ctx := context.Background()
+	cache := kv.NewMemoryStore()
+	appID := "bench-app-" + uuid.New().String()
+
+	testPolicies := []CachedPolicy{
+		{Type: model.PolicyTypeRateLimit, Config: []byte(`{"requests_per_minute":1000}`)},
+		{Type: model.PolicyTypeTokenLimit, Config: []byte(`{"max_tokens":8192}`)},
+		{Type: model.PolicyTypeModelAllowlist, Config: []byte(`{"allowed_models":["gpt-4"]}`)},
+	}
+	_ = SetCachedPoliciesRaw(ctx, cache, appID, testPolicies)
+
+	engine := NewEngine(nil, cache)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			_, _ = engine.LoadPolicies(ctx, appID)
+		}
+	})
+}
