@@ -32,3 +32,4 @@ tmp
 bin
 terraform/.terraform
 terraform/.terraform.lock.hcl
+opencode.json
