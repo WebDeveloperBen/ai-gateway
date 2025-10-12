@@ -40,3 +40,35 @@ func SetupProviderTestAPI(
 	register(group)
 	return api
 }
+
+// SetupAdminTestAPI creates a test Huma API instance for admin tests with /api prefix.
+func SetupAdminTestAPI(
+	t *testing.T,
+	register func(grp *huma.Group),
+) humatest.TestAPI {
+	_ = godotenv.Load(".env", "../.env", "../../.env", "../../../.env")
+
+	// Load .env from the repo root before constructing deps that read env.
+	LoadDotenvFromRepoRoot(t)
+
+	_, api := humatest.New(t)
+	group := huma.NewGroup(api, "/api")
+	register(group)
+	return api
+}
+
+// SetupAuthTestAPI creates a test Huma API instance for auth tests with /auth prefix.
+func SetupAuthTestAPI(
+	t *testing.T,
+	register func(grp *huma.Group),
+) humatest.TestAPI {
+	_ = godotenv.Load(".env", "../.env", "../../.env", "../../../.env")
+
+	// Load .env from the repo root before constructing deps that read env.
+	LoadDotenvFromRepoRoot(t)
+
+	_, api := humatest.New(t)
+	group := huma.NewGroup(api, "/auth")
+	register(group)
+	return api
+}

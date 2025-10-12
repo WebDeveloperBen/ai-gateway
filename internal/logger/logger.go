@@ -67,8 +67,10 @@ func LogError(ctx context.Context, err error, msg string) {
 
 // GetLogger extracts the per-request logger from context
 func GetLogger(ctx context.Context) *zerolog.Logger {
-	if l, ok := ctx.Value(LoggerKey).(*zerolog.Logger); ok {
-		return l
+	if ctx != nil {
+		if l, ok := ctx.Value(LoggerKey).(*zerolog.Logger); ok {
+			return l
+		}
 	}
 	return &Logger
 }

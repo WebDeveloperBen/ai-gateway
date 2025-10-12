@@ -81,7 +81,7 @@ func (c *Core) makeDirector(ctx context.Context, hctx huma.Context) func(*http.R
 			if pfx == "" || pfx == "/" {
 				continue
 			}
-			if i := indexOfSegment(path, pfx); i >= 0 {
+			if i := IndexOfSegment(path, pfx); i >= 0 {
 				ad, prefix, prefixPos = a, pfx, i
 				break
 			}
@@ -94,7 +94,7 @@ func (c *Core) makeDirector(ctx context.Context, hctx huma.Context) func(*http.R
 		}
 		if ad == nil {
 			req.Header.Set("X-RP-Error", "no_adapter_for_path:"+path)
-			req.Header.Set("X-RP-Adapters", strings.Join(listPrefixes(c.Adapters), ","))
+			req.Header.Set("X-RP-Adapters", strings.Join(ListPrefixes(c.Adapters), ","))
 			req.URL = mustParse("http://invalid/")
 			return
 		}
@@ -132,7 +132,7 @@ func (c *Core) makeDirector(ctx context.Context, hctx huma.Context) func(*http.R
 		// If you ever had an inbound Content-Encoding, drop it; we’re sending raw JSON upstream.
 		req.Header.Del("Content-Encoding")
 
-		model := extractModel(raw)
+		model := ExtractModel(raw)
 
 		info := provider.ReqInfo{
 			Method: hctx.Method(),
@@ -144,13 +144,13 @@ func (c *Core) makeDirector(ctx context.Context, hctx huma.Context) func(*http.R
 		}
 
 		// Set provider and model in context for middleware
-		ctx = auth.WithProvider(ctx, getProviderName(ad))
+		ctx = auth.WithProvider(ctx, GetProviderName(ad))
 		ctx = auth.WithModelName(ctx, model)
 		req = req.WithContext(ctx)
 
 		// 4) Let the adapter rewrite to the real upstream.
 		if err := ad.Rewrite(req, suffix, info); err != nil {
-			req.Header.Set("X-RP-Error", "rewrite:"+escape(err.Error()))
+			req.Header.Set("X-RP-Error", "rewrite:"+Escape(err.Error()))
 			req.URL = mustParse("http://invalid/")
 			return
 		}
@@ -162,9 +162,9 @@ func (c *Core) makeDirector(ctx context.Context, hctx huma.Context) func(*http.R
 	}
 }
 
-// indexOfSegment finds `needle` inside `p` only when aligned on path segment boundaries.
-// e.g. indexOfSegment("/api/azure/openai/v1/x", "/azure/openai") == 4.
-func indexOfSegment(p, needle string) int {
+// IndexOfSegment finds `needle` inside `p` only when aligned on path segment boundaries.
+// e.g. IndexOfSegment("/api/azure/openai/v1/x", "/azure/openai") == 4.
+func IndexOfSegment(p, needle string) int {
 	if needle == "" {
 		return -1
 	}
@@ -185,7 +185,7 @@ func indexOfSegment(p, needle string) int {
 	return -1
 }
 
-func listPrefixes(as []provider.Adapter) []string {
+func ListPrefixes(as []provider.Adapter) []string {
 	out := make([]string, 0, len(as))
 	for _, a := range as {
 		out = append(out, a.Prefix())
@@ -210,7 +210,7 @@ func writeProxyError(rw http.ResponseWriter, r *http.Request, err error) {
 
 func mustParse(s string) *url.URL { u, _ := url.Parse(s); return u }
 
-func extractModel(raw []byte) string {
+func ExtractModel(raw []byte) string {
 	// Fast path for empty/very small bodies
 	if len(raw) == 0 {
 		return ""
@@ -221,7 +221,7 @@ func extractModel(raw []byte) string {
 	}
 	var a m1
 	if json.Unmarshal(raw, &a) == nil && strings.TrimSpace(a.Model) != "" {
-		return a.Model
+		return strings.TrimSpace(a.Model)
 	}
 	// AOAI / legacy shapes sometimes use "deployment" or "engine"
 	type m2 struct {
@@ -261,7 +261,7 @@ func fail(hctx huma.Context, code int, body string) {
 	_, _ = hctx.BodyWriter().Write([]byte(body))
 }
 
-func escape(s string) string {
+func Escape(s string) string {
 	b, _ := json.Marshal(s)
 	if len(b) >= 2 {
 		return string(b[1 : len(b)-1])
@@ -269,14 +269,14 @@ func escape(s string) string {
 	return s
 }
 
-// getProviderName extracts provider name from adapter prefix
-func getProviderName(ad provider.Adapter) string {
+// GetProviderName extracts provider name from adapter prefix
+func GetProviderName(ad provider.Adapter) string {
 	prefix := ad.Prefix()
 	// Remove leading/trailing slashes and extract provider name
 	// e.g., "/azure/openai" -> "azureopenai"
 	// e.g., "/openai" -> "openai"
 	parts := strings.Split(strings.Trim(prefix, "/"), "/")
-	if len(parts) == 0 {
+	if len(parts) == 0 || (len(parts) == 1 && parts[0] == "") {
 		return "unknown"
 	}
 	// Join parts without slashes for provider name

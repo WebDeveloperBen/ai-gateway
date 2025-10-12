@@ -24,7 +24,7 @@ func InitDatabase(ctx context.Context, connectionConfig string) error {
 	}
 
 	// Convert connection config to standard connection string for database/sql
-	connectionString, err := resolveConnectionString(ctx, connectionConfig)
+	connectionString, err := ResolveConnectionString(ctx, connectionConfig)
 	if err != nil {
 		return fmt.Errorf("failed to resolve connection string: %w", err)
 	}
@@ -37,7 +37,7 @@ func InitDatabase(ctx context.Context, connectionConfig string) error {
 	defer sqlDB.Close()
 
 	// 1. Run pre-migration SQL (extensions, functions)
-	if err := runPreMigrationSQL(sqlDB); err != nil {
+	if err := RunPreMigrationSQL(sqlDB); err != nil {
 		return fmt.Errorf("failed to run pre-migration SQL: %w", err)
 	}
 
@@ -47,16 +47,16 @@ func InitDatabase(ctx context.Context, connectionConfig string) error {
 	}
 
 	// 3. Run post-migration SQL (triggers, policies, seeds)
-	if err := runPostMigrationSQL(sqlDB); err != nil {
+	if err := RunPostMigrationSQL(sqlDB); err != nil {
 		return fmt.Errorf("failed to run post-migration SQL: %w", err)
 	}
 
 	return nil
 }
 
-// resolveConnectionString converts either a standard connection string or Azure managed identity config
+// ResolveConnectionString converts either a standard connection string or Azure managed identity config
 // into a standard PostgreSQL connection string usable by database/sql
-func resolveConnectionString(ctx context.Context, config string) (string, error) {
+func ResolveConnectionString(ctx context.Context, config string) (string, error) {
 	// Check if config looks like a connection string or Azure managed identity config
 	if strings.Contains(config, "://") || strings.Contains(config, "host=") {
 		// Standard connection string
@@ -71,18 +71,22 @@ func resolveConnectionString(ctx context.Context, config string) (string, error)
 
 		// Extract connection string from the pool config (this is a bit hacky but works)
 		// In a real implementation, you'd refactor buildManagedIdentityConnection to be public
-		return buildManagedIdentityConnectionString(config)
+		return BuildManagedIdentityConnectionString(config)
 	}
 }
 
-// buildManagedIdentityConnectionString duplicates the logic from db driver for migration use
-func buildManagedIdentityConnectionString(config string) (string, error) {
+// BuildManagedIdentityConnectionString duplicates the logic from db driver for migration use
+func BuildManagedIdentityConnectionString(config string) (string, error) {
 	parts := strings.Split(config, ":")
 	if len(parts) != 3 {
 		return "", fmt.Errorf("managed identity config must be in format 'server:database:user'")
 	}
 
 	server, database, user := parts[0], parts[1], parts[2]
+	if server == "" || database == "" || user == "" {
+		return "", fmt.Errorf("managed identity config must be in format 'server:database:user'")
+	}
+
 	// FIX: this azure logic
 	// For now, this is a simplified version - you'd need to import the Azure SDK
 	// and replicate the token logic from postgres.go
@@ -117,7 +121,7 @@ func runGooseMigrations(connectionString string) error {
 	return nil
 }
 
-func runPreMigrationSQL(db *sql.DB) error {
+func RunPreMigrationSQL(db *sql.DB) error {
 	// Read and execute db/schema_pre.sql
 	content, err := os.ReadFile("db/schema_pre.sql")
 	if err != nil {
@@ -133,7 +137,7 @@ func runPreMigrationSQL(db *sql.DB) error {
 	return nil
 }
 
-func runPostMigrationSQL(db *sql.DB) error {
+func RunPostMigrationSQL(db *sql.DB) error {
 	// Read and execute db/schema_post.sql
 	content, err := os.ReadFile("db/schema_post.sql")
 	if err != nil {

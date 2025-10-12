@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/WebDeveloperBen/ai-gateway/internal/api/middleware"
 	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 	"github.com/danielgtaylor/huma/v2"
@@ -29,15 +30,20 @@ func (s *ApplicationService) RegisterRoutes(grp *huma.Group) {
 		DefaultStatus: http.StatusCreated,
 		Tags:          []string{"Applications"},
 	}, exceptions.Handle(func(ctx context.Context, in *CreateApplicationRequest) (*CreateApplicationResponse, error) {
-		// Get org ID from context (set by middleware)
-		orgID, ok := ctx.Value("org_id").(uuid.UUID)
-		if !ok {
-			return nil, huma.Error401Unauthorized("organization not found in context")
+		// Get org ID from scoped token (set by middleware)
+		claims, ok := middleware.GetScopedToken(ctx)
+		if !ok || claims.OrgID == "" {
+			return nil, exceptions.Unauthorized("organization not found in context")
+		}
+
+		orgID, err := uuid.Parse(claims.OrgID)
+		if err != nil {
+			return nil, exceptions.Validation("invalid organization ID", nil)
 		}
 
 		app, err := s.Applications.CreateApplication(ctx, orgID, in.Body)
 		if err != nil {
-			return nil, huma.Error400BadRequest(err.Error())
+			return nil, exceptions.Validation(err.Error(), nil)
 		}
 
 		return &CreateApplicationResponse{Body: app}, nil
@@ -52,16 +58,21 @@ func (s *ApplicationService) RegisterRoutes(grp *huma.Group) {
 		Description: "Retrieves a list of all applications belonging to the organization.",
 		Tags:        []string{"Applications"},
 	}, exceptions.Handle(func(ctx context.Context, in *model.ListRequest) (*ListApplicationsResponse, error) {
-		// Get org ID from context (set by middleware)
-		orgID, ok := ctx.Value("org_id").(uuid.UUID)
-		if !ok {
-			return nil, huma.Error401Unauthorized("organization not found in context")
+		// Get org ID from scoped token (set by middleware)
+		claims, ok := middleware.GetScopedToken(ctx)
+		if !ok || claims.OrgID == "" {
+			return nil, exceptions.Unauthorized("organization not found in context")
+		}
+
+		orgID, err := uuid.Parse(claims.OrgID)
+		if err != nil {
+			return nil, exceptions.Validation("invalid organization ID", nil)
 		}
 
 		normalized := model.NormalizePagination(*in)
 		apps, err := s.Applications.ListApplications(ctx, orgID, normalized.Limit, normalized.Offset)
 		if err != nil {
-			return nil, huma.Error500InternalServerError("failed to list applications")
+			return nil, exceptions.InternalServerError("failed to list applications")
 		}
 
 		return &ListApplicationsResponse{Body: apps}, nil
@@ -81,12 +92,12 @@ func (s *ApplicationService) RegisterRoutes(grp *huma.Group) {
 	) (*GetApplicationResponse, error) {
 		id, err := uuid.Parse(in.ID)
 		if err != nil {
-			return nil, huma.Error400BadRequest("invalid application ID")
+			return nil, exceptions.Validation("invalid application ID", nil)
 		}
 
 		app, err := s.Applications.GetApplication(ctx, id)
 		if err != nil {
-			return nil, huma.Error404NotFound("application not found")
+			return nil, exceptions.NotFound("application not found")
 		}
 
 		return &GetApplicationResponse{Body: app}, nil
@@ -104,12 +115,12 @@ func (s *ApplicationService) RegisterRoutes(grp *huma.Group) {
 	}, exceptions.Handle(func(ctx context.Context, in *UpdateApplicationRequest) (*UpdateApplicationResponse, error) {
 		id, err := uuid.Parse(in.ID)
 		if err != nil {
-			return nil, huma.Error400BadRequest("invalid application ID")
+			return nil, exceptions.Validation("invalid application ID", nil)
 		}
 
 		app, err := s.Applications.UpdateApplication(ctx, id, in.Body)
 		if err != nil {
-			return nil, huma.Error400BadRequest(err.Error())
+			return nil, exceptions.Validation(err.Error(), nil)
 		}
 
 		return &UpdateApplicationResponse{Body: app}, nil
@@ -130,11 +141,11 @@ func (s *ApplicationService) RegisterRoutes(grp *huma.Group) {
 	) (*struct{}, error) {
 		id, err := uuid.Parse(in.ID)
 		if err != nil {
-			return nil, huma.Error400BadRequest("invalid application ID")
+			return nil, exceptions.Validation("invalid application ID", nil)
 		}
 
 		if err := s.Applications.DeleteApplication(ctx, id); err != nil {
-			return nil, huma.Error404NotFound("application not found")
+			return nil, exceptions.NotFound("application not found")
 		}
 
 		return &struct{}{}, nil

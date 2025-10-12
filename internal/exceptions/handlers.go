@@ -47,6 +47,12 @@ func Handle[In any, Out any](handler HandlerFunc[In, Out]) HandlerFunc[In, Out] 
 			}
 			return nil, huma.NewError(apiErr.Status(), apiErr.Detail(), detailErrors...)
 		}
+
+		// If it's already a huma StatusError, pass it through unchanged
+		if _, ok := err.(huma.StatusError); ok {
+			return nil, err
+		}
+
 		return nil, huma.Error500InternalServerError("unexpected server error")
 	}
 }
