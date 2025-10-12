@@ -3,9 +3,9 @@ package users
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/WebDeveloperBen/ai-gateway/internal/db"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
+	"github.com/google/uuid"
 )
 
 type Repository interface {

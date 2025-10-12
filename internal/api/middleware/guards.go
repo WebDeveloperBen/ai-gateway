@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/danielgtaylor/huma/v2"
 	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions"
 	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
+	"github.com/danielgtaylor/huma/v2"
 )
 
 func RequireCookieAuth() RequireFunc {

@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/WebDeveloperBen/ai-gateway/internal/db"
 	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions/pg"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 	repository "github.com/WebDeveloperBen/ai-gateway/internal/repository"
 	"github.com/WebDeveloperBen/ai-gateway/internal/repository/roles"
+	"github.com/google/uuid"
 )
 
 type postgresRepo struct {

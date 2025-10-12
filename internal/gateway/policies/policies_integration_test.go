@@ -178,8 +178,18 @@ func TestPolicyRegistryIntegrationWithDatabase(t *testing.T) {
 			config := getTestConfigForType(policyType)
 			policyID := createTestPolicy(t, pg.Queries, orgID, appID, policyType, config)
 
-			// Load policies from DB
-			policies, err := engine.LoadPolicies(context.Background(), appIDStr)
+			t.Cleanup(func() {
+				cleanupTestPolicy(t, pg.Queries, policyID)
+				if err := engine.InvalidateCache(ctx, appIDStr); err != nil {
+					t.Logf("Warning: failed to invalidate cache for app %s: %v", appIDStr, err)
+				}
+			})
+
+			// Clear caches to ensure the latest DB state is fetched for each policy type
+			require.NoError(t, engine.InvalidateCache(ctx, appIDStr))
+
+			// Load policies from DB (after cache invalidation)
+			policies, err := engine.LoadPolicies(ctx, appIDStr)
 			require.NoError(t, err)
 
 			// Should have at least one policy
@@ -195,7 +205,7 @@ func TestPolicyRegistryIntegrationWithDatabase(t *testing.T) {
 			}
 			require.True(t, found, "Policy of type %s not found in loaded policies", policyType)
 
-			cleanupTestPolicy(t, pg.Queries, policyID)
+			// Cleanup handled via t.Cleanup to ensure it always runs
 		})
 	}
 

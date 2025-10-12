@@ -10,11 +10,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/danielgtaylor/huma/v2"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/WebDeveloperBen/ai-gateway/internal/api/middleware"
 	"github.com/WebDeveloperBen/ai-gateway/internal/config"
 	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions"
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type AuthService struct {

@@ -3,8 +3,8 @@ package exceptions
 import (
 	"context"
 
-	"github.com/danielgtaylor/huma/v2"
 	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
+	"github.com/danielgtaylor/huma/v2"
 )
 
 type HandlerFunc[In any, Out any] func(ctx context.Context, input *In) (*Out, error)

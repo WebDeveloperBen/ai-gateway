@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -89,8 +90,24 @@ func buildManagedIdentityConnectionString(config string) (string, error) {
 }
 
 func runGooseMigrations(connectionString string) error {
+	// Convert connection string to DSN for goose
+	dsn := connectionString
+	if strings.HasPrefix(dsn, "postgres://") {
+		u, err := url.Parse(dsn)
+		if err != nil {
+			return fmt.Errorf("failed to parse connection string: %w", err)
+		}
+		user := u.User.Username()
+		password, _ := u.User.Password()
+		host := u.Hostname()
+		port := u.Port()
+		dbname := strings.TrimPrefix(u.Path, "/")
+		sslmode := u.Query().Get("sslmode")
+		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", host, port, user, password, dbname, sslmode)
+	}
+
 	// Run goose up command
-	cmd := exec.Command("goose", "-dir", "./db/migrations", "postgres", connectionString, "up")
+	cmd := exec.Command("goose", "-dir", "./db/migrations", "postgres", dsn, "up")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to run goose migrations: %w\nOutput: %s", err, output)
@@ -131,4 +148,3 @@ func runPostMigrationSQL(db *sql.DB) error {
 	log.Println("Post-migration SQL executed successfully")
 	return nil
 }
-

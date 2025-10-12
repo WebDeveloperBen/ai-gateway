@@ -4,11 +4,11 @@ package server
 import (
 	"net/http"
 
+	"github.com/WebDeveloperBen/ai-gateway/internal/config"
+	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-	"github.com/WebDeveloperBen/ai-gateway/internal/config"
-	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
 
 	chi_middleware "github.com/go-chi/chi/v5/middleware"
 )

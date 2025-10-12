@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/danielgtaylor/huma/v2"
 	"github.com/WebDeveloperBen/ai-gateway/internal/db"
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )

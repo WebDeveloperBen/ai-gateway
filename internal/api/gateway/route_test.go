@@ -7,10 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/danielgtaylor/huma/v2"
 	apigw "github.com/WebDeveloperBen/ai-gateway/internal/api/gateway"
 	"github.com/WebDeveloperBen/ai-gateway/internal/gateway"
 	"github.com/WebDeveloperBen/ai-gateway/internal/testkit"
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/stretchr/testify/require"
 )
 

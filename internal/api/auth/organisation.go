@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/WebDeveloperBen/ai-gateway/internal/db"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 	"github.com/WebDeveloperBen/ai-gateway/internal/repository"
 	"github.com/WebDeveloperBen/ai-gateway/internal/repository/organisations"
 	"github.com/WebDeveloperBen/ai-gateway/internal/repository/users"
+	"github.com/google/uuid"
 )
 
 type OrganisationServiceInterface interface {

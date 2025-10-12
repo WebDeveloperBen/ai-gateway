@@ -5,8 +5,8 @@ package gateway
 import (
 	"net/http"
 
-	"github.com/danielgtaylor/huma/v2"
 	"github.com/WebDeveloperBen/ai-gateway/internal/gateway"
+	"github.com/danielgtaylor/huma/v2"
 )
 
 var openAIPaths = []string{

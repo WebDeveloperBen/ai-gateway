@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/danielgtaylor/huma/v2"
 	"github.com/WebDeveloperBen/ai-gateway/internal/gateway/auth"
 	"github.com/WebDeveloperBen/ai-gateway/internal/provider"
+	"github.com/danielgtaylor/huma/v2"
 )
 
 func (c *Core) StreamingHandler() func(ctx context.Context, _ *struct{}) (*huma.StreamResponse, error) {

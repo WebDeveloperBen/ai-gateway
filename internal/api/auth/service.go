@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
+	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/oauth2"
 )
 

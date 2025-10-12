@@ -24,7 +24,6 @@ var (
 	redisContainer    *redis.RedisContainer
 	setupOnce         sync.Once
 	cleanupOnce       sync.Once
-	sharedCleanupFn   func()
 	containerInitErr  error
 
 	// Connection strings
@@ -52,7 +51,7 @@ func DefaultContainerConfig() ContainerConfig {
 
 // SetupTestContainers initializes shared postgres and redis containers for integration testing
 // Containers are started once and reused across all tests for better performance
-func SetupTestContainers(t *testing.T, config ContainerConfig) (postgresConn, redisAddr string) {
+func SetupTestContainers(t *testing.T, config ContainerConfig) (string, string) {
 	t.Helper()
 
 	// Skip if Docker is not available
@@ -76,8 +75,34 @@ func setupSharedContainers(config ContainerConfig) {
 	ctx := context.Background()
 
 	// Start Postgres container
+	pgConnStr, pgContainer, err := createPostgresContainer(ctx, config)
+	if err != nil {
+		containerInitErr = err
+		return
+	}
+	postgresContainer = pgContainer
+	postgresConnStr = pgConnStr
+
+	// Run migrations
+	if err := runMigrationsOnContainer(pgConnStr); err != nil {
+		containerInitErr = fmt.Errorf("failed to run migrations: %w", err)
+		return
+	}
+
+	// Start Redis container
+	redisAddrStr, redisCont, err := createRedisContainer(ctx, config)
+	if err != nil {
+		containerInitErr = err
+		return
+	}
+	redisContainer = redisCont
+	redisAddr = redisAddrStr
+}
+
+// createPostgresContainer creates a postgres container and returns the connection string
+func createPostgresContainer(ctx context.Context, config ContainerConfig) (string, *postgres.PostgresContainer, error) {
 	pgContainer, err := postgres.Run(ctx,
-		"postgres:16-alpine",
+		"postgres:17-alpine",
 		postgres.WithDatabase(config.PostgresDB),
 		postgres.WithUsername(config.PostgresUser),
 		postgres.WithPassword(config.PostgresPassword),
@@ -86,63 +111,50 @@ func setupSharedContainers(config ContainerConfig) {
 				WithOccurrence(2).WithStartupTimeout(15*time.Second)),
 	)
 	if err != nil {
-		containerInitErr = fmt.Errorf("failed to start postgres container: %w", err)
-		return
+		return "", nil, fmt.Errorf("failed to start postgres container: %w", err)
 	}
 
-	pgConnStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
+	port, err := pgContainer.MappedPort(ctx, "5432")
 	if err != nil {
-		containerInitErr = fmt.Errorf("failed to get postgres connection string: %w", err)
-		cleanupContainers()
-		return
+		return "", nil, fmt.Errorf("failed to get postgres port: %w", err)
 	}
 
-	// Run migrations on postgres
-	if err := runMigrationsOnContainer(pgConnStr); err != nil {
-		containerInitErr = fmt.Errorf("failed to run migrations: %w", err)
-		cleanupContainers()
-		return
-	}
+	pgConnStr := fmt.Sprintf("postgres://%s:%s@127.0.0.1:%s/%s?sslmode=disable", config.PostgresUser, config.PostgresPassword, port.Port(), config.PostgresDB)
 
-	// Start Redis container
+	log.Printf("🗄️ Shared Postgres ready: %s", pgConnStr)
+	return pgConnStr, pgContainer, nil
+}
+
+// createRedisContainer creates a redis container and returns the address
+func createRedisContainer(ctx context.Context, config ContainerConfig) (string, *redis.RedisContainer, error) {
 	redisCont, err := redis.Run(ctx,
 		"redis:8-alpine",
 		redis.WithSnapshotting(10, 1),
 		testcontainers.WithWaitStrategy(
-			wait.ForLog("Ready to accept connections").
-				WithOccurrence(1).WithStartupTimeout(10*time.Second)),
+			wait.ForListeningPort("6379/tcp").
+				WithStartupTimeout(15*time.Second)),
 	)
 	if err != nil {
-		containerInitErr = fmt.Errorf("failed to start redis container: %w", err)
-		cleanupContainers()
-		return
+		return "", nil, fmt.Errorf("failed to start redis container: %w", err)
 	}
 
-	redisAddrStr, err := redisCont.ConnectionString(ctx)
+	port, err := redisCont.MappedPort(ctx, "6379")
 	if err != nil {
-		containerInitErr = fmt.Errorf("failed to get redis connection string: %w", err)
-		cleanupContainers()
-		return
+		return "", nil, fmt.Errorf("failed to get redis port: %w", err)
 	}
 
-	// Strip the redis:// prefix for go-redis client
-	if len(redisAddrStr) > 8 && redisAddrStr[:8] == "redis://" {
-		redisAddrStr = redisAddrStr[8:]
-	}
+	redisAddrStr := fmt.Sprintf("127.0.0.1:%s", port.Port())
 
-	// Store references
-	postgresContainer = pgContainer
-	redisContainer = redisCont
-	postgresConnStr = pgConnStr
-	redisAddr = redisAddrStr
-
-	// Set up shared cleanup
-	sharedCleanupFn = func() {
-		cleanupContainers()
-	}
-
-	log.Printf("🗄️ Shared Postgres ready: %s", pgConnStr)
 	log.Printf("🔴 Shared Redis ready: %s", redisAddrStr)
+
+	return redisAddrStr, redisCont, nil
+}
+
+// isDockerAvailable checks if Docker is available on the system
+func isDockerAvailable() bool {
+	cmd := exec.Command("docker", "info")
+	err := cmd.Run()
+	return err == nil
 }
 
 // runMigrationsOnContainer runs database migrations on the test container
@@ -166,166 +178,22 @@ func runMigrationsOnContainer(connStr string) error {
 	return migrate.InitDatabase(context.Background(), connStr)
 }
 
-// cleanupContainers terminates all shared containers
-func cleanupContainers() {
-	ctx := context.Background()
-
-	if postgresContainer != nil {
-		if err := postgresContainer.Terminate(ctx); err != nil {
-			log.Printf("Warning: Failed to terminate shared postgres container: %v", err)
-		}
-		postgresContainer = nil
-	}
-
-	if redisContainer != nil {
-		if err := redisContainer.Terminate(ctx); err != nil {
-			log.Printf("Warning: Failed to terminate shared redis container: %v", err)
-		}
-		redisContainer = nil
-	}
-}
-
-// SetupPostgresOnly sets up shared postgres container for tests that don't need redis
-func SetupPostgresOnly(t *testing.T, config ContainerConfig) (connStr string) {
-	t.Helper()
-
-	// Skip if Docker is not available
-	if !isDockerAvailable() {
-		t.Skip("Docker not available, skipping integration tests")
-	}
-
-	setupOnce.Do(func() {
-		setupSharedPostgres(config)
-	})
-
-	if containerInitErr != nil {
-		t.Fatalf("Postgres container initialization failed: %v", containerInitErr)
-	}
-
-	return postgresConnStr
-}
-
-// SetupRedisOnly sets up shared redis container for tests that don't need postgres
-func SetupRedisOnly(t *testing.T, config ContainerConfig) (addr string) {
-	t.Helper()
-
-	// Skip if Docker is not available
-	if !isDockerAvailable() {
-		t.Skip("Docker not available, skipping integration tests")
-	}
-
-	setupOnce.Do(func() {
-		setupSharedRedis(config)
-	})
-
-	if containerInitErr != nil {
-		t.Fatalf("Redis container initialization failed: %v", containerInitErr)
-	}
-
-	return redisAddr
-}
-
-// setupSharedPostgres initializes only the shared postgres container
-func setupSharedPostgres(config ContainerConfig) {
-	ctx := context.Background()
-
-	pgContainer, err := postgres.Run(ctx,
-		"postgres:16-alpine",
-		postgres.WithDatabase(config.PostgresDB),
-		postgres.WithUsername(config.PostgresUser),
-		postgres.WithPassword(config.PostgresPassword),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).WithStartupTimeout(15*time.Second)),
-	)
-	if err != nil {
-		containerInitErr = fmt.Errorf("failed to start postgres container: %w", err)
-		return
-	}
-
-	pgConnStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
-	if err != nil {
-		containerInitErr = fmt.Errorf("failed to get postgres connection string: %w", err)
-		cleanupContainers()
-		return
-	}
-
-	// Run migrations
-	if err := runMigrationsOnContainer(pgConnStr); err != nil {
-		containerInitErr = fmt.Errorf("failed to run migrations: %w", err)
-		cleanupContainers()
-		return
-	}
-
-	postgresContainer = pgContainer
-	postgresConnStr = pgConnStr
-
-	sharedCleanupFn = func() {
-		if postgresContainer != nil {
-			if err := postgresContainer.Terminate(context.Background()); err != nil {
-				log.Printf("Warning: Failed to terminate shared postgres container: %v", err)
-			}
-		}
-	}
-
-	log.Printf("🗄️ Shared Postgres ready: %s", pgConnStr)
-}
-
-// setupSharedRedis initializes only the shared redis container
-func setupSharedRedis(config ContainerConfig) {
-	ctx := context.Background()
-
-	redisCont, err := redis.Run(ctx,
-		"redis:8-alpine",
-		redis.WithSnapshotting(10, 1),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("Ready to accept connections").
-				WithOccurrence(1).WithStartupTimeout(10*time.Second)),
-	)
-	if err != nil {
-		containerInitErr = fmt.Errorf("failed to start redis container: %w", err)
-		return
-	}
-
-	redisAddrStr, err := redisCont.ConnectionString(ctx)
-	if err != nil {
-		containerInitErr = fmt.Errorf("failed to get redis connection string: %w", err)
-		cleanupContainers()
-		return
-	}
-
-	// Strip the redis:// prefix for go-redis client
-	if len(redisAddrStr) > 8 && redisAddrStr[:8] == "redis://" {
-		redisAddrStr = redisAddrStr[8:]
-	}
-
-	redisContainer = redisCont
-	redisAddr = redisAddrStr
-
-	sharedCleanupFn = func() {
-		if redisContainer != nil {
-			if err := redisContainer.Terminate(context.Background()); err != nil {
-				log.Printf("Warning: Failed to terminate shared redis container: %v", err)
-			}
-		}
-	}
-
-	log.Printf("🔴 Shared Redis ready: %s", redisAddrStr)
-}
-
-// isDockerAvailable checks if Docker is available on the system
-func isDockerAvailable() bool {
-	cmd := exec.Command("docker", "info")
-	err := cmd.Run()
-	return err == nil
-}
-
 // CleanupSharedContainers forces cleanup of shared containers
 // This is useful for TestMain to ensure cleanup happens at the end
 func CleanupSharedContainers() {
 	cleanupOnce.Do(func() {
-		if sharedCleanupFn != nil {
-			sharedCleanupFn()
+		ctx := context.Background()
+
+		if postgresContainer != nil {
+			if err := postgresContainer.Terminate(ctx); err != nil {
+				log.Printf("Warning: Failed to terminate shared postgres container: %v", err)
+			}
+		}
+
+		if redisContainer != nil {
+			if err := redisContainer.Terminate(ctx); err != nil {
+				log.Printf("Warning: Failed to terminate shared redis container: %v", err)
+			}
 		}
 	})
 }

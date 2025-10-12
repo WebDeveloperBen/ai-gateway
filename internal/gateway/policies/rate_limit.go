@@ -47,8 +47,12 @@ func (p *RateLimitPolicy) PreCheck(ctx context.Context, req *PreRequestContext) 
 		key := RateLimitKey(req.AppID, "requests")
 		allowed, err := p.limiter.CheckAndIncrement(ctx, key, p.config.RequestsPerMinute, time.Minute)
 		if err != nil {
-			// Log error but don't block request (fail open)
-			return nil
+			// Redis unavailable - block request to avoid bypassing limits
+			logger.GetLogger(ctx).Error().
+				Err(err).
+				Str("app_id", req.AppID).
+				Msg("Rate limiter Redis unavailable, blocking request")
+			return rateLimitError("rate limiter unavailable")
 		}
 		if !allowed {
 			logger.GetLogger(ctx).Warn().
