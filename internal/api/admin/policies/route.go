@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 )
@@ -17,19 +18,16 @@ func NewRouter(policies PoliciesService) *PolicyService {
 }
 
 func (s *PolicyService) RegisterRoutes(grp *huma.Group) {
-	// POST /admin/policies
+	// POST /policies
 	huma.Register(grp, huma.Operation{
 		OperationID:   "admin-create-policy",
 		Method:        http.MethodPost,
-		Path:          "/admin/policies",
-		Summary:       "Create policy",
+		Path:          "/policies",
+		Summary:       "Create a new policy",
+		Description:   "Creates a new policy to control API access and behavior for applications.",
 		DefaultStatus: http.StatusCreated,
-		Tags:          []string{"Admin"},
-	}, func(ctx context.Context, in *struct {
-		Body CreatePolicyRequest `json:"body"`
-	}) (*struct {
-		Policy *Policy `json:"policy"`
-	}, error) {
+		Tags:          []string{"Policies"},
+	}, exceptions.Handle(func(ctx context.Context, in *CreatePolicyRequest) (*CreatePolicyResponse, error) {
 		// Get org ID from context (set by middleware)
 		orgID, ok := ctx.Value("org_id").(uuid.UUID)
 		if !ok {
@@ -41,23 +39,20 @@ func (s *PolicyService) RegisterRoutes(grp *huma.Group) {
 			return nil, huma.Error400BadRequest(err.Error())
 		}
 
-		return &struct {
-			Policy *Policy `json:"policy"`
-		}{Policy: policy}, nil
-	})
+		return &CreatePolicyResponse{Body: policy}, nil
+	}))
 
-	// GET /admin/policies?app_id={app_id}
+	// GET /policies?app_id={app_id}
 	huma.Register(grp, huma.Operation{
 		OperationID: "admin-list-policies",
 		Method:      http.MethodGet,
-		Path:        "/admin/policies",
+		Path:        "/policies",
 		Summary:     "List policies for an application",
-		Tags:        []string{"Admin"},
-	}, func(ctx context.Context, in *struct {
+		Description: "Retrieves all policies associated with a specific application.",
+		Tags:        []string{"Policies"},
+	}, exceptions.Handle(func(ctx context.Context, in *struct {
 		AppID string `query:"app_id" required:"true"`
-	}) (*struct {
-		Policies []*Policy `json:"policies"`
-	}, error) {
+	}) (*ListPoliciesResponse, error) {
 		appID, err := uuid.Parse(in.AppID)
 		if err != nil {
 			return nil, huma.Error400BadRequest("invalid app_id")
@@ -68,23 +63,20 @@ func (s *PolicyService) RegisterRoutes(grp *huma.Group) {
 			return nil, huma.Error500InternalServerError("failed to list policies")
 		}
 
-		return &struct {
-			Policies []*Policy `json:"policies"`
-		}{Policies: policies}, nil
-	})
+		return &ListPoliciesResponse{Body: policies}, nil
+	}))
 
-	// GET /admin/policies/enabled?app_id={app_id}
+	// GET /policies/enabled?app_id={app_id}
 	huma.Register(grp, huma.Operation{
 		OperationID: "admin-list-enabled-policies",
 		Method:      http.MethodGet,
-		Path:        "/admin/policies/enabled",
+		Path:        "/policies/enabled",
 		Summary:     "List enabled policies for an application",
-		Tags:        []string{"Admin"},
-	}, func(ctx context.Context, in *struct {
+		Description: "Retrieves only the policies that are currently enabled for a specific application.",
+		Tags:        []string{"Policies"},
+	}, exceptions.Handle(func(ctx context.Context, in *struct {
 		AppID string `query:"app_id" required:"true"`
-	}) (*struct {
-		Policies []*Policy `json:"policies"`
-	}, error) {
+	}) (*ListEnabledPoliciesResponse, error) {
 		appID, err := uuid.Parse(in.AppID)
 		if err != nil {
 			return nil, huma.Error400BadRequest("invalid app_id")
@@ -95,23 +87,20 @@ func (s *PolicyService) RegisterRoutes(grp *huma.Group) {
 			return nil, huma.Error500InternalServerError("failed to list enabled policies")
 		}
 
-		return &struct {
-			Policies []*Policy `json:"policies"`
-		}{Policies: policies}, nil
-	})
+		return &ListEnabledPoliciesResponse{Body: policies}, nil
+	}))
 
-	// GET /admin/policies/{id}
+	// GET /policies/{id}
 	huma.Register(grp, huma.Operation{
 		OperationID: "admin-get-policy",
 		Method:      http.MethodGet,
-		Path:        "/admin/policies/{id}",
-		Summary:     "Get policy by ID",
-		Tags:        []string{"Admin"},
-	}, func(ctx context.Context, in *struct {
+		Path:        "/policies/{id}",
+		Summary:     "Get policy details",
+		Description: "Retrieves detailed information about a specific policy by its ID.",
+		Tags:        []string{"Policies"},
+	}, exceptions.Handle(func(ctx context.Context, in *struct {
 		ID string `path:"id" required:"true"`
-	}) (*struct {
-		Policy *Policy `json:"policy"`
-	}, error) {
+	}) (*GetPolicyResponse, error) {
 		id, err := uuid.Parse(in.ID)
 		if err != nil {
 			return nil, huma.Error400BadRequest("invalid policy ID")
@@ -122,25 +111,19 @@ func (s *PolicyService) RegisterRoutes(grp *huma.Group) {
 			return nil, huma.Error404NotFound("policy not found")
 		}
 
-		return &struct {
-			Policy *Policy `json:"policy"`
-		}{Policy: policy}, nil
-	})
+		return &GetPolicyResponse{Body: policy}, nil
+	}))
 
-	// PUT /admin/policies/{id}
+	// PUT /policies/{id}
 	huma.Register(grp, huma.Operation{
 		OperationID:   "admin-update-policy",
 		Method:        http.MethodPut,
-		Path:          "/admin/policies/{id}",
+		Path:          "/policies/{id}",
 		Summary:       "Update policy",
+		Description:   "Updates an existing policy's configuration and rules.",
 		DefaultStatus: http.StatusOK,
-		Tags:          []string{"Admin"},
-	}, func(ctx context.Context, in *struct {
-		ID   string              `path:"id" required:"true"`
-		Body UpdatePolicyRequest `json:"body"`
-	}) (*struct {
-		Policy *Policy `json:"policy"`
-	}, error) {
+		Tags:          []string{"Policies"},
+	}, exceptions.Handle(func(ctx context.Context, in *UpdatePolicyRequest) (*UpdatePolicyResponse, error) {
 		id, err := uuid.Parse(in.ID)
 		if err != nil {
 			return nil, huma.Error400BadRequest("invalid policy ID")
@@ -151,20 +134,19 @@ func (s *PolicyService) RegisterRoutes(grp *huma.Group) {
 			return nil, huma.Error400BadRequest(err.Error())
 		}
 
-		return &struct {
-			Policy *Policy `json:"policy"`
-		}{Policy: policy}, nil
-	})
+		return &UpdatePolicyResponse{Body: policy}, nil
+	}))
 
-	// DELETE /admin/policies/{id}
+	// DELETE /policies/{id}
 	huma.Register(grp, huma.Operation{
 		OperationID:   "admin-delete-policy",
 		Method:        http.MethodDelete,
-		Path:          "/admin/policies/{id}",
+		Path:          "/policies/{id}",
 		Summary:       "Delete policy",
+		Description:   "Permanently deletes a policy and removes it from all associated applications.",
 		DefaultStatus: http.StatusNoContent,
-		Tags:          []string{"Admin"},
-	}, func(ctx context.Context, in *struct {
+		Tags:          []string{"Policies"},
+	}, exceptions.Handle(func(ctx context.Context, in *struct {
 		ID string `path:"id" required:"true"`
 	}) (*struct{}, error) {
 		id, err := uuid.Parse(in.ID)
@@ -177,17 +159,18 @@ func (s *PolicyService) RegisterRoutes(grp *huma.Group) {
 		}
 
 		return &struct{}{}, nil
-	})
+	}))
 
-	// POST /admin/policies/{id}/enable
+	// POST /policies/{id}/enable
 	huma.Register(grp, huma.Operation{
 		OperationID:   "admin-enable-policy",
 		Method:        http.MethodPost,
-		Path:          "/admin/policies/{id}/enable",
+		Path:          "/policies/{id}/enable",
 		Summary:       "Enable policy",
+		Description:   "Enables a policy, making it active for applications that have it assigned.",
 		DefaultStatus: http.StatusNoContent,
-		Tags:          []string{"Admin"},
-	}, func(ctx context.Context, in *struct {
+		Tags:          []string{"Policies"},
+	}, exceptions.Handle(func(ctx context.Context, in *struct {
 		ID string `path:"id" required:"true"`
 	}) (*struct{}, error) {
 		id, err := uuid.Parse(in.ID)
@@ -200,17 +183,18 @@ func (s *PolicyService) RegisterRoutes(grp *huma.Group) {
 		}
 
 		return &struct{}{}, nil
-	})
+	}))
 
-	// POST /admin/policies/{id}/disable
+	// POST /policies/{id}/disable
 	huma.Register(grp, huma.Operation{
 		OperationID:   "admin-disable-policy",
 		Method:        http.MethodPost,
-		Path:          "/admin/policies/{id}/disable",
+		Path:          "/policies/{id}/disable",
 		Summary:       "Disable policy",
+		Description:   "Disables a policy, making it inactive for all applications.",
 		DefaultStatus: http.StatusNoContent,
-		Tags:          []string{"Admin"},
-	}, func(ctx context.Context, in *struct {
+		Tags:          []string{"Policies"},
+	}, exceptions.Handle(func(ctx context.Context, in *struct {
 		ID string `path:"id" required:"true"`
 	}) (*struct{}, error) {
 		id, err := uuid.Parse(in.ID)
@@ -223,5 +207,5 @@ func (s *PolicyService) RegisterRoutes(grp *huma.Group) {
 		}
 
 		return &struct{}{}, nil
-	})
+	}))
 }

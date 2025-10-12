@@ -18,7 +18,8 @@ type APIKey struct {
 	CreatedAt  time.Time
 }
 
-type MintKeyRequest struct {
+// Request/Response body types
+type MintKeyRequestBody struct {
 	Tenant   string
 	App      string
 	TTL      time.Duration
@@ -26,7 +27,20 @@ type MintKeyRequest struct {
 	Metadata map[string]any
 }
 
+type MintKeyResponseBody struct {
+	Token string `json:"token"`
+	Key   APIKey `json:"key"`
+}
+
+// Huma request/response types
+type MintKeyRequest struct {
+	Body MintKeyRequestBody `json:"body"`
+}
+
 type MintKeyResponse struct {
-	Token string // key_id.secret (display once)
-	Key   APIKey
+	Body MintKeyResponseBody `json:"body"`
+}
+
+type RevokeKeyRequest struct {
+	KeyID string `path:"key_id" required:"true"`
 }

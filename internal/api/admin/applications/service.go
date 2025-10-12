@@ -10,11 +10,11 @@ import (
 )
 
 type ApplicationsService interface {
-	CreateApplication(ctx context.Context, orgID uuid.UUID, req CreateApplicationRequest) (*Application, error)
+	CreateApplication(ctx context.Context, orgID uuid.UUID, req CreateApplicationBody) (*Application, error)
 	GetApplication(ctx context.Context, id uuid.UUID) (*Application, error)
 	GetApplicationByName(ctx context.Context, orgID uuid.UUID, name string) (*Application, error)
 	ListApplications(ctx context.Context, orgID uuid.UUID) ([]*Application, error)
-	UpdateApplication(ctx context.Context, id uuid.UUID, req UpdateApplicationRequest) (*Application, error)
+	UpdateApplication(ctx context.Context, id uuid.UUID, req UpdateApplicationBody) (*Application, error)
 	DeleteApplication(ctx context.Context, id uuid.UUID) error
 }
 
@@ -26,7 +26,7 @@ func NewService(repo applications.Repository) ApplicationsService {
 	return &applicationsService{repo: repo}
 }
 
-func (s *applicationsService) CreateApplication(ctx context.Context, orgID uuid.UUID, req CreateApplicationRequest) (*Application, error) {
+func (s *applicationsService) CreateApplication(ctx context.Context, orgID uuid.UUID, req CreateApplicationBody) (*Application, error) {
 	if req.Name == "" {
 		return nil, errors.New("application name is required")
 	}
@@ -70,7 +70,7 @@ func (s *applicationsService) ListApplications(ctx context.Context, orgID uuid.U
 	return result, nil
 }
 
-func (s *applicationsService) UpdateApplication(ctx context.Context, id uuid.UUID, req UpdateApplicationRequest) (*Application, error) {
+func (s *applicationsService) UpdateApplication(ctx context.Context, id uuid.UUID, req UpdateApplicationBody) (*Application, error) {
 	if req.Name == "" {
 		return nil, errors.New("application name is required")
 	}

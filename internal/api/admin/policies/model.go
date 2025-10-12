@@ -17,19 +17,46 @@ type Policy struct {
 	UpdatedAt  time.Time              `json:"updated_at"`
 }
 
-type CreatePolicyRequest struct {
+// Request/Response body types
+type CreatePolicyBody struct {
 	AppID      string                 `json:"app_id" required:"true"`
 	PolicyType model.PolicyType       `json:"policy_type" required:"true"`
 	Config     map[string]interface{} `json:"config" required:"true"`
 	Enabled    bool                   `json:"enabled"`
 }
 
-type UpdatePolicyRequest struct {
+type UpdatePolicyBody struct {
 	PolicyType model.PolicyType       `json:"policy_type" required:"true"`
 	Config     map[string]interface{} `json:"config" required:"true"`
 	Enabled    bool                   `json:"enabled"`
 }
 
-type PolicyList struct {
-	Policies []*Policy `json:"policies"`
+// Huma request/response types
+type CreatePolicyRequest struct {
+	Body CreatePolicyBody `json:"body"`
+}
+
+type CreatePolicyResponse struct {
+	Body *Policy `json:"body"`
+}
+
+type ListPoliciesResponse struct {
+	Body []*Policy `json:"body"`
+}
+
+type ListEnabledPoliciesResponse struct {
+	Body []*Policy `json:"body"`
+}
+
+type GetPolicyResponse struct {
+	Body *Policy `json:"body"`
+}
+
+type UpdatePolicyRequest struct {
+	ID   string           `path:"id" required:"true"`
+	Body UpdatePolicyBody `json:"body"`
+}
+
+type UpdatePolicyResponse struct {
+	Body *Policy `json:"body"`
 }

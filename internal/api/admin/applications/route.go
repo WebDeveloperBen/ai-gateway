@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 )
@@ -17,19 +18,16 @@ func NewRouter(applications ApplicationsService) *ApplicationService {
 }
 
 func (s *ApplicationService) RegisterRoutes(grp *huma.Group) {
-	// POST /admin/applications
+	// POST /applications
 	huma.Register(grp, huma.Operation{
 		OperationID:   "admin-create-application",
 		Method:        http.MethodPost,
-		Path:          "/admin/applications",
-		Summary:       "Create application",
+		Path:          "/applications",
+		Summary:       "Create a new application",
+		Description:   "Creates a new application within the organization with the specified configuration.",
 		DefaultStatus: http.StatusCreated,
-		Tags:          []string{"Admin"},
-	}, func(ctx context.Context, in *struct {
-		Body CreateApplicationRequest `json:"body"`
-	}) (*struct {
-		Application *Application `json:"application"`
-	}, error) {
+		Tags:          []string{"Applications"},
+	}, exceptions.Handle(func(ctx context.Context, in *CreateApplicationRequest) (*CreateApplicationResponse, error) {
 		// Get org ID from context (set by middleware)
 		orgID, ok := ctx.Value("org_id").(uuid.UUID)
 		if !ok {
@@ -41,21 +39,18 @@ func (s *ApplicationService) RegisterRoutes(grp *huma.Group) {
 			return nil, huma.Error400BadRequest(err.Error())
 		}
 
-		return &struct {
-			Application *Application `json:"application"`
-		}{Application: app}, nil
-	})
+		return &CreateApplicationResponse{Body: app}, nil
+	}))
 
-	// GET /admin/applications
+	// GET /applications
 	huma.Register(grp, huma.Operation{
 		OperationID: "admin-list-applications",
 		Method:      http.MethodGet,
-		Path:        "/admin/applications",
-		Summary:     "List applications",
-		Tags:        []string{"Admin"},
-	}, func(ctx context.Context, in *struct{}) (*struct {
-		Applications []*Application `json:"applications"`
-	}, error) {
+		Path:        "/applications",
+		Summary:     "List all applications",
+		Description: "Retrieves a list of all applications belonging to the organization.",
+		Tags:        []string{"Applications"},
+	}, exceptions.Handle(func(ctx context.Context, in *struct{}) (*ListApplicationsResponse, error) {
 		// Get org ID from context (set by middleware)
 		orgID, ok := ctx.Value("org_id").(uuid.UUID)
 		if !ok {
@@ -67,23 +62,21 @@ func (s *ApplicationService) RegisterRoutes(grp *huma.Group) {
 			return nil, huma.Error500InternalServerError("failed to list applications")
 		}
 
-		return &struct {
-			Applications []*Application `json:"applications"`
-		}{Applications: apps}, nil
-	})
+		return &ListApplicationsResponse{Body: apps}, nil
+	}))
 
-	// GET /admin/applications/{id}
+	// GET /applications/{id}
 	huma.Register(grp, huma.Operation{
 		OperationID: "admin-get-application",
 		Method:      http.MethodGet,
-		Path:        "/admin/applications/{id}",
-		Summary:     "Get application by ID",
-		Tags:        []string{"Admin"},
-	}, func(ctx context.Context, in *struct {
+		Path:        "/applications/{id}",
+		Summary:     "Get application details",
+		Description: "Retrieves detailed information about a specific application by its ID.",
+		Tags:        []string{"Applications"},
+	}, exceptions.Handle(func(ctx context.Context, in *struct {
 		ID string `path:"id" required:"true"`
-	}) (*struct {
-		Application *Application `json:"application"`
-	}, error) {
+	},
+	) (*GetApplicationResponse, error) {
 		id, err := uuid.Parse(in.ID)
 		if err != nil {
 			return nil, huma.Error400BadRequest("invalid application ID")
@@ -94,25 +87,19 @@ func (s *ApplicationService) RegisterRoutes(grp *huma.Group) {
 			return nil, huma.Error404NotFound("application not found")
 		}
 
-		return &struct {
-			Application *Application `json:"application"`
-		}{Application: app}, nil
-	})
+		return &GetApplicationResponse{Body: app}, nil
+	}))
 
-	// PUT /admin/applications/{id}
+	// PUT /applications/{id}
 	huma.Register(grp, huma.Operation{
 		OperationID:   "admin-update-application",
 		Method:        http.MethodPut,
-		Path:          "/admin/applications/{id}",
+		Path:          "/applications/{id}",
 		Summary:       "Update application",
+		Description:   "Updates an existing application's configuration and settings.",
 		DefaultStatus: http.StatusOK,
-		Tags:          []string{"Admin"},
-	}, func(ctx context.Context, in *struct {
-		ID   string                   `path:"id" required:"true"`
-		Body UpdateApplicationRequest `json:"body"`
-	}) (*struct {
-		Application *Application `json:"application"`
-	}, error) {
+		Tags:          []string{"Applications"},
+	}, exceptions.Handle(func(ctx context.Context, in *UpdateApplicationRequest) (*UpdateApplicationResponse, error) {
 		id, err := uuid.Parse(in.ID)
 		if err != nil {
 			return nil, huma.Error400BadRequest("invalid application ID")
@@ -123,22 +110,22 @@ func (s *ApplicationService) RegisterRoutes(grp *huma.Group) {
 			return nil, huma.Error400BadRequest(err.Error())
 		}
 
-		return &struct {
-			Application *Application `json:"application"`
-		}{Application: app}, nil
-	})
+		return &UpdateApplicationResponse{Body: app}, nil
+	}))
 
-	// DELETE /admin/applications/{id}
+	// DELETE /applications/{id}
 	huma.Register(grp, huma.Operation{
 		OperationID:   "admin-delete-application",
 		Method:        http.MethodDelete,
-		Path:          "/admin/applications/{id}",
+		Path:          "/applications/{id}",
 		Summary:       "Delete application",
+		Description:   "Permanently deletes an application and all its associated resources.",
 		DefaultStatus: http.StatusNoContent,
-		Tags:          []string{"Admin"},
-	}, func(ctx context.Context, in *struct {
+		Tags:          []string{"Applications"},
+	}, exceptions.Handle(func(ctx context.Context, in *struct {
 		ID string `path:"id" required:"true"`
-	}) (*struct{}, error) {
+	},
+	) (*struct{}, error) {
 		id, err := uuid.Parse(in.ID)
 		if err != nil {
 			return nil, huma.Error400BadRequest("invalid application ID")
@@ -149,5 +136,5 @@ func (s *ApplicationService) RegisterRoutes(grp *huma.Group) {
 		}
 
 		return &struct{}{}, nil
-	})
+	}))
 }

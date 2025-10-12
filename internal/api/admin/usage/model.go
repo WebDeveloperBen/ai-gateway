@@ -36,10 +36,42 @@ type ModelUsageSummary struct {
 	RequestCount          int    `json:"request_count"`
 }
 
-type UsageMetricsList struct {
-	Metrics []*UsageMetric `json:"metrics"`
+// Huma request/response types
+type GetUsageMetricsRequest struct {
+	AppID string `query:"app_id" required:"true"`
+	Start string `query:"start" required:"true"` // ISO 8601 format
+	End   string `query:"end" required:"true"`   // ISO 8601 format
 }
 
-type ModelUsageList struct {
-	Summaries []*ModelUsageSummary `json:"summaries"`
+type GetUsageMetricsResponse struct {
+	Body []*UsageMetric `json:"body"`
+}
+
+type GetUsageSummaryByAppRequest struct {
+	AppID string `path:"app_id" required:"true"`
+	Start string `query:"start" required:"true"`
+	End   string `query:"end" required:"true"`
+}
+
+type GetUsageSummaryByAppResponse struct {
+	Body *TokenSummary `json:"body"`
+}
+
+type GetUsageSummaryByOrgRequest struct {
+	Start string `query:"start" required:"true"`
+	End   string `query:"end" required:"true"`
+}
+
+type GetUsageSummaryByOrgResponse struct {
+	Body *TokenSummary `json:"body"`
+}
+
+type GetUsageByModelRequest struct {
+	AppID string `path:"app_id" required:"true"`
+	Start string `query:"start" required:"true"`
+	End   string `query:"end" required:"true"`
+}
+
+type GetUsageByModelResponse struct {
+	Body []*ModelUsageSummary `json:"body"`
 }

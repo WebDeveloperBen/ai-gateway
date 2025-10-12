@@ -10,19 +10,40 @@ type Application struct {
 	Name        string    `json:"name"`
 	Description *string   `json:"description,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	UpdatedAt   time.Time `json:"-"`
+}
+
+type CreateApplicationBody struct {
+	Name        string  `json:"name" required:"true"`
+	Description *string `json:"description,omitempty"`
+}
+
+type UpdateApplicationBody struct {
+	Name        string  `json:"name" required:"true"`
+	Description *string `json:"description,omitempty"`
 }
 
 type CreateApplicationRequest struct {
-	Name        string  `json:"name" required:"true"`
-	Description *string `json:"description,omitempty"`
+	Body CreateApplicationBody `json:"body"`
+}
+
+type CreateApplicationResponse struct {
+	Body *Application `json:"body"`
+}
+
+type ListApplicationsResponse struct {
+	Body []*Application `json:"body"`
+}
+
+type GetApplicationResponse struct {
+	Body *Application `json:"body"`
 }
 
 type UpdateApplicationRequest struct {
-	Name        string  `json:"name" required:"true"`
-	Description *string `json:"description,omitempty"`
+	ID   string                `path:"id" required:"true"`
+	Body UpdateApplicationBody `json:"body"`
 }
 
-type ApplicationList struct {
-	Applications []*Application `json:"applications"`
+type UpdateApplicationResponse struct {
+	Body *Application `json:"body"`
 }

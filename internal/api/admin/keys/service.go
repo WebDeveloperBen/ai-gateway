@@ -14,7 +14,7 @@ import (
 )
 
 type KeysService interface {
-	MintKey(ctx context.Context, req MintKeyRequest) (MintKeyResponse, error)
+	MintKey(ctx context.Context, req MintKeyRequestBody) (MintKeyResponse, error)
 	RevokeKey(ctx context.Context, keyID string) error
 	GetByKeyID(ctx context.Context, keyID string) (APIKey, error)
 }
@@ -28,7 +28,7 @@ func NewService(store keys.KeyRepository, hasher keys.Hasher) KeysService {
 	return &keysService{store: store, hasher: hasher}
 }
 
-func (s *keysService) MintKey(ctx context.Context, req MintKeyRequest) (MintKeyResponse, error) {
+func (s *keysService) MintKey(ctx context.Context, req MintKeyRequestBody) (MintKeyResponse, error) {
 	if req.Tenant == "" || req.App == "" {
 		return MintKeyResponse{}, errors.New("tenant & app required")
 	}
@@ -81,14 +81,16 @@ func (s *keysService) MintKey(ctx context.Context, req MintKeyRequest) (MintKeyR
 	}
 
 	return MintKeyResponse{
-		Token: keyID + "." + secretB64, // show ONCE
-		Key: APIKey{
-			KeyID:     keyID,
-			Tenant:    req.Tenant,
-			App:       req.App,
-			Status:    model.KeyActive,
-			ExpiresAt: exp,
-			LastFour:  last4,
+		Body: MintKeyResponseBody{
+			Token: keyID + "." + secretB64, // show ONCE
+			Key: APIKey{
+				KeyID:     keyID,
+				Tenant:    req.Tenant,
+				App:       req.App,
+				Status:    model.KeyActive,
+				ExpiresAt: exp,
+				LastFour:  last4,
+			},
 		},
 	}, nil
 }

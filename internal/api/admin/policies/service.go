@@ -10,12 +10,12 @@ import (
 )
 
 type PoliciesService interface {
-	CreatePolicy(ctx context.Context, orgID uuid.UUID, req CreatePolicyRequest) (*Policy, error)
+	CreatePolicy(ctx context.Context, orgID uuid.UUID, req CreatePolicyBody) (*Policy, error)
 	GetPolicy(ctx context.Context, id uuid.UUID) (*Policy, error)
 	ListPolicies(ctx context.Context, appID uuid.UUID) ([]*Policy, error)
 	ListEnabledPolicies(ctx context.Context, appID uuid.UUID) ([]*Policy, error)
 	GetPoliciesByType(ctx context.Context, appID uuid.UUID, policyType model.PolicyType) ([]*Policy, error)
-	UpdatePolicy(ctx context.Context, id uuid.UUID, req UpdatePolicyRequest) (*Policy, error)
+	UpdatePolicy(ctx context.Context, id uuid.UUID, req UpdatePolicyBody) (*Policy, error)
 	DeletePolicy(ctx context.Context, id uuid.UUID) error
 	EnablePolicy(ctx context.Context, id uuid.UUID) error
 	DisablePolicy(ctx context.Context, id uuid.UUID) error
@@ -29,7 +29,7 @@ func NewService(repo policies.Repository) PoliciesService {
 	return &policiesService{repo: repo}
 }
 
-func (s *policiesService) CreatePolicy(ctx context.Context, orgID uuid.UUID, req CreatePolicyRequest) (*Policy, error) {
+func (s *policiesService) CreatePolicy(ctx context.Context, orgID uuid.UUID, req CreatePolicyBody) (*Policy, error) {
 	if req.AppID == "" {
 		return nil, errors.New("app_id is required")
 	}
@@ -101,7 +101,7 @@ func (s *policiesService) GetPoliciesByType(ctx context.Context, appID uuid.UUID
 	return result, nil
 }
 
-func (s *policiesService) UpdatePolicy(ctx context.Context, id uuid.UUID, req UpdatePolicyRequest) (*Policy, error) {
+func (s *policiesService) UpdatePolicy(ctx context.Context, id uuid.UUID, req UpdatePolicyBody) (*Policy, error) {
 	if req.PolicyType == "" {
 		return nil, errors.New("policy_type is required")
 	}

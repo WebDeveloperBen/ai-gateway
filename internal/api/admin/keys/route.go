@@ -3,8 +3,8 @@ package keys
 import (
 	"context"
 	"net/http"
-	"time"
 
+	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions"
 	"github.com/danielgtaylor/huma/v2"
 )
 
@@ -17,60 +17,36 @@ func NewRouter(keys KeysService) *KeyService {
 }
 
 func (s *KeyService) RegisterRoutes(grp *huma.Group) {
-	// POST /admin/keys
+	// POST /keys
 	huma.Register(grp, huma.Operation{
 		OperationID:   "admin-mint-key",
 		Method:        http.MethodPost,
-		Path:          "/admin/keys",
+		Path:          "/keys",
 		Summary:       "Mint API key",
+		Description:   "Creates a new API key for accessing the gateway with specified tenant and application.",
 		DefaultStatus: http.StatusCreated,
-		Tags:          []string{"Admin"},
-	}, func(ctx context.Context, in *struct {
-		Tenant   string         `json:"tenant" required:"true"`
-		App      string         `json:"app" required:"true"`
-		TTL      *time.Duration `json:"ttl,omitempty"`
-		Prefix   string         `json:"prefix,omitempty"`
-		Metadata map[string]any `json:"metadata,omitempty"`
-	}) (*struct {
-		Token string `json:"token"`
-		Key   APIKey `json:"key"`
-	}, error,
-	) {
-		var ttl time.Duration
-		if in.TTL != nil {
-			ttl = *in.TTL
-		}
-		out, err := s.Keys.MintKey(ctx, MintKeyRequest{
-			Tenant:   in.Tenant,
-			App:      in.App,
-			TTL:      ttl,
-			Prefix:   in.Prefix,
-			Metadata: in.Metadata,
-		})
+		Tags:          []string{"API Keys"},
+	}, exceptions.Handle(func(ctx context.Context, in *MintKeyRequest) (*MintKeyResponse, error) {
+		out, err := s.Keys.MintKey(ctx, in.Body)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("mint failed")
 		}
-		return &struct {
-			Token string `json:"token"`
-			Key   APIKey `json:"key"`
-		}{Token: out.Token, Key: out.Key}, nil
-	})
+		return &out, nil
+	}))
 
-	// POST /admin/keys/{key_id}/revoke
+	// POST /keys/{key_id}/revoke
 	huma.Register(grp, huma.Operation{
 		OperationID:   "admin-revoke-key",
 		Method:        http.MethodPost,
-		Path:          "/admin/keys/{key_id}/revoke",
+		Path:          "/keys/{key_id}/revoke",
 		Summary:       "Revoke API key",
+		Description:   "Revokes an API key, making it permanently unusable for authentication.",
 		DefaultStatus: http.StatusNoContent,
-		Tags:          []string{"Admin"},
-	}, func(ctx context.Context, in *struct {
-		KeyID string `path:"key_id" required:"true"`
-	},
-	) (*struct{}, error) {
+		Tags:          []string{"API Keys"},
+	}, exceptions.Handle(func(ctx context.Context, in *RevokeKeyRequest) (*struct{}, error) {
 		if err := s.Keys.RevokeKey(ctx, in.KeyID); err != nil {
 			return nil, huma.Error404NotFound("not found")
 		}
 		return &struct{}{}, nil
-	})
+	}))
 }
