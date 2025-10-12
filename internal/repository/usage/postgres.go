@@ -19,11 +19,13 @@ func NewPostgresRepo(q *db.Queries) Repository {
 	return &postgresRepo{q: q}
 }
 
-func (r *postgresRepo) GetByAppID(ctx context.Context, appID uuid.UUID, start, end time.Time) ([]*model.UsageMetric, error) {
+func (r *postgresRepo) GetByAppID(ctx context.Context, appID uuid.UUID, start, end time.Time, limit, offset int) ([]*model.UsageMetric, error) {
 	metrics, err := r.q.GetUsageMetricsByApp(ctx, db.GetUsageMetricsByAppParams{
 		AppID:       appID,
 		Timestamp:   pgtype.Timestamptz{Time: start, Valid: true},
 		Timestamp_2: pgtype.Timestamptz{Time: end, Valid: true},
+		Limit:       int32(limit),
+		Offset:      int32(offset),
 	})
 	if err != nil {
 		return nil, err
@@ -106,11 +108,13 @@ func (r *postgresRepo) SumTokensByOrgID(ctx context.Context, orgID uuid.UUID, st
 	}, nil
 }
 
-func (r *postgresRepo) GetUsageByModel(ctx context.Context, appID uuid.UUID, start, end time.Time) ([]*ModelUsageSummary, error) {
+func (r *postgresRepo) GetUsageByModel(ctx context.Context, appID uuid.UUID, start, end time.Time, limit, offset int) ([]*ModelUsageSummary, error) {
 	rows, err := r.q.GetUsageByModel(ctx, db.GetUsageByModelParams{
 		AppID:       appID,
 		Timestamp:   pgtype.Timestamptz{Time: start, Valid: true},
 		Timestamp_2: pgtype.Timestamptz{Time: end, Valid: true},
+		Limit:       int32(limit),
+		Offset:      int32(offset),
 	})
 	if err != nil {
 		return nil, err

@@ -10,12 +10,12 @@ import (
 )
 
 type UsageService interface {
-	GetMetricsByAppID(ctx context.Context, appID uuid.UUID, start, end time.Time) ([]*UsageMetric, error)
+	GetMetricsByAppID(ctx context.Context, appID uuid.UUID, start, end time.Time, limit, offset int) ([]*UsageMetric, error)
 	GetMetricsByOrgID(ctx context.Context, orgID uuid.UUID, start, end time.Time) ([]*UsageMetric, error)
 	GetMetricsByAPIKeyID(ctx context.Context, apiKeyID uuid.UUID, start, end time.Time) ([]*UsageMetric, error)
 	GetTokenSummaryByAppID(ctx context.Context, appID uuid.UUID, start, end time.Time) (*TokenSummary, error)
 	GetTokenSummaryByOrgID(ctx context.Context, orgID uuid.UUID, start, end time.Time) (*TokenSummary, error)
-	GetUsageByModel(ctx context.Context, appID uuid.UUID, start, end time.Time) ([]*ModelUsageSummary, error)
+	GetUsageByModel(ctx context.Context, appID uuid.UUID, start, end time.Time, limit, offset int) ([]*ModelUsageSummary, error)
 }
 
 type usageService struct {
@@ -26,8 +26,8 @@ func NewService(repo usage.Repository) UsageService {
 	return &usageService{repo: repo}
 }
 
-func (s *usageService) GetMetricsByAppID(ctx context.Context, appID uuid.UUID, start, end time.Time) ([]*UsageMetric, error) {
-	metrics, err := s.repo.GetByAppID(ctx, appID, start, end)
+func (s *usageService) GetMetricsByAppID(ctx context.Context, appID uuid.UUID, start, end time.Time, limit, offset int) ([]*UsageMetric, error) {
+	metrics, err := s.repo.GetByAppID(ctx, appID, start, end, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -93,8 +93,8 @@ func (s *usageService) GetTokenSummaryByOrgID(ctx context.Context, orgID uuid.UU
 	}, nil
 }
 
-func (s *usageService) GetUsageByModel(ctx context.Context, appID uuid.UUID, start, end time.Time) ([]*ModelUsageSummary, error) {
-	summaries, err := s.repo.GetUsageByModel(ctx, appID, start, end)
+func (s *usageService) GetUsageByModel(ctx context.Context, appID uuid.UUID, start, end time.Time, limit, offset int) ([]*ModelUsageSummary, error) {
+	summaries, err := s.repo.GetUsageByModel(ctx, appID, start, end, limit, offset)
 	if err != nil {
 		return nil, err
 	}

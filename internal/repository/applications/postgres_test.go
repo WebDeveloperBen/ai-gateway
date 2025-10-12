@@ -94,7 +94,7 @@ func TestPostgresRepo_ListByOrgID(t *testing.T) {
 	orgID, appID := fixtures.CreateTestOrgAndApp(t)
 
 	// Test ListByOrgID
-	apps, err := repo.ListByOrgID(ctx, orgID)
+	apps, err := repo.ListByOrgID(ctx, orgID, 100, 0)
 	require.NoError(t, err)
 	assert.Len(t, apps, 1)
 	assert.Equal(t, appID, apps[0].ID)

@@ -5,12 +5,14 @@ WHERE id = $1 LIMIT 1;
 -- name: ListPolicies :many
 SELECT * FROM policies
 WHERE app_id = $1
-ORDER BY policy_type;
+ORDER BY policy_type
+LIMIT $2 OFFSET $3;
 
 -- name: ListEnabledPolicies :many
 SELECT * FROM policies
 WHERE app_id = $1 AND enabled = true
-ORDER BY policy_type;
+ORDER BY policy_type
+LIMIT $2 OFFSET $3;
 
 -- name: GetPoliciesByType :many
 SELECT * FROM policies

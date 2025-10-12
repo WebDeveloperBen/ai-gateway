@@ -106,7 +106,11 @@ func (e *Engine) LoadPolicies(ctx context.Context, appID string) ([]Policy, erro
 		return nil, fmt.Errorf("database not available for loading policies")
 	}
 
-	dbPolicies, err := e.db.ListEnabledPolicies(ctx, appUUID)
+	dbPolicies, err := e.db.ListEnabledPolicies(ctx, db.ListEnabledPoliciesParams{
+		AppID:  appUUID,
+		Limit:  1000, // Load all enabled policies for the app
+		Offset: 0,
+	})
 	if err != nil {
 		observability.FromContext(ctx).RecordPolicyLoadError(ctx, appID, err)
 		return nil, fmt.Errorf("failed to load policies: %w", err)

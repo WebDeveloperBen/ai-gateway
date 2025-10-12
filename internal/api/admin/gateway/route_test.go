@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	apigw "github.com/WebDeveloperBen/ai-gateway/internal/api/gateway"
+	apigw "github.com/WebDeveloperBen/ai-gateway/internal/api/admin/gateway"
 	"github.com/WebDeveloperBen/ai-gateway/internal/gateway"
 	"github.com/WebDeveloperBen/ai-gateway/internal/testkit"
 	"github.com/danielgtaylor/huma/v2"

@@ -10,7 +10,7 @@ import (
 type Reader interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*model.Application, error)
 	GetByName(ctx context.Context, orgID uuid.UUID, name string) (*model.Application, error)
-	ListByOrgID(ctx context.Context, orgID uuid.UUID) ([]*model.Application, error)
+	ListByOrgID(ctx context.Context, orgID uuid.UUID, limit, offset int) ([]*model.Application, error)
 }
 
 type Writer interface {

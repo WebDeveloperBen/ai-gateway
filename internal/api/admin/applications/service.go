@@ -13,7 +13,7 @@ type ApplicationsService interface {
 	CreateApplication(ctx context.Context, orgID uuid.UUID, req CreateApplicationBody) (*Application, error)
 	GetApplication(ctx context.Context, id uuid.UUID) (*Application, error)
 	GetApplicationByName(ctx context.Context, orgID uuid.UUID, name string) (*Application, error)
-	ListApplications(ctx context.Context, orgID uuid.UUID) ([]*Application, error)
+	ListApplications(ctx context.Context, orgID uuid.UUID, limit, offset int) ([]*Application, error)
 	UpdateApplication(ctx context.Context, id uuid.UUID, req UpdateApplicationBody) (*Application, error)
 	DeleteApplication(ctx context.Context, id uuid.UUID) error
 }
@@ -57,8 +57,8 @@ func (s *applicationsService) GetApplicationByName(ctx context.Context, orgID uu
 	return s.convertToAPI(app), nil
 }
 
-func (s *applicationsService) ListApplications(ctx context.Context, orgID uuid.UUID) ([]*Application, error) {
-	apps, err := s.repo.ListByOrgID(ctx, orgID)
+func (s *applicationsService) ListApplications(ctx context.Context, orgID uuid.UUID, limit, offset int) ([]*Application, error) {
+	apps, err := s.repo.ListByOrgID(ctx, orgID, limit, offset)
 	if err != nil {
 		return nil, err
 	}

@@ -8,11 +8,11 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 
+	apigw "github.com/WebDeveloperBen/ai-gateway/internal/api/admin/gateway"
 	apiauth "github.com/WebDeveloperBen/ai-gateway/internal/api/auth"
-	"github.com/WebDeveloperBen/ai-gateway/internal/api/docs"
-	apigw "github.com/WebDeveloperBen/ai-gateway/internal/api/gateway"
-	"github.com/WebDeveloperBen/ai-gateway/internal/api/health"
 	"github.com/WebDeveloperBen/ai-gateway/internal/api/middleware"
+	"github.com/WebDeveloperBen/ai-gateway/internal/api/public/docs"
+	"github.com/WebDeveloperBen/ai-gateway/internal/api/public/health"
 	"github.com/WebDeveloperBen/ai-gateway/internal/config"
 	dbdriver "github.com/WebDeveloperBen/ai-gateway/internal/drivers/db"
 	"github.com/WebDeveloperBen/ai-gateway/internal/drivers/kv"
@@ -24,10 +24,12 @@ import (
 	"github.com/WebDeveloperBen/ai-gateway/internal/provider"
 
 	"github.com/WebDeveloperBen/ai-gateway/internal/api/admin/applications"
+	"github.com/WebDeveloperBen/ai-gateway/internal/api/admin/catalog"
 	"github.com/WebDeveloperBen/ai-gateway/internal/api/admin/keys"
 	adminpolicies "github.com/WebDeveloperBen/ai-gateway/internal/api/admin/policies"
 	adminusage "github.com/WebDeveloperBen/ai-gateway/internal/api/admin/usage"
 	apprepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/applications"
+	catalogrepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/catalog"
 	keyrepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/keys"
 	orgrepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/organisations"
 	policiesrepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/policies"
@@ -79,6 +81,7 @@ func main() {
 		log.Fatal(err)
 	}
 	appRepo := apprepo.NewPostgresRepo(pg.Queries)
+	catalogRepo := catalogrepo.NewPostgresRepo(pg.Queries)
 	orgRepo := orgrepo.NewPostgresRepo(pg.Queries)
 	policiesRepo := policiesrepo.NewPostgresRepo(pg.Queries)
 	usageRepo := usagerepo.NewPostgresRepo(pg.Queries)
@@ -116,6 +119,7 @@ func main() {
 	orgSvc := apiauth.NewOrganisationService(orgRepo, userRepo)
 	keysSvc := keys.NewService(keyRepo, hasher)
 	appsSvc := applications.NewService(appRepo)
+	catalogSvc := catalog.NewService(catalogRepo)
 	policiesSvc := adminpolicies.NewService(policiesRepo)
 	usageSvc := adminusage.NewService(usageRepo)
 
@@ -147,6 +151,7 @@ func main() {
 	apiauth.NewRouter(oidcService, orgSvc).RegisterRoutes(authgrp)
 	keys.NewRouter(keysSvc).RegisterRoutes(authgrp)
 	applications.NewRouter(appsSvc).RegisterRoutes(admingrp)
+	catalog.NewRouter(catalogSvc).RegisterRoutes(admingrp)
 	adminpolicies.NewRouter(policiesSvc).RegisterRoutes(admingrp)
 	adminusage.NewRouter(usageSvc).RegisterRoutes(admingrp)
 

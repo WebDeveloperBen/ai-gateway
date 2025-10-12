@@ -9,12 +9,14 @@ WHERE org_id = $1 AND provider = $2 AND model_name = $3 LIMIT 1;
 -- name: ListModels :many
 SELECT * FROM models
 WHERE org_id = $1
-ORDER BY provider, model_name;
+ORDER BY provider, model_name
+LIMIT $2 OFFSET $3;
 
 -- name: ListEnabledModels :many
 SELECT * FROM models
 WHERE org_id = $1 AND enabled = true
-ORDER BY provider, model_name;
+ORDER BY provider, model_name
+LIMIT $2 OFFSET $3;
 
 -- name: CreateModel :one
 INSERT INTO models (

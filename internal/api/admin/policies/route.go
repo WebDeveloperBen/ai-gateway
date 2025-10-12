@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 )
@@ -50,15 +51,14 @@ func (s *PolicyService) RegisterRoutes(grp *huma.Group) {
 		Summary:     "List policies for an application",
 		Description: "Retrieves all policies associated with a specific application.",
 		Tags:        []string{"Policies"},
-	}, exceptions.Handle(func(ctx context.Context, in *struct {
-		AppID string `query:"app_id" required:"true"`
-	}) (*ListPoliciesResponse, error) {
+	}, exceptions.Handle(func(ctx context.Context, in *ListPoliciesRequest) (*ListPoliciesResponse, error) {
 		appID, err := uuid.Parse(in.AppID)
 		if err != nil {
 			return nil, huma.Error400BadRequest("invalid app_id")
 		}
 
-		policies, err := s.Policies.ListPolicies(ctx, appID)
+		normalized := model.NormalizePagination(model.ListRequest{Limit: in.Limit, Offset: in.Offset})
+		policies, err := s.Policies.ListPolicies(ctx, appID, normalized.Limit, normalized.Offset)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("failed to list policies")
 		}
@@ -74,15 +74,14 @@ func (s *PolicyService) RegisterRoutes(grp *huma.Group) {
 		Summary:     "List enabled policies for an application",
 		Description: "Retrieves only the policies that are currently enabled for a specific application.",
 		Tags:        []string{"Policies"},
-	}, exceptions.Handle(func(ctx context.Context, in *struct {
-		AppID string `query:"app_id" required:"true"`
-	}) (*ListEnabledPoliciesResponse, error) {
+	}, exceptions.Handle(func(ctx context.Context, in *ListEnabledPoliciesRequest) (*ListEnabledPoliciesResponse, error) {
 		appID, err := uuid.Parse(in.AppID)
 		if err != nil {
 			return nil, huma.Error400BadRequest("invalid app_id")
 		}
 
-		policies, err := s.Policies.ListEnabledPolicies(ctx, appID)
+		normalized := model.NormalizePagination(model.ListRequest{Limit: in.Limit, Offset: in.Offset})
+		policies, err := s.Policies.ListEnabledPolicies(ctx, appID, normalized.Limit, normalized.Offset)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("failed to list enabled policies")
 		}

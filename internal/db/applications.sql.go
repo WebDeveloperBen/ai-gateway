@@ -97,10 +97,17 @@ const listApplications = `-- name: ListApplications :many
 SELECT id, org_id, name, description, created_at, updated_at FROM applications
 WHERE org_id = $1
 ORDER BY name
+LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) ListApplications(ctx context.Context, orgID uuid.UUID) ([]Application, error) {
-	rows, err := q.db.Query(ctx, listApplications, orgID)
+type ListApplicationsParams struct {
+	OrgID  uuid.UUID `json:"org_id"`
+	Limit  int32     `json:"limit"`
+	Offset int32     `json:"offset"`
+}
+
+func (q *Queries) ListApplications(ctx context.Context, arg ListApplicationsParams) ([]Application, error) {
+	rows, err := q.db.Query(ctx, listApplications, arg.OrgID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

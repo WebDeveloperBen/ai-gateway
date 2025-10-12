@@ -81,7 +81,7 @@ func TestPostgresRepo_ListByAppID(t *testing.T) {
 	fixtures.CreateTestPolicy(t, orgID, appID, model.PolicyTypeTokenLimit, `{"max_prompt_tokens": 1000}`)
 
 	// Test ListByAppID
-	policies, err := repo.ListByAppID(ctx, appID)
+	policies, err := repo.ListByAppID(ctx, appID, 100, 0)
 	require.NoError(t, err)
 	assert.Len(t, policies, 2)
 
@@ -116,7 +116,7 @@ func TestPostgresRepo_ListEnabledByAppID(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test ListEnabledByAppID
-	policies, err := repo.ListEnabledByAppID(ctx, appID)
+	policies, err := repo.ListEnabledByAppID(ctx, appID, 100, 0)
 	require.NoError(t, err)
 	assert.Len(t, policies, 1)
 	assert.Equal(t, enabledPolicyID, policies[0].ID)

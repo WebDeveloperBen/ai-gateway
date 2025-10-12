@@ -9,7 +9,8 @@ WHERE org_id = $1 AND name = $2 LIMIT 1;
 -- name: ListApplications :many
 SELECT * FROM applications
 WHERE org_id = $1
-ORDER BY name;
+ORDER BY name
+LIMIT $2 OFFSET $3;
 
 -- name: CreateApplication :one
 INSERT INTO applications (

@@ -13,7 +13,8 @@ SELECT * FROM usage_metrics
 WHERE app_id = $1
   AND timestamp >= $2
   AND timestamp <= $3
-ORDER BY timestamp DESC;
+ORDER BY timestamp DESC
+LIMIT $4 OFFSET $5;
 
 -- name: GetUsageMetricsByOrg :many
 SELECT * FROM usage_metrics
@@ -64,4 +65,5 @@ WHERE app_id = $1
   AND timestamp >= $2
   AND timestamp <= $3
 GROUP BY model_name, provider
-ORDER BY total_tokens DESC;
+ORDER BY total_tokens DESC
+LIMIT $4 OFFSET $5;

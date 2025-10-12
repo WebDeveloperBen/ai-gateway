@@ -86,12 +86,15 @@ WHERE app_id = $1
   AND timestamp <= $3
 GROUP BY model_name, provider
 ORDER BY total_tokens DESC
+LIMIT $4 OFFSET $5
 `
 
 type GetUsageByModelParams struct {
 	AppID       uuid.UUID          `json:"app_id"`
 	Timestamp   pgtype.Timestamptz `json:"timestamp"`
 	Timestamp_2 pgtype.Timestamptz `json:"timestamp_2"`
+	Limit       int32              `json:"limit"`
+	Offset      int32              `json:"offset"`
 }
 
 type GetUsageByModelRow struct {
@@ -104,7 +107,13 @@ type GetUsageByModelRow struct {
 }
 
 func (q *Queries) GetUsageByModel(ctx context.Context, arg GetUsageByModelParams) ([]GetUsageByModelRow, error) {
-	rows, err := q.db.Query(ctx, getUsageByModel, arg.AppID, arg.Timestamp, arg.Timestamp_2)
+	rows, err := q.db.Query(ctx, getUsageByModel,
+		arg.AppID,
+		arg.Timestamp,
+		arg.Timestamp_2,
+		arg.Limit,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -184,16 +193,25 @@ WHERE app_id = $1
   AND timestamp >= $2
   AND timestamp <= $3
 ORDER BY timestamp DESC
+LIMIT $4 OFFSET $5
 `
 
 type GetUsageMetricsByAppParams struct {
 	AppID       uuid.UUID          `json:"app_id"`
 	Timestamp   pgtype.Timestamptz `json:"timestamp"`
 	Timestamp_2 pgtype.Timestamptz `json:"timestamp_2"`
+	Limit       int32              `json:"limit"`
+	Offset      int32              `json:"offset"`
 }
 
 func (q *Queries) GetUsageMetricsByApp(ctx context.Context, arg GetUsageMetricsByAppParams) ([]UsageMetric, error) {
-	rows, err := q.db.Query(ctx, getUsageMetricsByApp, arg.AppID, arg.Timestamp, arg.Timestamp_2)
+	rows, err := q.db.Query(ctx, getUsageMetricsByApp,
+		arg.AppID,
+		arg.Timestamp,
+		arg.Timestamp_2,
+		arg.Limit,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}

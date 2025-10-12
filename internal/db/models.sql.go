@@ -157,10 +157,17 @@ const listEnabledModels = `-- name: ListEnabledModels :many
 SELECT id, org_id, provider, model_name, deployment_name, endpoint_url, auth_type, auth_config, metadata, enabled, created_at, updated_at FROM models
 WHERE org_id = $1 AND enabled = true
 ORDER BY provider, model_name
+LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) ListEnabledModels(ctx context.Context, orgID uuid.UUID) ([]Model, error) {
-	rows, err := q.db.Query(ctx, listEnabledModels, orgID)
+type ListEnabledModelsParams struct {
+	OrgID  uuid.UUID `json:"org_id"`
+	Limit  int32     `json:"limit"`
+	Offset int32     `json:"offset"`
+}
+
+func (q *Queries) ListEnabledModels(ctx context.Context, arg ListEnabledModelsParams) ([]Model, error) {
+	rows, err := q.db.Query(ctx, listEnabledModels, arg.OrgID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -196,10 +203,17 @@ const listModels = `-- name: ListModels :many
 SELECT id, org_id, provider, model_name, deployment_name, endpoint_url, auth_type, auth_config, metadata, enabled, created_at, updated_at FROM models
 WHERE org_id = $1
 ORDER BY provider, model_name
+LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) ListModels(ctx context.Context, orgID uuid.UUID) ([]Model, error) {
-	rows, err := q.db.Query(ctx, listModels, orgID)
+type ListModelsParams struct {
+	OrgID  uuid.UUID `json:"org_id"`
+	Limit  int32     `json:"limit"`
+	Offset int32     `json:"offset"`
+}
+
+func (q *Queries) ListModels(ctx context.Context, arg ListModelsParams) ([]Model, error) {
+	rows, err := q.db.Query(ctx, listModels, arg.OrgID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

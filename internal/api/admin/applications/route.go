@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 )
@@ -50,14 +51,15 @@ func (s *ApplicationService) RegisterRoutes(grp *huma.Group) {
 		Summary:     "List all applications",
 		Description: "Retrieves a list of all applications belonging to the organization.",
 		Tags:        []string{"Applications"},
-	}, exceptions.Handle(func(ctx context.Context, in *struct{}) (*ListApplicationsResponse, error) {
+	}, exceptions.Handle(func(ctx context.Context, in *model.ListRequest) (*ListApplicationsResponse, error) {
 		// Get org ID from context (set by middleware)
 		orgID, ok := ctx.Value("org_id").(uuid.UUID)
 		if !ok {
 			return nil, huma.Error401Unauthorized("organization not found in context")
 		}
 
-		apps, err := s.Applications.ListApplications(ctx, orgID)
+		normalized := model.NormalizePagination(*in)
+		apps, err := s.Applications.ListApplications(ctx, orgID, normalized.Limit, normalized.Offset)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("failed to list applications")
 		}

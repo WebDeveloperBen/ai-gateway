@@ -2,6 +2,8 @@ package usage
 
 import (
 	"time"
+
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 )
 
 type UsageMetric struct {
@@ -41,6 +43,7 @@ type GetUsageMetricsRequest struct {
 	AppID string `query:"app_id" required:"true"`
 	Start string `query:"start" required:"true"` // ISO 8601 format
 	End   string `query:"end" required:"true"`   // ISO 8601 format
+	model.ListRequest
 }
 
 type GetUsageMetricsResponse struct {
@@ -70,6 +73,7 @@ type GetUsageByModelRequest struct {
 	AppID string `path:"app_id" required:"true"`
 	Start string `query:"start" required:"true"`
 	End   string `query:"end" required:"true"`
+	model.ListRequest
 }
 
 type GetUsageByModelResponse struct {

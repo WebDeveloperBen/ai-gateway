@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 )
@@ -43,7 +44,8 @@ func (s *UsageServiceRouter) RegisterRoutes(grp *huma.Group) {
 			return nil, huma.Error400BadRequest("invalid end time (use RFC3339 format)")
 		}
 
-		metrics, err := s.Usage.GetMetricsByAppID(ctx, appID, start, end)
+		normalized := model.NormalizePagination(model.ListRequest{Limit: in.Limit, Offset: in.Offset})
+		metrics, err := s.Usage.GetMetricsByAppID(ctx, appID, start, end, normalized.Limit, normalized.Offset)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("failed to get usage metrics")
 		}
@@ -140,7 +142,8 @@ func (s *UsageServiceRouter) RegisterRoutes(grp *huma.Group) {
 			return nil, huma.Error400BadRequest("invalid end time (use RFC3339 format)")
 		}
 
-		summaries, err := s.Usage.GetUsageByModel(ctx, appID, start, end)
+		normalized := model.NormalizePagination(model.ListRequest{Limit: in.Limit, Offset: in.Offset})
+		summaries, err := s.Usage.GetUsageByModel(ctx, appID, start, end, normalized.Limit, normalized.Offset)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("failed to get usage by model")
 		}

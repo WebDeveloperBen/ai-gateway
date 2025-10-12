@@ -149,10 +149,17 @@ const listEnabledPolicies = `-- name: ListEnabledPolicies :many
 SELECT id, org_id, app_id, policy_type, config, enabled, created_at, updated_at FROM policies
 WHERE app_id = $1 AND enabled = true
 ORDER BY policy_type
+LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) ListEnabledPolicies(ctx context.Context, appID uuid.UUID) ([]Policy, error) {
-	rows, err := q.db.Query(ctx, listEnabledPolicies, appID)
+type ListEnabledPoliciesParams struct {
+	AppID  uuid.UUID `json:"app_id"`
+	Limit  int32     `json:"limit"`
+	Offset int32     `json:"offset"`
+}
+
+func (q *Queries) ListEnabledPolicies(ctx context.Context, arg ListEnabledPoliciesParams) ([]Policy, error) {
+	rows, err := q.db.Query(ctx, listEnabledPolicies, arg.AppID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -184,10 +191,17 @@ const listPolicies = `-- name: ListPolicies :many
 SELECT id, org_id, app_id, policy_type, config, enabled, created_at, updated_at FROM policies
 WHERE app_id = $1
 ORDER BY policy_type
+LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) ListPolicies(ctx context.Context, appID uuid.UUID) ([]Policy, error) {
-	rows, err := q.db.Query(ctx, listPolicies, appID)
+type ListPoliciesParams struct {
+	AppID  uuid.UUID `json:"app_id"`
+	Limit  int32     `json:"limit"`
+	Offset int32     `json:"offset"`
+}
+
+func (q *Queries) ListPolicies(ctx context.Context, arg ListPoliciesParams) ([]Policy, error) {
+	rows, err := q.db.Query(ctx, listPolicies, arg.AppID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

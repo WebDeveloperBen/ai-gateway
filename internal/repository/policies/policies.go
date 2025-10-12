@@ -9,8 +9,8 @@ import (
 
 type Reader interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*model.Policy, error)
-	ListByAppID(ctx context.Context, appID uuid.UUID) ([]*model.Policy, error)
-	ListEnabledByAppID(ctx context.Context, appID uuid.UUID) ([]*model.Policy, error)
+	ListByAppID(ctx context.Context, appID uuid.UUID, limit, offset int) ([]*model.Policy, error)
+	ListEnabledByAppID(ctx context.Context, appID uuid.UUID, limit, offset int) ([]*model.Policy, error)
 	GetByType(ctx context.Context, appID uuid.UUID, policyType model.PolicyType) ([]*model.Policy, error)
 }
 

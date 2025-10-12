@@ -60,3 +60,14 @@ type UpdatePolicyRequest struct {
 type UpdatePolicyResponse struct {
 	Body *Policy `json:"body"`
 }
+
+// Huma request types for list endpoints with pagination
+type ListPoliciesRequest struct {
+	AppID string `query:"app_id" required:"true"`
+	model.ListRequest
+}
+
+type ListEnabledPoliciesRequest struct {
+	AppID string `query:"app_id" required:"true"`
+	model.ListRequest
+}

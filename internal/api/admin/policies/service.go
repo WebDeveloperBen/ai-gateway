@@ -12,8 +12,8 @@ import (
 type PoliciesService interface {
 	CreatePolicy(ctx context.Context, orgID uuid.UUID, req CreatePolicyBody) (*Policy, error)
 	GetPolicy(ctx context.Context, id uuid.UUID) (*Policy, error)
-	ListPolicies(ctx context.Context, appID uuid.UUID) ([]*Policy, error)
-	ListEnabledPolicies(ctx context.Context, appID uuid.UUID) ([]*Policy, error)
+	ListPolicies(ctx context.Context, appID uuid.UUID, limit, offset int) ([]*Policy, error)
+	ListEnabledPolicies(ctx context.Context, appID uuid.UUID, limit, offset int) ([]*Policy, error)
 	GetPoliciesByType(ctx context.Context, appID uuid.UUID, policyType model.PolicyType) ([]*Policy, error)
 	UpdatePolicy(ctx context.Context, id uuid.UUID, req UpdatePolicyBody) (*Policy, error)
 	DeletePolicy(ctx context.Context, id uuid.UUID) error
@@ -62,8 +62,8 @@ func (s *policiesService) GetPolicy(ctx context.Context, id uuid.UUID) (*Policy,
 	return s.convertToAPI(policy), nil
 }
 
-func (s *policiesService) ListPolicies(ctx context.Context, appID uuid.UUID) ([]*Policy, error) {
-	policies, err := s.repo.ListByAppID(ctx, appID)
+func (s *policiesService) ListPolicies(ctx context.Context, appID uuid.UUID, limit, offset int) ([]*Policy, error) {
+	policies, err := s.repo.ListByAppID(ctx, appID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -75,8 +75,8 @@ func (s *policiesService) ListPolicies(ctx context.Context, appID uuid.UUID) ([]
 	return result, nil
 }
 
-func (s *policiesService) ListEnabledPolicies(ctx context.Context, appID uuid.UUID) ([]*Policy, error) {
-	policies, err := s.repo.ListEnabledByAppID(ctx, appID)
+func (s *policiesService) ListEnabledPolicies(ctx context.Context, appID uuid.UUID, limit, offset int) ([]*Policy, error) {
+	policies, err := s.repo.ListEnabledByAppID(ctx, appID, limit, offset)
 	if err != nil {
 		return nil, err
 	}

@@ -154,6 +154,8 @@ func TestStreamingResponseWithUsageRecordingAndPolicies(t *testing.T) {
 			AppID:       uuid.MustParse(testAppID),
 			Timestamp:   pgtype.Timestamptz{Time: oneHourAgo, Valid: true},
 			Timestamp_2: pgtype.Timestamptz{Time: now, Valid: true},
+			Limit:       100,
+			Offset:      0,
 		})
 		require.NoError(t, err)
 		require.Len(t, usageMetrics, 1, "Should have recorded one usage metric")
@@ -230,6 +232,8 @@ func TestStreamingResponseWithUsageRecordingAndPolicies(t *testing.T) {
 			AppID:       uuid.MustParse(testAppID),
 			Timestamp:   pgtype.Timestamptz{Time: oneHourAgo, Valid: true},
 			Timestamp_2: pgtype.Timestamptz{Time: now, Valid: true},
+			Limit:       100,
+			Offset:      0,
 		})
 		require.NoError(t, err)
 
@@ -309,6 +313,8 @@ func TestStreamingResponseWithUsageRecordingAndPolicies(t *testing.T) {
 			AppID:       uuid.MustParse(testAppID),
 			Timestamp:   pgtype.Timestamptz{Time: oneHourAgo, Valid: true},
 			Timestamp_2: pgtype.Timestamptz{Time: now, Valid: true},
+			Limit:       100,
+			Offset:      0,
 		})
 		require.NoError(t, err)
 		require.True(t, len(usageMetrics) >= 1, "Should have recorded usage metrics")
@@ -366,6 +372,8 @@ func TestStreamingResponseWithUsageRecordingAndPolicies(t *testing.T) {
 			AppID:       uuid.MustParse(testAppID),
 			Timestamp:   pgtype.Timestamptz{Time: oneHourAgo, Valid: true},
 			Timestamp_2: pgtype.Timestamptz{Time: now, Valid: true},
+			Limit:       100,
+			Offset:      0,
 		})
 		require.NoError(t, err)
 

@@ -45,8 +45,12 @@ func (r *postgresRepo) GetByID(ctx context.Context, id uuid.UUID) (*model.Policy
 	}, nil
 }
 
-func (r *postgresRepo) ListByAppID(ctx context.Context, appID uuid.UUID) ([]*model.Policy, error) {
-	policies, err := r.q.ListPolicies(ctx, appID)
+func (r *postgresRepo) ListByAppID(ctx context.Context, appID uuid.UUID, limit, offset int) ([]*model.Policy, error) {
+	policies, err := r.q.ListPolicies(ctx, db.ListPoliciesParams{
+		AppID:  appID,
+		Limit:  int32(limit),
+		Offset: int32(offset),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -72,8 +76,12 @@ func (r *postgresRepo) ListByAppID(ctx context.Context, appID uuid.UUID) ([]*mod
 	return result, nil
 }
 
-func (r *postgresRepo) ListEnabledByAppID(ctx context.Context, appID uuid.UUID) ([]*model.Policy, error) {
-	policies, err := r.q.ListEnabledPolicies(ctx, appID)
+func (r *postgresRepo) ListEnabledByAppID(ctx context.Context, appID uuid.UUID, limit, offset int) ([]*model.Policy, error) {
+	policies, err := r.q.ListEnabledPolicies(ctx, db.ListEnabledPoliciesParams{
+		AppID:  appID,
+		Limit:  int32(limit),
+		Offset: int32(offset),
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -57,8 +57,12 @@ func (r *postgresRepo) GetByName(ctx context.Context, orgID uuid.UUID, name stri
 	}, nil
 }
 
-func (r *postgresRepo) ListByOrgID(ctx context.Context, orgID uuid.UUID) ([]*model.Application, error) {
-	apps, err := r.q.ListApplications(ctx, orgID)
+func (r *postgresRepo) ListByOrgID(ctx context.Context, orgID uuid.UUID, limit, offset int) ([]*model.Application, error) {
+	apps, err := r.q.ListApplications(ctx, db.ListApplicationsParams{
+		OrgID:  orgID,
+		Limit:  int32(limit),
+		Offset: int32(offset),
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -122,7 +122,7 @@ func TestPostgresRepo_GetByAppID(t *testing.T) {
 	// Test GetByAppID
 	start := now.Add(-2 * time.Hour)
 	end := now.Add(time.Hour)
-	metrics, err := repo.GetByAppID(ctx, appID, start, end)
+	metrics, err := repo.GetByAppID(ctx, appID, start, end, 100, 0)
 	require.NoError(t, err)
 	assert.Len(t, metrics, 2)
 
@@ -249,7 +249,7 @@ func TestPostgresRepo_GetUsageByModel(t *testing.T) {
 	// Test GetUsageByModel
 	start := now.Add(-time.Hour)
 	end := now.Add(time.Hour)
-	summaries, err := repo.GetUsageByModel(ctx, appID, start, end)
+	summaries, err := repo.GetUsageByModel(ctx, appID, start, end, 100, 0)
 	require.NoError(t, err)
 	assert.Len(t, summaries, 2)
 
