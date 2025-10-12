@@ -3,91 +3,106 @@ package keys
 import (
 	"context"
 	"errors"
+	"time"
 
+	"github.com/WebDeveloperBen/ai-gateway/internal/db"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// Store is a concrete Postgres implementation of keys.Store.
 type store struct {
-	pool *pgxpool.Pool
+	queries *db.Queries
 }
 
 var _ KeyRepository = (*store)(nil)
 
-func NewPostgresStore(pool *pgxpool.Pool) *store {
-	return &store{pool: pool}
+func NewPostgresStore(queries *db.Queries) *store {
+	return &store{queries: queries}
 }
 
-// Insert stores key metadata and its PHC hash.
 func (s *store) Insert(ctx context.Context, k model.Key, phc string) error {
-	_, err := s.pool.Exec(ctx, `
-		INSERT INTO api_keys
-			(key_id, secret_phc, tenant, app, status, last_four, metadata, expires_at)
-		VALUES
-			($1,     $2,         $3,     $4,  $5,     $6,       COALESCE($7,'{}'::jsonb), $8)
-	`,
-		k.KeyID, phc, k.Tenant, k.App, string(k.Status), k.LastFour, k.Metadata, k.ExpiresAt,
-	)
+	var expiresAt pgtype.Timestamptz
+	if k.ExpiresAt != nil {
+		expiresAt = pgtype.Timestamptz{Time: *k.ExpiresAt, Valid: true}
+	}
+
+	_, err := s.queries.InsertAPIKey(ctx, db.InsertAPIKeyParams{
+		OrgID:      k.OrgID,
+		AppID:      k.AppID,
+		UserID:     k.UserID,
+		KeyPrefix:  k.KeyPrefix,
+		SecretPhc:  phc,
+		Status:     string(k.Status),
+		LastFour:   k.LastFour,
+		ExpiresAt:  expiresAt,
+		Metadata:   k.Metadata,
+	})
 	return err
 }
 
-// GetByKeyID returns key metadata (no PHC).
-func (s *store) GetByKeyID(ctx context.Context, keyID string) (*model.Key, error) {
-	row := s.pool.QueryRow(ctx, `
-		SELECT key_id, tenant, app, status, expires_at, last_used_at,
-		       COALESCE(metadata,'{}'::jsonb), created_at, COALESCE(last_four,'')
-		FROM api_keys
-		WHERE key_id = $1
-	`, keyID)
-
-	var (
-		k        model.Key
-		status   string
-		metadata []byte
-		lastFour string
-	)
-	err := row.Scan(
-		&k.KeyID, &k.Tenant, &k.App, &status, &k.ExpiresAt, &k.LastUsedAt,
-		&metadata, &k.CreatedAt, &lastFour,
-	)
+func (s *store) GetByKeyPrefix(ctx context.Context, keyPrefix string) (*model.Key, error) {
+	row, err := s.queries.GetAPIKeyByPrefix(ctx, keyPrefix)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, errors.New("key not found")
+		}
 		return nil, err
 	}
-	k.Status = model.KeyStatus(status)
-	k.Metadata = metadata
-	k.LastFour = lastFour
-	return &k, nil
+
+	var expiresAt *time.Time
+	if row.ExpiresAt.Valid {
+		expiresAt = &row.ExpiresAt.Time
+	}
+
+	var lastUsedAt *time.Time
+	if row.LastUsedAt.Valid {
+		lastUsedAt = &row.LastUsedAt.Time
+	}
+
+	return &model.Key{
+		ID:         row.ID,
+		OrgID:      row.OrgID,
+		AppID:      row.AppID,
+		UserID:     row.UserID,
+		KeyPrefix:  row.KeyPrefix,
+		Status:     model.KeyStatus(row.Status),
+		LastFour:   row.LastFour,
+		ExpiresAt:  expiresAt,
+		LastUsedAt: lastUsedAt,
+		Metadata:   row.Metadata,
+		CreatedAt:  row.CreatedAt.Time,
+	}, nil
 }
 
-// GetPHCByKeyID fetches the PHC (argon2id) string for verification.
-func (s *store) GetPHCByKeyID(ctx context.Context, keyID string) (string, error) {
-	var phc string
-	if err := s.pool.QueryRow(ctx, `
-		SELECT secret_phc FROM api_keys WHERE key_id = $1
-	`, keyID).Scan(&phc); err != nil {
+func (s *store) GetSecretPHCByPrefix(ctx context.Context, keyPrefix string) (string, error) {
+	phc, err := s.queries.GetSecretPHCByPrefix(ctx, keyPrefix)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", errors.New("key not found")
+		}
 		return "", err
 	}
 	return phc, nil
 }
 
-// TouchLastUsed updates last_used_at; best-effort.
-func (s *store) TouchLastUsed(ctx context.Context, keyID string) error {
-	_, err := s.pool.Exec(ctx, `
-		UPDATE api_keys SET last_used_at = now() WHERE key_id = $1
-	`, keyID)
-	return err
+func (s *store) TouchLastUsed(ctx context.Context, keyPrefix string) error {
+	return s.queries.UpdateAPIKeyLastUsed(ctx, keyPrefix)
 }
 
-// UpdateStatus sets the key status (active/revoked/expired).
-func (s *store) UpdateStatus(ctx context.Context, keyID string, status model.KeyStatus) error {
+func (s *store) UpdateStatus(ctx context.Context, keyPrefix string, status model.KeyStatus) error {
 	switch status {
 	case model.KeyActive, model.KeyRevoked, model.KeyExpired:
 	default:
 		return errors.New("invalid status")
 	}
-	_, err := s.pool.Exec(ctx, `
-		UPDATE api_keys SET status = $2 WHERE key_id = $1
-	`, keyID, string(status))
-	return err
+	return s.queries.UpdateAPIKeyStatus(ctx, db.UpdateAPIKeyStatusParams{
+		KeyPrefix: keyPrefix,
+		Status:    string(status),
+	})
+}
+
+func (s *store) Delete(ctx context.Context, id uuid.UUID) error {
+	return s.queries.DeleteAPIKey(ctx, id)
 }

@@ -19,6 +19,9 @@ type PoliciesService interface {
 	DeletePolicy(ctx context.Context, id uuid.UUID) error
 	EnablePolicy(ctx context.Context, id uuid.UUID) error
 	DisablePolicy(ctx context.Context, id uuid.UUID) error
+	AttachPolicyToApp(ctx context.Context, policyID, appID uuid.UUID) error
+	DetachPolicyFromApp(ctx context.Context, policyID, appID uuid.UUID) error
+	GetAppsForPolicy(ctx context.Context, policyID uuid.UUID) ([]*model.Application, error)
 }
 
 type policiesService struct {
@@ -30,9 +33,6 @@ func NewService(repo policies.Repository) PoliciesService {
 }
 
 func (s *policiesService) CreatePolicy(ctx context.Context, orgID uuid.UUID, req CreatePolicyBody) (*Policy, error) {
-	if req.AppID == "" {
-		return nil, errors.New("app_id is required")
-	}
 	if req.PolicyType == "" {
 		return nil, errors.New("policy_type is required")
 	}
@@ -40,14 +40,20 @@ func (s *policiesService) CreatePolicy(ctx context.Context, orgID uuid.UUID, req
 		return nil, errors.New("config is required")
 	}
 
-	appID, err := uuid.Parse(req.AppID)
-	if err != nil {
-		return nil, errors.New("invalid app_id")
-	}
-
-	policy, err := s.repo.Create(ctx, orgID, appID, req.PolicyType, req.Config, req.Enabled)
+	policy, err := s.repo.Create(ctx, orgID, req.PolicyType, req.Config, req.Enabled)
 	if err != nil {
 		return nil, err
+	}
+
+	// If appID is provided, attach the policy to the app
+	if req.AppID != "" {
+		appID, err := uuid.Parse(req.AppID)
+		if err != nil {
+			return nil, errors.New("invalid app_id")
+		}
+		if err := s.repo.AttachToApp(ctx, policy.ID, appID); err != nil {
+			return nil, err
+		}
 	}
 
 	return s.convertToAPI(policy), nil
@@ -129,11 +135,22 @@ func (s *policiesService) DisablePolicy(ctx context.Context, id uuid.UUID) error
 	return s.repo.Disable(ctx, id)
 }
 
+func (s *policiesService) AttachPolicyToApp(ctx context.Context, policyID, appID uuid.UUID) error {
+	return s.repo.AttachToApp(ctx, policyID, appID)
+}
+
+func (s *policiesService) DetachPolicyFromApp(ctx context.Context, policyID, appID uuid.UUID) error {
+	return s.repo.DetachFromApp(ctx, policyID, appID)
+}
+
+func (s *policiesService) GetAppsForPolicy(ctx context.Context, policyID uuid.UUID) ([]*model.Application, error) {
+	return s.repo.GetAppsForPolicy(ctx, policyID)
+}
+
 func (s *policiesService) convertToAPI(policy *model.Policy) *Policy {
 	return &Policy{
 		ID:         policy.ID.String(),
 		OrgID:      policy.OrgID.String(),
-		AppID:      policy.AppID.String(),
 		PolicyType: policy.PolicyType,
 		Config:     policy.Config,
 		Enabled:    policy.Enabled,

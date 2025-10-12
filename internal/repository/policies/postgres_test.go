@@ -2,8 +2,6 @@ package policies
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"os"
 	"testing"
 
@@ -63,7 +61,6 @@ func TestPostgresRepo_GetByID(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, policyID, policy.ID)
 	assert.Equal(t, orgID, policy.OrgID)
-	assert.Equal(t, appID, policy.AppID)
 	assert.Equal(t, model.PolicyTypeRateLimit, policy.PolicyType)
 	assert.True(t, policy.Enabled)
 	assert.NotZero(t, policy.CreatedAt)
@@ -150,14 +147,13 @@ func TestPostgresRepo_Create(t *testing.T) {
 	ctx := context.Background()
 
 	// Create test data
-	orgID, appID := fixtures.CreateTestOrgAndApp(t)
+	orgID, _ := fixtures.CreateTestOrgAndApp(t)
 
 	// Test Create
 	config := map[string]any{"requests_per_minute": 150}
-	policy, err := repo.Create(ctx, orgID, appID, model.PolicyTypeRateLimit, config, true)
+	policy, err := repo.Create(ctx, orgID, model.PolicyTypeRateLimit, config, true)
 	require.NoError(t, err)
 	assert.Equal(t, orgID, policy.OrgID)
-	assert.Equal(t, appID, policy.AppID)
 	assert.Equal(t, model.PolicyTypeRateLimit, policy.PolicyType)
 	assert.Equal(t, config, policy.Config)
 	assert.True(t, policy.Enabled)
@@ -226,7 +222,7 @@ func TestPostgresRepo_Delete(t *testing.T) {
 	// Verify deletion
 	_, err = repo.GetByID(ctx, policyID)
 	assert.Error(t, err)
-	assert.True(t, errors.Is(err, sql.ErrNoRows), "expected sql.ErrNoRows, got %v", err)
+	assert.Contains(t, err.Error(), "policy not found")
 }
 
 func TestPostgresRepo_GetByID_NotFound(t *testing.T) {
@@ -237,7 +233,7 @@ func TestPostgresRepo_GetByID_NotFound(t *testing.T) {
 	// Test GetByID with non-existent ID
 	_, err := repo.GetByID(ctx, uuid.New())
 	assert.Error(t, err)
-	assert.True(t, errors.Is(err, sql.ErrNoRows), "expected sql.ErrNoRows, got %v", err)
+	assert.Contains(t, err.Error(), "policy not found")
 }
 
 func TestPostgresRepo_Create_Validation(t *testing.T) {
@@ -248,17 +244,12 @@ func TestPostgresRepo_Create_Validation(t *testing.T) {
 	config := map[string]any{"test": "config"}
 
 	// Test Create with nil orgID
-	_, err := repo.Create(ctx, uuid.Nil, uuid.New(), model.PolicyTypeRateLimit, config, true)
+	_, err := repo.Create(ctx, uuid.Nil, model.PolicyTypeRateLimit, config, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "orgID cannot be nil")
 
-	// Test Create with nil appID
-	_, err = repo.Create(ctx, uuid.New(), uuid.Nil, model.PolicyTypeRateLimit, config, true)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "appID cannot be nil")
-
 	// Test Create with empty policyType
-	_, err = repo.Create(ctx, uuid.New(), uuid.New(), "", config, true)
+	_, err = repo.Create(ctx, uuid.New(), "", config, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "policyType cannot be empty")
 }

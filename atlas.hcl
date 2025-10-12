@@ -6,12 +6,12 @@ env "local" {
 
   // Define the URL of the database which is managed in
   // this environment.
-  url = getenv("ATLAS_DATABASE_URL")
+  url = getenv("POSTGRES_DSN")
 
-  // Define the URL of the Dev Database for this environment
-  // See: https://atlasgo.io/concepts/dev-database
-  // Using docker ephemeral database with extensions pre-loaded
-  dev = "docker://postgres/16/dev"
+  // Use a persistent dev database (postgres-dev from docker compose)
+  // This database should have schema_pre.sql applied to it
+  // Run: docker compose up -d postgres-dev && psql <dev-url> -f db/schema_pre.sql
+  dev = "postgres://atlas:atlas@localhost:5433/atlas_dev?sslmode=disable"
 
   // Diff policy to ignore triggers and policies (managed in schema_post.sql)
   diff {
@@ -25,8 +25,7 @@ env "local" {
     dir = "file://db/migrations"
     // Format of the migration directory: atlas, flyway, goose, dbmate or golang-migrate.
     format = goose
-    // Baseline version
-    baseline = "20250929133943"
+    // No baseline needed - dev database is manually synced via db:dev:init
   }
 }
 

@@ -29,10 +29,9 @@ func (s *PolicyService) RegisterRoutes(grp *huma.Group) {
 		DefaultStatus: http.StatusCreated,
 		Tags:          []string{"Policies"},
 	}, exceptions.Handle(func(ctx context.Context, in *CreatePolicyRequest) (*CreatePolicyResponse, error) {
-		// Get org ID from context (set by middleware)
-		orgID, ok := ctx.Value("org_id").(uuid.UUID)
-		if !ok {
-			return nil, huma.Error401Unauthorized("organization not found in context")
+		orgID, err := uuid.Parse(in.Body.OrgID)
+		if err != nil {
+			return nil, huma.Error400BadRequest("invalid organization ID")
 		}
 
 		policy, err := s.Policies.CreatePolicy(ctx, orgID, in.Body)
@@ -107,7 +106,7 @@ func (s *PolicyService) RegisterRoutes(grp *huma.Group) {
 
 		policy, err := s.Policies.GetPolicy(ctx, id)
 		if err != nil {
-			return nil, huma.Error404NotFound("policy not found")
+			return nil, err
 		}
 
 		return &GetPolicyResponse{Body: policy}, nil
@@ -203,6 +202,66 @@ func (s *PolicyService) RegisterRoutes(grp *huma.Group) {
 
 		if err := s.Policies.DisablePolicy(ctx, id); err != nil {
 			return nil, huma.Error404NotFound("policy not found")
+		}
+
+		return &struct{}{}, nil
+	}))
+
+	// POST /policies/{id}/attach/{app_id}
+	huma.Register(grp, huma.Operation{
+		OperationID:   "admin-attach-policy-to-app",
+		Method:        http.MethodPost,
+		Path:          "/policies/{id}/attach/{app_id}",
+		Summary:       "Attach policy to application",
+		Description:   "Attaches an existing policy to a specific application.",
+		DefaultStatus: http.StatusNoContent,
+		Tags:          []string{"Policies"},
+	}, exceptions.Handle(func(ctx context.Context, in *struct {
+		PolicyID string `path:"id" required:"true"`
+		AppID    string `path:"app_id" required:"true"`
+	}) (*struct{}, error) {
+		policyID, err := uuid.Parse(in.PolicyID)
+		if err != nil {
+			return nil, huma.Error400BadRequest("invalid policy ID")
+		}
+
+		appID, err := uuid.Parse(in.AppID)
+		if err != nil {
+			return nil, huma.Error400BadRequest("invalid app ID")
+		}
+
+		if err := s.Policies.AttachPolicyToApp(ctx, policyID, appID); err != nil {
+			return nil, huma.Error400BadRequest("failed to attach policy to app")
+		}
+
+		return &struct{}{}, nil
+	}))
+
+	// POST /policies/{id}/detach/{app_id}
+	huma.Register(grp, huma.Operation{
+		OperationID:   "admin-detach-policy-from-app",
+		Method:        http.MethodPost,
+		Path:          "/policies/{id}/detach/{app_id}",
+		Summary:       "Detach policy from application",
+		Description:   "Detaches a policy from a specific application.",
+		DefaultStatus: http.StatusNoContent,
+		Tags:          []string{"Policies"},
+	}, exceptions.Handle(func(ctx context.Context, in *struct {
+		PolicyID string `path:"id" required:"true"`
+		AppID    string `path:"app_id" required:"true"`
+	}) (*struct{}, error) {
+		policyID, err := uuid.Parse(in.PolicyID)
+		if err != nil {
+			return nil, huma.Error400BadRequest("invalid policy ID")
+		}
+
+		appID, err := uuid.Parse(in.AppID)
+		if err != nil {
+			return nil, huma.Error400BadRequest("invalid app ID")
+		}
+
+		if err := s.Policies.DetachPolicyFromApp(ctx, policyID, appID); err != nil {
+			return nil, huma.Error400BadRequest("failed to detach policy from app")
 		}
 
 		return &struct{}{}, nil

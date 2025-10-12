@@ -26,39 +26,51 @@
 
 #### Application Configs Repository
 
-- [ ] Create `internal/repository/application_configs` package
-- [ ] Implement environment-specific config management
-- [ ] Add config validation and type safety
-- [ ] Add tests for config operations
+- [x] Create `internal/repository/application_configs` package
+- [x] Add config validation and type safety
+- [x] Add tests for config operations
 
-#### Models Repository
+#### Catalog Repository
 
-- [ ] Create `internal/repository/models` package
-- [ ] Implement model deployment CRUD
-- [ ] Add provider mapping (OpenAI ↔ Azure)
-- [ ] Add model validation and status tracking
-- [ ] Add tests for model operations
+- [x] Create `internal/repository/catalog` package
+- [x] Implement model deployment CRUD
+- [x] Add provider mapping (OpenAI ↔ Azure)
+- [x] Add model validation and status tracking
+- [x] Add tests for model operations
 
 #### Policies Repository
 
-- [ ] Create `internal/repository/policies` package
-- [ ] Implement policy CRUD with cache invalidation
-- [ ] Add policy validation and type checking
-- [ ] Integrate with policy engine cache clearing
-- [ ] Add tests for policy operations
+- [x] Create `internal/repository/policies` package
+- [x] Implement policy CRUD with cache invalidation
+- [x] Add policy validation and type checking
+- [x] Integrate with policy engine cache clearing
+- [x] Add tests for policy operations
 
 #### Usage Repository
 
-- [ ] Create `internal/repository/usage` package
-- [ ] Implement usage metrics storage and retrieval
-- [ ] Add rollup queries for dashboards (by org, app, time range)
-- [ ] Add aggregation functions (sum tokens, avg latency)
-- [ ] Add tests for usage queries
+- [x] Create `internal/repository/usage` package
+- [x] Implement usage metrics storage and retrieval
+- [x] Add rollup queries for dashboards (by org, app, time range)
+- [x] Add aggregation functions (sum tokens, avg latency)
+- [x] Add tests for usage queries
 
 ### Phase 6: Clean up the api docs again
 
-- [ ] Fix the Proxy router docs
-- [ ] Fix the /azure/openai router docs
+- [x] Fix the Proxy router docs
+- [x] Fix the /azure/openai router docs
+
+### Phase 7: Database Schema & Migration System
+
+- [x] Set up Atlas + Goose migration pipeline
+- [x] Configure persistent postgres-dev container with schema_pre.sql auto-loading
+- [x] Implement declarative HCL schema in `db/schema/`
+- [x] Migrate policies to many-to-many relationship with applications
+- [x] Add `policy_applications` join table
+- [x] Update all test fixtures for new schema
+- [x] Fix repository tests after schema migration
+- [x] Create comprehensive DATABASE.md documentation
+- [x] Simplify TaskFile.yml tasks (coverage: 7→3, benchmarks: 5→3)
+- [x] Add `schema:update` workflow command
 
 ## Testing & Coverage Expansion 🚧
 

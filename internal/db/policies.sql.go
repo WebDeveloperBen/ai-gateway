@@ -11,18 +11,33 @@ import (
 	"github.com/google/uuid"
 )
 
+const attachPolicyToApp = `-- name: AttachPolicyToApp :exec
+INSERT INTO policy_applications (policy_id, app_id)
+VALUES ($1, $2)
+ON CONFLICT (policy_id, app_id) DO NOTHING
+`
+
+type AttachPolicyToAppParams struct {
+	PolicyID uuid.UUID `json:"policy_id"`
+	AppID    uuid.UUID `json:"app_id"`
+}
+
+func (q *Queries) AttachPolicyToApp(ctx context.Context, arg AttachPolicyToAppParams) error {
+	_, err := q.db.Exec(ctx, attachPolicyToApp, arg.PolicyID, arg.AppID)
+	return err
+}
+
 const createPolicy = `-- name: CreatePolicy :one
 INSERT INTO policies (
-  org_id, app_id, policy_type, config, enabled
+  org_id, policy_type, config, enabled
 ) VALUES (
-  $1, $2, $3, $4, $5
+  $1, $2, $3, $4
 )
-RETURNING id, org_id, app_id, policy_type, config, enabled, created_at, updated_at
+RETURNING id, org_id, policy_type, config, enabled, created_at, updated_at
 `
 
 type CreatePolicyParams struct {
 	OrgID      uuid.UUID `json:"org_id"`
-	AppID      uuid.UUID `json:"app_id"`
 	PolicyType string    `json:"policy_type"`
 	Config     []byte    `json:"config"`
 	Enabled    bool      `json:"enabled"`
@@ -31,7 +46,6 @@ type CreatePolicyParams struct {
 func (q *Queries) CreatePolicy(ctx context.Context, arg CreatePolicyParams) (Policy, error) {
 	row := q.db.QueryRow(ctx, createPolicy,
 		arg.OrgID,
-		arg.AppID,
 		arg.PolicyType,
 		arg.Config,
 		arg.Enabled,
@@ -40,7 +54,6 @@ func (q *Queries) CreatePolicy(ctx context.Context, arg CreatePolicyParams) (Pol
 	err := row.Scan(
 		&i.ID,
 		&i.OrgID,
-		&i.AppID,
 		&i.PolicyType,
 		&i.Config,
 		&i.Enabled,
@@ -57,6 +70,21 @@ WHERE id = $1
 
 func (q *Queries) DeletePolicy(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, deletePolicy, id)
+	return err
+}
+
+const detachPolicyFromApp = `-- name: DetachPolicyFromApp :exec
+DELETE FROM policy_applications
+WHERE policy_id = $1 AND app_id = $2
+`
+
+type DetachPolicyFromAppParams struct {
+	PolicyID uuid.UUID `json:"policy_id"`
+	AppID    uuid.UUID `json:"app_id"`
+}
+
+func (q *Queries) DetachPolicyFromApp(ctx context.Context, arg DetachPolicyFromAppParams) error {
+	_, err := q.db.Exec(ctx, detachPolicyFromApp, arg.PolicyID, arg.AppID)
 	return err
 }
 
@@ -84,10 +112,45 @@ func (q *Queries) EnablePolicy(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const getAppsForPolicy = `-- name: GetAppsForPolicy :many
+SELECT a.id, a.org_id, a.name, a.description, a.created_at, a.updated_at FROM applications a
+JOIN policy_applications pa ON a.id = pa.app_id
+WHERE pa.policy_id = $1
+ORDER BY a.name
+`
+
+func (q *Queries) GetAppsForPolicy(ctx context.Context, policyID uuid.UUID) ([]Application, error) {
+	rows, err := q.db.Query(ctx, getAppsForPolicy, policyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Application
+	for rows.Next() {
+		var i Application
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrgID,
+			&i.Name,
+			&i.Description,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPoliciesByType = `-- name: GetPoliciesByType :many
-SELECT id, org_id, app_id, policy_type, config, enabled, created_at, updated_at FROM policies
-WHERE app_id = $1 AND policy_type = $2
-ORDER BY created_at
+SELECT p.id, p.org_id, p.policy_type, p.config, p.enabled, p.created_at, p.updated_at FROM policies p
+JOIN policy_applications pa ON p.id = pa.policy_id
+WHERE pa.app_id = $1 AND p.policy_type = $2
+ORDER BY p.created_at
 `
 
 type GetPoliciesByTypeParams struct {
@@ -107,7 +170,41 @@ func (q *Queries) GetPoliciesByType(ctx context.Context, arg GetPoliciesByTypePa
 		if err := rows.Scan(
 			&i.ID,
 			&i.OrgID,
-			&i.AppID,
+			&i.PolicyType,
+			&i.Config,
+			&i.Enabled,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPoliciesForApp = `-- name: GetPoliciesForApp :many
+SELECT p.id, p.org_id, p.policy_type, p.config, p.enabled, p.created_at, p.updated_at FROM policies p
+JOIN policy_applications pa ON p.id = pa.policy_id
+WHERE pa.app_id = $1
+ORDER BY p.policy_type
+`
+
+func (q *Queries) GetPoliciesForApp(ctx context.Context, appID uuid.UUID) ([]Policy, error) {
+	rows, err := q.db.Query(ctx, getPoliciesForApp, appID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Policy
+	for rows.Next() {
+		var i Policy
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrgID,
 			&i.PolicyType,
 			&i.Config,
 			&i.Enabled,
@@ -125,7 +222,7 @@ func (q *Queries) GetPoliciesByType(ctx context.Context, arg GetPoliciesByTypePa
 }
 
 const getPolicy = `-- name: GetPolicy :one
-SELECT id, org_id, app_id, policy_type, config, enabled, created_at, updated_at FROM policies
+SELECT id, org_id, policy_type, config, enabled, created_at, updated_at FROM policies
 WHERE id = $1 LIMIT 1
 `
 
@@ -135,7 +232,6 @@ func (q *Queries) GetPolicy(ctx context.Context, id uuid.UUID) (Policy, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.OrgID,
-		&i.AppID,
 		&i.PolicyType,
 		&i.Config,
 		&i.Enabled,
@@ -146,9 +242,10 @@ func (q *Queries) GetPolicy(ctx context.Context, id uuid.UUID) (Policy, error) {
 }
 
 const listEnabledPolicies = `-- name: ListEnabledPolicies :many
-SELECT id, org_id, app_id, policy_type, config, enabled, created_at, updated_at FROM policies
-WHERE app_id = $1 AND enabled = true
-ORDER BY policy_type
+SELECT p.id, p.org_id, p.policy_type, p.config, p.enabled, p.created_at, p.updated_at FROM policies p
+JOIN policy_applications pa ON p.id = pa.policy_id
+WHERE pa.app_id = $1 AND p.enabled = true
+ORDER BY p.policy_type
 LIMIT $2 OFFSET $3
 `
 
@@ -170,7 +267,6 @@ func (q *Queries) ListEnabledPolicies(ctx context.Context, arg ListEnabledPolici
 		if err := rows.Scan(
 			&i.ID,
 			&i.OrgID,
-			&i.AppID,
 			&i.PolicyType,
 			&i.Config,
 			&i.Enabled,
@@ -188,9 +284,10 @@ func (q *Queries) ListEnabledPolicies(ctx context.Context, arg ListEnabledPolici
 }
 
 const listPolicies = `-- name: ListPolicies :many
-SELECT id, org_id, app_id, policy_type, config, enabled, created_at, updated_at FROM policies
-WHERE app_id = $1
-ORDER BY policy_type
+SELECT p.id, p.org_id, p.policy_type, p.config, p.enabled, p.created_at, p.updated_at FROM policies p
+JOIN policy_applications pa ON p.id = pa.policy_id
+WHERE pa.app_id = $1
+ORDER BY p.policy_type
 LIMIT $2 OFFSET $3
 `
 
@@ -212,7 +309,6 @@ func (q *Queries) ListPolicies(ctx context.Context, arg ListPoliciesParams) ([]P
 		if err := rows.Scan(
 			&i.ID,
 			&i.OrgID,
-			&i.AppID,
 			&i.PolicyType,
 			&i.Config,
 			&i.Enabled,
@@ -236,7 +332,7 @@ SET policy_type = $2,
     enabled = $4,
     updated_at = now()
 WHERE id = $1
-RETURNING id, org_id, app_id, policy_type, config, enabled, created_at, updated_at
+RETURNING id, org_id, policy_type, config, enabled, created_at, updated_at
 `
 
 type UpdatePolicyParams struct {
@@ -257,7 +353,6 @@ func (q *Queries) UpdatePolicy(ctx context.Context, arg UpdatePolicyParams) (Pol
 	err := row.Scan(
 		&i.ID,
 		&i.OrgID,
-		&i.AppID,
 		&i.PolicyType,
 		&i.Config,
 		&i.Enabled,

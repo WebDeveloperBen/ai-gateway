@@ -9,81 +9,240 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createAPIKey = `-- name: CreateAPIKey :one
-INSERT INTO api_keys (org_id, user_id, key_hash)
-VALUES ($1, $2, $3)
-RETURNING id, org_id, user_id, key_hash, created_at, last_used
-`
-
-type CreateAPIKeyParams struct {
-	OrgID   uuid.UUID `json:"org_id"`
-	UserID  uuid.UUID `json:"user_id"`
-	KeyHash string    `json:"key_hash"`
-}
-
-func (q *Queries) CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (ApiKey, error) {
-	row := q.db.QueryRow(ctx, createAPIKey, arg.OrgID, arg.UserID, arg.KeyHash)
-	var i ApiKey
-	err := row.Scan(
-		&i.ID,
-		&i.OrgID,
-		&i.UserID,
-		&i.KeyHash,
-		&i.CreatedAt,
-		&i.LastUsed,
-	)
-	return i, err
-}
-
-const getAPIKey = `-- name: GetAPIKey :one
-SELECT id, org_id, user_id, key_hash, created_at, last_used
-FROM api_keys
+const deleteAPIKey = `-- name: DeleteAPIKey :exec
+DELETE FROM api_keys
 WHERE id = $1
 `
 
-func (q *Queries) GetAPIKey(ctx context.Context, id uuid.UUID) (ApiKey, error) {
-	row := q.db.QueryRow(ctx, getAPIKey, id)
+func (q *Queries) DeleteAPIKey(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteAPIKey, id)
+	return err
+}
+
+const getAPIKeyByID = `-- name: GetAPIKeyByID :one
+SELECT id, org_id, app_id, user_id, key_prefix, secret_phc, status, last_four, expires_at, last_used_at, metadata, created_at FROM api_keys
+WHERE id = $1
+`
+
+func (q *Queries) GetAPIKeyByID(ctx context.Context, id uuid.UUID) (ApiKey, error) {
+	row := q.db.QueryRow(ctx, getAPIKeyByID, id)
 	var i ApiKey
 	err := row.Scan(
 		&i.ID,
 		&i.OrgID,
+		&i.AppID,
 		&i.UserID,
-		&i.KeyHash,
+		&i.KeyPrefix,
+		&i.SecretPhc,
+		&i.Status,
+		&i.LastFour,
+		&i.ExpiresAt,
+		&i.LastUsedAt,
+		&i.Metadata,
 		&i.CreatedAt,
-		&i.LastUsed,
 	)
 	return i, err
 }
 
-const getAPIKeyByHash = `-- name: GetAPIKeyByHash :one
-SELECT id, org_id, user_id, key_hash, created_at, last_used
-FROM api_keys
-WHERE key_hash = $1
+const getAPIKeyByPrefix = `-- name: GetAPIKeyByPrefix :one
+SELECT id, org_id, app_id, user_id, key_prefix, secret_phc, status, last_four, expires_at, last_used_at, metadata, created_at FROM api_keys
+WHERE key_prefix = $1
 `
 
-func (q *Queries) GetAPIKeyByHash(ctx context.Context, keyHash string) (ApiKey, error) {
-	row := q.db.QueryRow(ctx, getAPIKeyByHash, keyHash)
+func (q *Queries) GetAPIKeyByPrefix(ctx context.Context, keyPrefix string) (ApiKey, error) {
+	row := q.db.QueryRow(ctx, getAPIKeyByPrefix, keyPrefix)
 	var i ApiKey
 	err := row.Scan(
 		&i.ID,
 		&i.OrgID,
+		&i.AppID,
 		&i.UserID,
-		&i.KeyHash,
+		&i.KeyPrefix,
+		&i.SecretPhc,
+		&i.Status,
+		&i.LastFour,
+		&i.ExpiresAt,
+		&i.LastUsedAt,
+		&i.Metadata,
 		&i.CreatedAt,
-		&i.LastUsed,
 	)
 	return i, err
+}
+
+const getSecretPHCByPrefix = `-- name: GetSecretPHCByPrefix :one
+SELECT secret_phc FROM api_keys
+WHERE key_prefix = $1
+`
+
+func (q *Queries) GetSecretPHCByPrefix(ctx context.Context, keyPrefix string) (string, error) {
+	row := q.db.QueryRow(ctx, getSecretPHCByPrefix, keyPrefix)
+	var secret_phc string
+	err := row.Scan(&secret_phc)
+	return secret_phc, err
+}
+
+const insertAPIKey = `-- name: InsertAPIKey :one
+INSERT INTO api_keys (
+  org_id,
+  app_id,
+  user_id,
+  key_prefix,
+  secret_phc,
+  status,
+  last_four,
+  expires_at,
+  metadata
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING id, org_id, app_id, user_id, key_prefix, secret_phc, status, last_four, expires_at, last_used_at, metadata, created_at
+`
+
+type InsertAPIKeyParams struct {
+	OrgID     uuid.UUID          `json:"org_id"`
+	AppID     uuid.UUID          `json:"app_id"`
+	UserID    uuid.UUID          `json:"user_id"`
+	KeyPrefix string             `json:"key_prefix"`
+	SecretPhc string             `json:"secret_phc"`
+	Status    string             `json:"status"`
+	LastFour  string             `json:"last_four"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	Metadata  []byte             `json:"metadata"`
+}
+
+func (q *Queries) InsertAPIKey(ctx context.Context, arg InsertAPIKeyParams) (ApiKey, error) {
+	row := q.db.QueryRow(ctx, insertAPIKey,
+		arg.OrgID,
+		arg.AppID,
+		arg.UserID,
+		arg.KeyPrefix,
+		arg.SecretPhc,
+		arg.Status,
+		arg.LastFour,
+		arg.ExpiresAt,
+		arg.Metadata,
+	)
+	var i ApiKey
+	err := row.Scan(
+		&i.ID,
+		&i.OrgID,
+		&i.AppID,
+		&i.UserID,
+		&i.KeyPrefix,
+		&i.SecretPhc,
+		&i.Status,
+		&i.LastFour,
+		&i.ExpiresAt,
+		&i.LastUsedAt,
+		&i.Metadata,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const listAPIKeysByAppID = `-- name: ListAPIKeysByAppID :many
+SELECT id, org_id, app_id, user_id, key_prefix, secret_phc, status, last_four, expires_at, last_used_at, metadata, created_at FROM api_keys
+WHERE app_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListAPIKeysByAppID(ctx context.Context, appID uuid.UUID) ([]ApiKey, error) {
+	rows, err := q.db.Query(ctx, listAPIKeysByAppID, appID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ApiKey
+	for rows.Next() {
+		var i ApiKey
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrgID,
+			&i.AppID,
+			&i.UserID,
+			&i.KeyPrefix,
+			&i.SecretPhc,
+			&i.Status,
+			&i.LastFour,
+			&i.ExpiresAt,
+			&i.LastUsedAt,
+			&i.Metadata,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAPIKeysByOrgID = `-- name: ListAPIKeysByOrgID :many
+SELECT id, org_id, app_id, user_id, key_prefix, secret_phc, status, last_four, expires_at, last_used_at, metadata, created_at FROM api_keys
+WHERE org_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListAPIKeysByOrgID(ctx context.Context, orgID uuid.UUID) ([]ApiKey, error) {
+	rows, err := q.db.Query(ctx, listAPIKeysByOrgID, orgID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ApiKey
+	for rows.Next() {
+		var i ApiKey
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrgID,
+			&i.AppID,
+			&i.UserID,
+			&i.KeyPrefix,
+			&i.SecretPhc,
+			&i.Status,
+			&i.LastFour,
+			&i.ExpiresAt,
+			&i.LastUsedAt,
+			&i.Metadata,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateAPIKeyLastUsed = `-- name: UpdateAPIKeyLastUsed :exec
 UPDATE api_keys
-SET last_used = now()
-WHERE id = $1
+SET last_used_at = now()
+WHERE key_prefix = $1
 `
 
-func (q *Queries) UpdateAPIKeyLastUsed(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, updateAPIKeyLastUsed, id)
+func (q *Queries) UpdateAPIKeyLastUsed(ctx context.Context, keyPrefix string) error {
+	_, err := q.db.Exec(ctx, updateAPIKeyLastUsed, keyPrefix)
+	return err
+}
+
+const updateAPIKeyStatus = `-- name: UpdateAPIKeyStatus :exec
+UPDATE api_keys
+SET status = $2
+WHERE key_prefix = $1
+`
+
+type UpdateAPIKeyStatusParams struct {
+	KeyPrefix string `json:"key_prefix"`
+	Status    string `json:"status"`
+}
+
+func (q *Queries) UpdateAPIKeyStatus(ctx context.Context, arg UpdateAPIKeyStatusParams) error {
+	_, err := q.db.Exec(ctx, updateAPIKeyStatus, arg.KeyPrefix, arg.Status)
 	return err
 }

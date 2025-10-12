@@ -55,7 +55,7 @@ func TestPostgresRepo_Create(t *testing.T) {
 
 	// Create test data
 	orgID, appID := fixtures.CreateTestOrgAndApp(t)
-	keyID := fixtures.CreateTestAPIKey(t, orgID)
+	keyID := fixtures.CreateTestAPIKey(t, orgID, appID)
 
 	// Test Create
 	metric := &model.UsageMetric{
@@ -83,7 +83,7 @@ func TestPostgresRepo_GetByAppID(t *testing.T) {
 
 	// Create test data
 	orgID, appID := fixtures.CreateTestOrgAndApp(t)
-	keyID := fixtures.CreateTestAPIKey(t, orgID)
+	keyID := fixtures.CreateTestAPIKey(t, orgID, appID)
 
 	// Create usage metrics
 	now := time.Now()
@@ -140,7 +140,7 @@ func TestPostgresRepo_SumTokensByAppID(t *testing.T) {
 
 	// Create test data
 	orgID, appID := fixtures.CreateTestOrgAndApp(t)
-	keyID := fixtures.CreateTestAPIKey(t, orgID)
+	keyID := fixtures.CreateTestAPIKey(t, orgID, appID)
 
 	// Create usage metrics
 	now := time.Now()
@@ -195,7 +195,7 @@ func TestPostgresRepo_GetUsageByModel(t *testing.T) {
 
 	// Create test data
 	orgID, appID := fixtures.CreateTestOrgAndApp(t)
-	keyID := fixtures.CreateTestAPIKey(t, orgID)
+	keyID := fixtures.CreateTestAPIKey(t, orgID, appID)
 
 	// Create usage metrics
 	now := time.Now()

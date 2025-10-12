@@ -63,7 +63,7 @@ func TestStreamingResponseWithUsageRecordingAndPolicies(t *testing.T) {
 	testAppID := appID.String()
 
 	// Create test API key
-	testKeyID := fixtures.CreateTestAPIKey(t, orgID)
+	testKeyID := fixtures.CreateTestAPIKey(t, orgID, appID)
 
 	// Create test policies (token limit policy to test post-checks)
 	tokenLimitConfig := `{"max_completion_tokens": 100}`

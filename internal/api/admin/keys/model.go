@@ -20,8 +20,9 @@ type APIKey struct {
 
 // Request/Response body types
 type MintKeyRequestBody struct {
-	Tenant   string
-	App      string
+	OrgID    string
+	AppID    string
+	UserID   string
 	TTL      time.Duration
 	Prefix   string
 	Metadata map[string]any

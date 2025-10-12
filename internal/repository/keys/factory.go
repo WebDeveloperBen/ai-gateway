@@ -4,13 +4,15 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/WebDeveloperBen/ai-gateway/internal/db"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 )
 
 func NewKeyRepository(ctx context.Context, cfg model.RepositoryConfig) (KeyRepository, error) {
 	switch cfg.Backend {
 	case model.RepositoryPostgres:
-		return NewPostgresStore(cfg.PGPool), nil
+		queries := db.New(cfg.PGPool)
+		return NewPostgresStore(queries), nil
 	case model.RepositoryMemory:
 		return NewMemoryStore(), nil
 	default:

@@ -4,9 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
@@ -15,8 +17,8 @@ import (
 
 type KeysService interface {
 	MintKey(ctx context.Context, req MintKeyRequestBody) (MintKeyResponse, error)
-	RevokeKey(ctx context.Context, keyID string) error
-	GetByKeyID(ctx context.Context, keyID string) (APIKey, error)
+	RevokeKey(ctx context.Context, keyPrefix string) error
+	GetByKeyPrefix(ctx context.Context, keyPrefix string) (APIKey, error)
 }
 
 type keysService struct {
@@ -29,17 +31,32 @@ func NewService(store keys.KeyRepository, hasher keys.Hasher) KeysService {
 }
 
 func (s *keysService) MintKey(ctx context.Context, req MintKeyRequestBody) (MintKeyResponse, error) {
-	if req.Tenant == "" || req.App == "" {
-		return MintKeyResponse{}, errors.New("tenant & app required")
+	if req.OrgID == "" || req.AppID == "" || req.UserID == "" {
+		return MintKeyResponse{}, errors.New("orgID, appID & userID required")
 	}
+
+	orgID, err := uuid.Parse(req.OrgID)
+	if err != nil {
+		return MintKeyResponse{}, errors.New("invalid orgID")
+	}
+
+	appID, err := uuid.Parse(req.AppID)
+	if err != nil {
+		return MintKeyResponse{}, errors.New("invalid appID")
+	}
+
+	userID, err := uuid.Parse(req.UserID)
+	if err != nil {
+		return MintKeyResponse{}, errors.New("invalid userID")
+	}
+
 	prefix := req.Prefix
 	if prefix == "" {
 		prefix = "sk_live"
 	}
 
-	// id + secret
 	id := ulid.Make().String()
-	keyID := prefix + "_" + id
+	keyPrefix := prefix + "_" + id
 
 	secret := make([]byte, 32)
 	if _, err := rand.Read(secret); err != nil {
@@ -47,13 +64,11 @@ func (s *keysService) MintKey(ctx context.Context, req MintKeyRequestBody) (Mint
 	}
 	secretB64 := base64.RawStdEncoding.EncodeToString(secret)
 
-	// PHC (random salt is generated inside Hash)
 	phc, err := s.hasher.Hash(secret)
 	if err != nil {
 		return MintKeyResponse{}, err
 	}
 
-	// optional expiry
 	var exp *time.Time
 	if req.TTL > 0 {
 		t := time.Now().Add(req.TTL)
@@ -65,16 +80,23 @@ func (s *keysService) MintKey(ctx context.Context, req MintKeyRequestBody) (Mint
 		last4 = secretB64[len(secretB64)-4:]
 	}
 
-	// persist metadata via shared keys.Store
+	metadata := []byte("{}")
+	if req.Metadata != nil {
+		metadata, err = json.Marshal(req.Metadata)
+		if err != nil {
+			return MintKeyResponse{}, err
+		}
+	}
+
 	k := model.Key{
-		KeyID:     keyID,
-		Tenant:    req.Tenant,
-		App:       req.App,
+		OrgID:     orgID,
+		AppID:     appID,
+		UserID:    userID,
+		KeyPrefix: keyPrefix,
 		Status:    model.KeyActive,
 		ExpiresAt: exp,
 		LastFour:  last4,
-		Metadata:  []byte("{}"),
-		// CreatedAt is filled by DB default; ok to leave zero here
+		Metadata:  metadata,
 	}
 	if err := s.store.Insert(ctx, k, phc); err != nil {
 		return MintKeyResponse{}, err
@@ -82,11 +104,11 @@ func (s *keysService) MintKey(ctx context.Context, req MintKeyRequestBody) (Mint
 
 	return MintKeyResponse{
 		Body: MintKeyResponseBody{
-			Token: keyID + "." + secretB64, // show ONCE
+			Token: keyPrefix + "." + secretB64,
 			Key: APIKey{
-				KeyID:     keyID,
-				Tenant:    req.Tenant,
-				App:       req.App,
+				KeyID:     keyPrefix,
+				Tenant:    req.OrgID,
+				App:       req.AppID,
 				Status:    model.KeyActive,
 				ExpiresAt: exp,
 				LastFour:  last4,
@@ -95,23 +117,22 @@ func (s *keysService) MintKey(ctx context.Context, req MintKeyRequestBody) (Mint
 	}, nil
 }
 
-func (s *keysService) RevokeKey(ctx context.Context, keyID string) error {
-	return s.store.UpdateStatus(ctx, keyID, model.KeyRevoked)
+func (s *keysService) RevokeKey(ctx context.Context, keyPrefix string) error {
+	return s.store.UpdateStatus(ctx, keyPrefix, model.KeyRevoked)
 }
 
-func (s *keysService) GetByKeyID(ctx context.Context, keyID string) (APIKey, error) {
-	rec, err := s.store.GetByKeyID(ctx, keyID)
+func (s *keysService) GetByKeyPrefix(ctx context.Context, keyPrefix string) (APIKey, error) {
+	rec, err := s.store.GetByKeyPrefix(ctx, keyPrefix)
 	if err != nil || rec == nil {
 		return APIKey{}, errors.New("not found")
 	}
 	return APIKey{
-		KeyID:      rec.KeyID,
-		Tenant:     rec.Tenant,
-		App:        rec.App,
-		Status:     model.KeyStatus(rec.Status),
+		KeyID:      rec.KeyPrefix,
+		Tenant:     rec.OrgID.String(),
+		App:        rec.AppID.String(),
+		Status:     rec.Status,
 		ExpiresAt:  rec.ExpiresAt,
 		LastUsedAt: rec.LastUsedAt,
 		LastFour:   rec.LastFour,
-		// Metadata: map if you expose it in admin API
 	}, nil
 }

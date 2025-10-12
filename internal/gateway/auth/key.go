@@ -28,7 +28,7 @@ func (a *APIKeyAuthenticator) Authenticate(r *http.Request) (keyID string, keyDa
 		return "", nil, errors.New("unauthorized")
 	}
 
-	rec, err := a.Keys.GetByKeyID(r.Context(), keyID)
+	rec, err := a.Keys.GetByKeyPrefix(r.Context(), keyID)
 	if err != nil || rec == nil {
 		_ = padWork(a.Hasher)
 		return "", nil, errors.New("unauthorized")
@@ -41,7 +41,7 @@ func (a *APIKeyAuthenticator) Authenticate(r *http.Request) (keyID string, keyDa
 		return "", nil, errors.New("unauthorized")
 	}
 
-	phc, err := a.Keys.GetPHCByKeyID(r.Context(), keyID)
+	phc, err := a.Keys.GetSecretPHCByPrefix(r.Context(), keyID)
 	if err != nil {
 		_ = padWork(a.Hasher)
 		return "", nil, errors.New("unauthorized")
@@ -54,13 +54,11 @@ func (a *APIKeyAuthenticator) Authenticate(r *http.Request) (keyID string, keyDa
 	_ = a.Keys.TouchLastUsed(r.Context(), keyID)
 
 	// Build KeyData from record
-	// Note: For now, using Tenant as OrgID and App as AppID (legacy fields)
-	// TODO: Once api_keys schema has proper org_id/app_id/user_id UUIDs, update this
 	data := &KeyData{
 		KeyID:  keyID,
-		OrgID:  rec.Tenant, // Legacy field mapping
-		AppID:  rec.App,    // Legacy field mapping
-		UserID: "",         // Not available in current schema
+		OrgID:  rec.OrgID.String(),
+		AppID:  rec.AppID.String(),
+		UserID: rec.UserID.String(),
 	}
 
 	return keyID, data, nil

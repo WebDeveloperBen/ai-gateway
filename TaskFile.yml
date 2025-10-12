@@ -13,9 +13,14 @@ tasks:
       - go build -o ./bin/proxy ./cmd/proxy
 
   dev:
-    desc: Run the application in development mode with migrations and Air hot reloading (requires docker compose to be running)
+    desc: Run the application in development mode with hot reloading
     cmds:
+      - echo "🚀 Starting development environment..."
+      - docker compose up -d
+      - task wait-for-db
+      - echo "📦 Running migrations..."
       - task migrate
+      - echo "🔥 Starting Air hot reload..."
       - air
 
   run:
@@ -59,120 +64,52 @@ tasks:
   # -------------------
 
   coverage:
-    desc: Run tests with coverage for all packages
+    desc: Run tests with coverage and show summary
     cmds:
       - go test -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out | tail -1
 
   coverage:html:
-    desc: Generate HTML coverage report
+    desc: Generate and open HTML coverage report
     cmds:
       - go test -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out -o coverage.html
-      - 'echo "Coverage report generated: coverage.html"'
-
-  coverage:func:
-    desc: Show function-level coverage report
-    cmds:
-      - go test -coverprofile=coverage.out ./...
-      - go tool cover -func=coverage.out
+      - |
+        echo "✅ Coverage report: coverage.html"
 
   coverage:check:
-    desc: Check if coverage meets minimum threshold (80%)
+    desc: Check if total coverage meets 80% threshold
     cmds:
       - go test -coverprofile=coverage.out ./...
       - |
         COVERAGE=$(go tool cover -func=coverage.out | grep "total:" | awk '{print $3}' | sed 's/%//')
         echo "Total coverage: ${COVERAGE}%"
         if (( $(echo "$COVERAGE < 80" | bc -l) )); then
-          echo "❌ Coverage below 80% threshold"
+          echo "❌ Coverage below 80%"
           exit 1
-        else
-          echo "✅ Coverage meets 80% threshold"
         fi
-
-  coverage:internal:
-    desc: Run coverage on internal packages only (excludes cmd/ and generated code)
-    cmds:
-      - go test -coverprofile=coverage-internal.out ./internal/...
-      - go tool cover -func=coverage-internal.out
-
-  coverage:internal:check:
-    desc: Check if internal package coverage meets 80% threshold
-    cmds:
-      - go test -coverprofile=coverage-internal.out ./internal/...
-      - |
-        COVERAGE=$(go tool cover -func=coverage-internal.out | grep "total:" | awk '{print $3}' | sed 's/%//')
-        echo "Internal coverage: ${COVERAGE}%"
-        if (( $(echo "$COVERAGE < 80" | bc -l) )); then
-          echo "❌ Internal coverage below 80% threshold"
-          exit 1
-        else
-          echo "✅ Internal coverage meets 80% threshold"
-        fi
-
-  coverage:business:
-    desc: Run coverage on business logic packages (excludes generated/db/infra code)
-    cmds:
-      - |
-        go test -coverprofile=coverage-business.out \
-          ./internal/api/gateway \
-          ./internal/gateway/middleware \
-          ./internal/gateway/policies \
-          ./internal/provider/azureopenai \
-          ./internal/provider/openai
-      - go tool cover -func=coverage-business.out
-
-  coverage:business:check:
-    desc: Check if business logic coverage meets 80% threshold
-    cmds:
-      - |
-        go test -coverprofile=coverage-business.out \
-          ./internal/api/gateway \
-          ./internal/gateway/middleware \
-          ./internal/gateway/policies \
-          ./internal/provider/azureopenai \
-          ./internal/provider/openai
-      - |
-        COVERAGE=$(go tool cover -func=coverage-business.out | grep "total:" | awk '{print $3}' | sed 's/%//')
-        echo "Business logic coverage: ${COVERAGE}%"
-        if (( $(echo "$COVERAGE < 80" | bc -l) )); then
-          echo "❌ Business logic coverage below 80% threshold"
-          exit 1
-        else
-          echo "✅ Business logic coverage meets 80% threshold"
-        fi
+        echo "✅ Coverage meets threshold"
 
   # -------------------
   # Benchmarking tasks
   # -------------------
 
   bench:
-    desc: Run all benchmarks
+    desc: Run benchmarks for key packages
     cmds:
-      - go test -bench=. -benchmem -benchtime=1s ./internal/gateway/middleware
-      - go test -bench=. -benchmem -benchtime=1s ./internal/gateway/policies
-
-  bench:middleware:
-    desc: Benchmark middleware components
-    cmds:
-      - go test -bench=. -benchmem -benchtime=1s ./internal/gateway/middleware
-
-  bench:policies:
-    desc: Benchmark policy engine
-    cmds:
-      - go test -bench=. -benchmem -benchtime=1s ./internal/gateway/policies
-
-  bench:compare:
-    desc: Compare benchmarks before/after changes (requires old.txt baseline)
-    cmds:
-      - go test -bench=. -benchmem ./internal/gateway/middleware > new.txt
-      - benchstat old.txt new.txt
+      - go test -bench=. -benchmem -benchtime=1s ./internal/...
 
   bench:save:
-    desc: Save current benchmark results as baseline
+    desc: Save current benchmark as baseline for comparison
     cmds:
-      - go test -bench=. -benchmem ./internal/gateway/middleware > old.txt
-      - echo "Baseline saved to old.txt"
+      - go test -bench=. -benchmem ./internal/... > bench-baseline.txt
+      - echo "✅ Baseline saved to bench-baseline.txt"
+
+  bench:compare:
+    desc: Compare current benchmarks against baseline
+    cmds:
+      - go test -bench=. -benchmem ./internal/... > bench-current.txt
+      - benchstat bench-baseline.txt bench-current.txt
 
   # -------------------
   # Atlas database tasks
@@ -206,9 +143,6 @@ tasks:
     desc: Create and apply new Goose migration from schema changes
     cmds:
       - atlas migrate diff --env local {{.CLI_ARGS | default "auto_migration"}}
-      - psql "$POSTGRES_DSN" -f db/schema_pre.sql
-      - goose -dir ./db/migrations postgres "$POSTGRES_DSN" up
-      - psql "$POSTGRES_DSN" -f db/schema_post.sql
 
   db:migrate:status:
     desc: Show Goose migration status
@@ -242,7 +176,7 @@ tasks:
   generate:
     desc: Generate SQLC code from queries
     cmds:
-      - atlas schema inspect --url "$ATLAS_DATABASE_URL" --exclude goose_db_version --format '{{ sql . "  " }}' > db/schema.sql
+      - atlas schema inspect --url "$ATLAS_DATABASE_URL" --exclude goose_db_version --format '{{"{{ sql . }}"}}' > db/schema.sql
       - rm -rf ./internal/db && sqlc generate -f ./db/sqlc.yml
 
   generate:sqlc:

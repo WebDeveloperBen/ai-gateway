@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type KeyStatus string
@@ -13,13 +15,15 @@ const (
 )
 
 type Key struct {
-	KeyID      string
-	Tenant     string
-	App        string
+	ID         uuid.UUID
+	OrgID      uuid.UUID
+	AppID      uuid.UUID
+	UserID     uuid.UUID
+	KeyPrefix  string
 	Status     KeyStatus
+	LastFour   string
 	ExpiresAt  *time.Time
 	LastUsedAt *time.Time
-	LastFour   string
 	Metadata   []byte // raw JSON
 	CreatedAt  time.Time
 }

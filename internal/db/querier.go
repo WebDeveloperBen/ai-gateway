@@ -13,7 +13,7 @@ import (
 type Querier interface {
 	AssignRoleToOrg(ctx context.Context, arg AssignRoleToOrgParams) (OrganisationRole, error)
 	AssignRoleToUser(ctx context.Context, arg AssignRoleToUserParams) error
-	CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (ApiKey, error)
+	AttachPolicyToApp(ctx context.Context, arg AttachPolicyToAppParams) error
 	CreateApplication(ctx context.Context, arg CreateApplicationParams) (Application, error)
 	CreateApplicationConfig(ctx context.Context, arg CreateApplicationConfigParams) (ApplicationConfig, error)
 	CreateModel(ctx context.Context, arg CreateModelParams) (Model, error)
@@ -22,11 +22,13 @@ type Querier interface {
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 	CreateUsageMetric(ctx context.Context, arg CreateUsageMetricParams) (UsageMetric, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteAPIKey(ctx context.Context, id uuid.UUID) error
 	DeleteApplication(ctx context.Context, id uuid.UUID) error
 	DeleteApplicationConfig(ctx context.Context, id uuid.UUID) error
 	DeleteModel(ctx context.Context, id uuid.UUID) error
 	DeletePolicy(ctx context.Context, id uuid.UUID) error
 	DeleteRole(ctx context.Context, id uuid.UUID) error
+	DetachPolicyFromApp(ctx context.Context, arg DetachPolicyFromAppParams) error
 	DisableModel(ctx context.Context, id uuid.UUID) error
 	DisablePolicy(ctx context.Context, id uuid.UUID) error
 	EnableModel(ctx context.Context, id uuid.UUID) error
@@ -36,20 +38,26 @@ type Querier interface {
 	FindRoleByID(ctx context.Context, id uuid.UUID) (Role, error)
 	FindRoleByName(ctx context.Context, name string) (Role, error)
 	FindUserBySubOrEmail(ctx context.Context, arg FindUserBySubOrEmailParams) (User, error)
-	GetAPIKey(ctx context.Context, id uuid.UUID) (ApiKey, error)
-	GetAPIKeyByHash(ctx context.Context, keyHash string) (ApiKey, error)
+	GetAPIKeyByID(ctx context.Context, id uuid.UUID) (ApiKey, error)
+	GetAPIKeyByPrefix(ctx context.Context, keyPrefix string) (ApiKey, error)
 	GetApplication(ctx context.Context, id uuid.UUID) (Application, error)
 	GetApplicationByName(ctx context.Context, arg GetApplicationByNameParams) (Application, error)
 	GetApplicationConfig(ctx context.Context, id uuid.UUID) (ApplicationConfig, error)
 	GetApplicationConfigByEnv(ctx context.Context, arg GetApplicationConfigByEnvParams) (ApplicationConfig, error)
+	GetAppsForPolicy(ctx context.Context, policyID uuid.UUID) ([]Application, error)
 	GetModel(ctx context.Context, id uuid.UUID) (Model, error)
 	GetModelByProviderAndName(ctx context.Context, arg GetModelByProviderAndNameParams) (Model, error)
 	GetPoliciesByType(ctx context.Context, arg GetPoliciesByTypeParams) ([]Policy, error)
+	GetPoliciesForApp(ctx context.Context, appID uuid.UUID) ([]Policy, error)
 	GetPolicy(ctx context.Context, id uuid.UUID) (Policy, error)
+	GetSecretPHCByPrefix(ctx context.Context, keyPrefix string) (string, error)
 	GetUsageByModel(ctx context.Context, arg GetUsageByModelParams) ([]GetUsageByModelRow, error)
 	GetUsageMetricsByAPIKey(ctx context.Context, arg GetUsageMetricsByAPIKeyParams) ([]UsageMetric, error)
 	GetUsageMetricsByApp(ctx context.Context, arg GetUsageMetricsByAppParams) ([]UsageMetric, error)
 	GetUsageMetricsByOrg(ctx context.Context, arg GetUsageMetricsByOrgParams) ([]UsageMetric, error)
+	InsertAPIKey(ctx context.Context, arg InsertAPIKeyParams) (ApiKey, error)
+	ListAPIKeysByAppID(ctx context.Context, appID uuid.UUID) ([]ApiKey, error)
+	ListAPIKeysByOrgID(ctx context.Context, orgID uuid.UUID) ([]ApiKey, error)
 	ListApplicationConfigs(ctx context.Context, appID uuid.UUID) ([]ApplicationConfig, error)
 	ListApplications(ctx context.Context, arg ListApplicationsParams) ([]Application, error)
 	ListEnabledModels(ctx context.Context, arg ListEnabledModelsParams) ([]Model, error)
@@ -59,7 +67,8 @@ type Querier interface {
 	ListRoles(ctx context.Context) ([]Role, error)
 	SumTokensByApp(ctx context.Context, arg SumTokensByAppParams) (SumTokensByAppRow, error)
 	SumTokensByOrg(ctx context.Context, arg SumTokensByOrgParams) (SumTokensByOrgRow, error)
-	UpdateAPIKeyLastUsed(ctx context.Context, id uuid.UUID) error
+	UpdateAPIKeyLastUsed(ctx context.Context, keyPrefix string) error
+	UpdateAPIKeyStatus(ctx context.Context, arg UpdateAPIKeyStatusParams) error
 	UpdateApplication(ctx context.Context, arg UpdateApplicationParams) (Application, error)
 	UpdateApplicationConfig(ctx context.Context, arg UpdateApplicationConfigParams) (ApplicationConfig, error)
 	UpdateModel(ctx context.Context, arg UpdateModelParams) (Model, error)

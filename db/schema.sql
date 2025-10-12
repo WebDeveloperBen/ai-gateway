@@ -18,6 +18,21 @@ CREATE TABLE "public"."goose_db_version" (
   "tstamp" timestamp NOT NULL DEFAULT now(),
   PRIMARY KEY ("id")
 );
+-- Create "applications" table
+CREATE TABLE "public"."applications" (
+  "id" uuid NOT NULL DEFAULT public.uuid_generate_v4(),
+  "org_id" uuid NOT NULL DEFAULT public.app_current_org(),
+  "name" text NOT NULL,
+  "description" text NULL,
+  "created_at" timestamptz NOT NULL DEFAULT now(),
+  "updated_at" timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY ("id"),
+  CONSTRAINT "applications_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organisations" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+);
+-- Create index "idx_applications_name_org" to table: "applications"
+CREATE UNIQUE INDEX "idx_applications_name_org" ON "public"."applications" ("org_id", "name");
+-- Create index "idx_applications_org" to table: "applications"
+CREATE INDEX "idx_applications_org" ON "public"."applications" ("org_id");
 -- Create "users" table
 CREATE TABLE "public"."users" (
   "id" uuid NOT NULL DEFAULT public.uuid_generate_v4(),
@@ -40,31 +55,25 @@ CREATE INDEX "idx_users_sub" ON "public"."users" ("sub");
 CREATE TABLE "public"."api_keys" (
   "id" uuid NOT NULL DEFAULT public.uuid_generate_v4(),
   "org_id" uuid NOT NULL DEFAULT public.app_current_org(),
+  "app_id" uuid NOT NULL,
   "user_id" uuid NOT NULL,
-  "key_hash" text NOT NULL,
+  "key_prefix" text NOT NULL,
+  "secret_phc" text NOT NULL,
+  "status" text NOT NULL DEFAULT 'active',
+  "last_four" text NOT NULL,
+  "expires_at" timestamptz NULL,
+  "last_used_at" timestamptz NULL,
+  "metadata" jsonb NOT NULL DEFAULT '{}',
   "created_at" timestamptz NOT NULL DEFAULT now(),
-  "last_used" timestamptz NULL,
   PRIMARY KEY ("id"),
+  CONSTRAINT "api_keys_app_id_fkey" FOREIGN KEY ("app_id") REFERENCES "public"."applications" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "api_keys_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organisations" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "api_keys_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
--- Create index "idx_api_keys_org_user" to table: "api_keys"
-CREATE INDEX "idx_api_keys_org_user" ON "public"."api_keys" ("org_id", "user_id");
--- Create "applications" table
-CREATE TABLE "public"."applications" (
-  "id" uuid NOT NULL DEFAULT public.uuid_generate_v4(),
-  "org_id" uuid NOT NULL DEFAULT public.app_current_org(),
-  "name" text NOT NULL,
-  "description" text NULL,
-  "created_at" timestamptz NOT NULL DEFAULT now(),
-  "updated_at" timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY ("id"),
-  CONSTRAINT "applications_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organisations" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
-);
--- Create index "idx_applications_name_org" to table: "applications"
-CREATE UNIQUE INDEX "idx_applications_name_org" ON "public"."applications" ("org_id", "name");
--- Create index "idx_applications_org" to table: "applications"
-CREATE INDEX "idx_applications_org" ON "public"."applications" ("org_id");
+-- Create index "idx_api_keys_org_app" to table: "api_keys"
+CREATE INDEX "idx_api_keys_org_app" ON "public"."api_keys" ("org_id", "app_id");
+-- Create index "idx_api_keys_prefix" to table: "api_keys"
+CREATE INDEX "idx_api_keys_prefix" ON "public"."api_keys" ("key_prefix");
 -- Create "application_configs" table
 CREATE TABLE "public"."application_configs" (
   "id" uuid NOT NULL DEFAULT public.uuid_generate_v4(),
@@ -169,22 +178,31 @@ CREATE INDEX "idx_org_users_user" ON "public"."organisation_users" ("user_id");
 CREATE TABLE "public"."policies" (
   "id" uuid NOT NULL DEFAULT public.uuid_generate_v4(),
   "org_id" uuid NOT NULL DEFAULT public.app_current_org(),
-  "app_id" uuid NOT NULL,
   "policy_type" text NOT NULL,
   "config" jsonb NOT NULL DEFAULT '{}',
   "enabled" boolean NOT NULL DEFAULT true,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY ("id"),
-  CONSTRAINT "policies_app_id_fkey" FOREIGN KEY ("app_id") REFERENCES "public"."applications" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "policies_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organisations" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
--- Create index "idx_policies_app_enabled" to table: "policies"
-CREATE INDEX "idx_policies_app_enabled" ON "public"."policies" ("app_id", "enabled");
 -- Create index "idx_policies_org" to table: "policies"
 CREATE INDEX "idx_policies_org" ON "public"."policies" ("org_id");
 -- Create index "idx_policies_type" to table: "policies"
 CREATE INDEX "idx_policies_type" ON "public"."policies" ("policy_type");
+-- Create "policy_applications" table
+CREATE TABLE "public"."policy_applications" (
+  "policy_id" uuid NOT NULL,
+  "app_id" uuid NOT NULL,
+  "created_at" timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY ("policy_id", "app_id"),
+  CONSTRAINT "policy_applications_app_id_fkey" FOREIGN KEY ("app_id") REFERENCES "public"."applications" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "policy_applications_policy_id_fkey" FOREIGN KEY ("policy_id") REFERENCES "public"."policies" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+);
+-- Create index "idx_policy_applications_app" to table: "policy_applications"
+CREATE INDEX "idx_policy_applications_app" ON "public"."policy_applications" ("app_id");
+-- Create index "idx_policy_applications_policy" to table: "policy_applications"
+CREATE INDEX "idx_policy_applications_policy" ON "public"."policy_applications" ("policy_id");
 -- Create "usage_metrics" table
 CREATE TABLE "public"."usage_metrics" (
   "id" uuid NOT NULL DEFAULT public.uuid_generate_v4(),

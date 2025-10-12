@@ -22,7 +22,6 @@ const (
 type Policy struct {
 	ID         uuid.UUID
 	OrgID      uuid.UUID
-	AppID      uuid.UUID
 	PolicyType PolicyType
 	Config     map[string]any // JSON blob
 	Enabled    bool

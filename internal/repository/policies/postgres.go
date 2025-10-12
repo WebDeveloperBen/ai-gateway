@@ -2,11 +2,11 @@ package policies
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 
 	"github.com/WebDeveloperBen/ai-gateway/internal/db"
+	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions/pg"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 	"github.com/google/uuid"
 )
@@ -19,13 +19,12 @@ func NewPostgresRepo(q *db.Queries) Repository {
 	return &postgresRepo{q: q}
 }
 
+var handleDBError = pg.MakeErrorHandler("policy")
+
 func (r *postgresRepo) GetByID(ctx context.Context, id uuid.UUID) (*model.Policy, error) {
 	policy, err := r.q.GetPolicy(ctx, id)
-	if err == sql.ErrNoRows {
-		return nil, err
-	}
 	if err != nil {
-		return nil, err
+		return nil, handleDBError(err)
 	}
 
 	config, err := r.unmarshalConfig(policy.Config)
@@ -36,7 +35,6 @@ func (r *postgresRepo) GetByID(ctx context.Context, id uuid.UUID) (*model.Policy
 	return &model.Policy{
 		ID:         policy.ID,
 		OrgID:      policy.OrgID,
-		AppID:      policy.AppID,
 		PolicyType: model.PolicyType(policy.PolicyType),
 		Config:     config,
 		Enabled:    policy.Enabled,
@@ -65,7 +63,6 @@ func (r *postgresRepo) ListByAppID(ctx context.Context, appID uuid.UUID, limit, 
 		result[i] = &model.Policy{
 			ID:         policy.ID,
 			OrgID:      policy.OrgID,
-			AppID:      policy.AppID,
 			PolicyType: model.PolicyType(policy.PolicyType),
 			Config:     config,
 			Enabled:    policy.Enabled,
@@ -96,7 +93,6 @@ func (r *postgresRepo) ListEnabledByAppID(ctx context.Context, appID uuid.UUID, 
 		result[i] = &model.Policy{
 			ID:         policy.ID,
 			OrgID:      policy.OrgID,
-			AppID:      policy.AppID,
 			PolicyType: model.PolicyType(policy.PolicyType),
 			Config:     config,
 			Enabled:    policy.Enabled,
@@ -126,7 +122,6 @@ func (r *postgresRepo) GetByType(ctx context.Context, appID uuid.UUID, policyTyp
 		result[i] = &model.Policy{
 			ID:         policy.ID,
 			OrgID:      policy.OrgID,
-			AppID:      policy.AppID,
 			PolicyType: model.PolicyType(policy.PolicyType),
 			Config:     config,
 			Enabled:    policy.Enabled,
@@ -137,12 +132,9 @@ func (r *postgresRepo) GetByType(ctx context.Context, appID uuid.UUID, policyTyp
 	return result, nil
 }
 
-func (r *postgresRepo) Create(ctx context.Context, orgID, appID uuid.UUID, policyType model.PolicyType, config map[string]any, enabled bool) (*model.Policy, error) {
+func (r *postgresRepo) Create(ctx context.Context, orgID uuid.UUID, policyType model.PolicyType, config map[string]any, enabled bool) (*model.Policy, error) {
 	if orgID == uuid.Nil {
 		return nil, errors.New("orgID cannot be nil")
-	}
-	if appID == uuid.Nil {
-		return nil, errors.New("appID cannot be nil")
 	}
 	if policyType == "" {
 		return nil, errors.New("policyType cannot be empty")
@@ -155,7 +147,6 @@ func (r *postgresRepo) Create(ctx context.Context, orgID, appID uuid.UUID, polic
 
 	policy, err := r.q.CreatePolicy(ctx, db.CreatePolicyParams{
 		OrgID:      orgID,
-		AppID:      appID,
 		PolicyType: string(policyType),
 		Config:     configBytes,
 		Enabled:    enabled,
@@ -167,7 +158,6 @@ func (r *postgresRepo) Create(ctx context.Context, orgID, appID uuid.UUID, polic
 	return &model.Policy{
 		ID:         policy.ID,
 		OrgID:      policy.OrgID,
-		AppID:      policy.AppID,
 		PolicyType: model.PolicyType(policy.PolicyType),
 		Config:     config,
 		Enabled:    policy.Enabled,
@@ -202,7 +192,6 @@ func (r *postgresRepo) Update(ctx context.Context, id uuid.UUID, policyType mode
 	return &model.Policy{
 		ID:         policy.ID,
 		OrgID:      policy.OrgID,
-		AppID:      policy.AppID,
 		PolicyType: model.PolicyType(policy.PolicyType),
 		Config:     config,
 		Enabled:    policy.Enabled,
@@ -230,6 +219,58 @@ func (r *postgresRepo) Disable(ctx context.Context, id uuid.UUID) error {
 		return errors.New("id cannot be nil")
 	}
 	return r.q.DisablePolicy(ctx, id)
+}
+
+func (r *postgresRepo) GetAppsForPolicy(ctx context.Context, policyID uuid.UUID) ([]*model.Application, error) {
+	if policyID == uuid.Nil {
+		return nil, errors.New("policyID cannot be nil")
+	}
+
+	apps, err := r.q.GetAppsForPolicy(ctx, policyID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*model.Application, len(apps))
+	for i, app := range apps {
+		result[i] = &model.Application{
+			ID:          app.ID,
+			OrgID:       app.OrgID,
+			Name:        app.Name,
+			Description: app.Description,
+			CreatedAt:   app.CreatedAt.Time,
+			UpdatedAt:   app.UpdatedAt.Time,
+		}
+	}
+	return result, nil
+}
+
+func (r *postgresRepo) AttachToApp(ctx context.Context, policyID, appID uuid.UUID) error {
+	if policyID == uuid.Nil {
+		return errors.New("policyID cannot be nil")
+	}
+	if appID == uuid.Nil {
+		return errors.New("appID cannot be nil")
+	}
+
+	return r.q.AttachPolicyToApp(ctx, db.AttachPolicyToAppParams{
+		PolicyID: policyID,
+		AppID:    appID,
+	})
+}
+
+func (r *postgresRepo) DetachFromApp(ctx context.Context, policyID, appID uuid.UUID) error {
+	if policyID == uuid.Nil {
+		return errors.New("policyID cannot be nil")
+	}
+	if appID == uuid.Nil {
+		return errors.New("appID cannot be nil")
+	}
+
+	return r.q.DetachPolicyFromApp(ctx, db.DetachPolicyFromAppParams{
+		PolicyID: policyID,
+		AppID:    appID,
+	})
 }
 
 func (r *postgresRepo) marshalConfig(config map[string]any) ([]byte, error) {

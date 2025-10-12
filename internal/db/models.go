@@ -10,12 +10,18 @@ import (
 )
 
 type ApiKey struct {
-	ID        uuid.UUID          `json:"id"`
-	OrgID     uuid.UUID          `json:"org_id"`
-	UserID    uuid.UUID          `json:"user_id"`
-	KeyHash   string             `json:"key_hash"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	LastUsed  pgtype.Timestamptz `json:"last_used"`
+	ID         uuid.UUID          `json:"id"`
+	OrgID      uuid.UUID          `json:"org_id"`
+	AppID      uuid.UUID          `json:"app_id"`
+	UserID     uuid.UUID          `json:"user_id"`
+	KeyPrefix  string             `json:"key_prefix"`
+	SecretPhc  string             `json:"secret_phc"`
+	Status     string             `json:"status"`
+	LastFour   string             `json:"last_four"`
+	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
+	LastUsedAt pgtype.Timestamptz `json:"last_used_at"`
+	Metadata   []byte             `json:"metadata"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 }
 
 type Application struct {
@@ -101,12 +107,17 @@ type OrganisationUser struct {
 type Policy struct {
 	ID         uuid.UUID          `json:"id"`
 	OrgID      uuid.UUID          `json:"org_id"`
-	AppID      uuid.UUID          `json:"app_id"`
 	PolicyType string             `json:"policy_type"`
 	Config     []byte             `json:"config"`
 	Enabled    bool               `json:"enabled"`
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+type PolicyApplication struct {
+	PolicyID  uuid.UUID          `json:"policy_id"`
+	AppID     uuid.UUID          `json:"app_id"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
 type Role struct {

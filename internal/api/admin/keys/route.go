@@ -26,13 +26,13 @@ func (s *KeyService) RegisterRoutes(grp *huma.Group) {
 		Description:   "Creates a new API key for accessing the gateway with specified tenant and application.",
 		DefaultStatus: http.StatusCreated,
 		Tags:          []string{"API Keys"},
-	}, exceptions.Handle(func(ctx context.Context, in *MintKeyRequest) (*MintKeyResponse, error) {
+	}, func(ctx context.Context, in *MintKeyRequest) (*MintKeyResponse, error) {
 		out, err := s.Keys.MintKey(ctx, in.Body)
 		if err != nil {
-			return nil, huma.Error500InternalServerError("mint failed")
+			return nil, huma.Error400BadRequest(err.Error())
 		}
 		return &out, nil
-	}))
+	})
 
 	// POST /keys/{key_id}/revoke
 	huma.Register(grp, huma.Operation{

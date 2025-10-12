@@ -58,19 +58,27 @@ func (df *DBFixtures) CreateTestOrgAndAppWithSuffix(t *testing.T, suffix string)
 	return org.ID, app.ID
 }
 
-// CreateTestPolicy creates a test policy for the given org and app
+// CreateTestPolicy creates a test policy for the given org and attaches it to an app
 func (df *DBFixtures) CreateTestPolicy(t *testing.T, orgID, appID uuid.UUID, policyType model.PolicyType, config string) uuid.UUID {
 	t.Helper()
 
 	policy, err := df.Queries.CreatePolicy(context.Background(), db.CreatePolicyParams{
 		OrgID:      orgID,
-		AppID:      appID,
 		PolicyType: string(policyType),
 		Config:     []byte(config),
 		Enabled:    true,
 	})
 	if err != nil {
 		t.Fatalf("Failed to create test policy: %v", err)
+	}
+
+	// Attach policy to the application
+	err = df.Queries.AttachPolicyToApp(context.Background(), db.AttachPolicyToAppParams{
+		PolicyID: policy.ID,
+		AppID:    appID,
+	})
+	if err != nil {
+		t.Fatalf("Failed to attach policy to app: %v", err)
 	}
 
 	return policy.ID
@@ -96,8 +104,8 @@ func (df *DBFixtures) CleanupTestApp(t *testing.T, appID uuid.UUID) {
 	}
 }
 
-// CreateTestAPIKey creates a test API key for the given org
-func (df *DBFixtures) CreateTestAPIKey(t *testing.T, orgID uuid.UUID) uuid.UUID {
+// CreateTestAPIKey creates a test API key for the given org and app
+func (df *DBFixtures) CreateTestAPIKey(t *testing.T, orgID, appID uuid.UUID) uuid.UUID {
 	t.Helper()
 
 	// Create a user first (required by api_keys table)
@@ -109,13 +117,13 @@ func (df *DBFixtures) CreateTestAPIKey(t *testing.T, orgID uuid.UUID) uuid.UUID 
 		t.Fatalf("Failed to create test user: %v", err)
 	}
 
-	// Create API key directly with raw SQL since there's no SQLC query for it
+	// Create API key directly with raw SQL
 	var apiKeyID uuid.UUID
 	err = df.Pool.QueryRow(context.Background(), `
-		INSERT INTO api_keys (org_id, user_id, key_hash)
-		VALUES ($1, $2, $3)
+		INSERT INTO api_keys (org_id, app_id, user_id, key_prefix, secret_phc, status, last_four, metadata)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id
-	`, orgID, user.ID, "$argon2id$v=19$m=65536,t=3,p=2$dummy$salt$dummyhash").Scan(&apiKeyID)
+	`, orgID, appID, user.ID, "test_", "$argon2id$v=19$m=65536,t=3,p=2$dummy$dummyhash", "active", "1234", []byte("{}")).Scan(&apiKeyID)
 	if err != nil {
 		t.Fatalf("Failed to create test API key: %v", err)
 	}

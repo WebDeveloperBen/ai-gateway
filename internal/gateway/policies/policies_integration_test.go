@@ -251,10 +251,16 @@ func createTestPolicy(t *testing.T, queries *db.Queries, orgID, appID uuid.UUID,
 
 	policy, err := queries.CreatePolicy(context.Background(), db.CreatePolicyParams{
 		OrgID:      orgID,
-		AppID:      appID,
 		PolicyType: string(policyType),
 		Config:     []byte(config),
 		Enabled:    true,
+	})
+	require.NoError(t, err)
+
+	// Attach policy to the application
+	err = queries.AttachPolicyToApp(context.Background(), db.AttachPolicyToAppParams{
+		PolicyID: policy.ID,
+		AppID:    appID,
 	})
 	require.NoError(t, err)
 
