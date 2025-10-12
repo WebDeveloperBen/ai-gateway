@@ -43,7 +43,7 @@ func BenchmarkCacheTiers(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_, _ = engine.LoadPolicies(ctx, appID)
 		}
 	})
@@ -58,7 +58,7 @@ func BenchmarkCacheTiers(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			// Clear memory cache to force Redis lookup
 			engine.memoryCache.Purge()
 			_, _ = engine.LoadPolicies(ctx, appID)
@@ -79,7 +79,7 @@ func BenchmarkPolicyReconstruction(b *testing.B) {
 	for _, count := range policyCounts {
 		b.Run(b.Name()+"_"+string(rune(count))+"policies", func(b *testing.B) {
 			policies := make([]CachedPolicy, count)
-			for i := 0; i < count; i++ {
+			for i := range count {
 				policies[i] = CachedPolicy{
 					Type:   model.PolicyTypeRateLimit,
 					Config: []byte(`{"requests_per_minute":1000}`),
@@ -90,7 +90,7 @@ func BenchmarkPolicyReconstruction(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				_, _ = engine.LoadPolicies(ctx, appID)
 			}
 		})
@@ -111,10 +111,9 @@ func BenchmarkRateLimitCheck(b *testing.B) {
 		AppID: "test-app-123",
 	}
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = policy.PreCheck(ctx, preCtx)
 	}
 }
@@ -129,7 +128,7 @@ func BenchmarkCELPolicy(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_, err := NewCELPolicy(model.PolicyTypeCustomCEL, config)
 			if err != nil {
 				b.Fatal(err)
@@ -156,7 +155,7 @@ func BenchmarkCELPolicy(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			if err := policy.PreCheck(ctx, preCtx); err != nil {
 				b.Fatal(err)
 			}
@@ -177,10 +176,9 @@ func BenchmarkTokenLimitPolicy(b *testing.B) {
 		EstimatedTokens: 1000,
 	}
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if err := policy.PreCheck(ctx, preCtx); err != nil {
 			b.Fatal(err)
 		}
@@ -199,10 +197,9 @@ func BenchmarkModelAllowlistPolicy(b *testing.B) {
 		Model: "gpt-4",
 	}
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if err := policy.PreCheck(ctx, preCtx); err != nil {
 			b.Fatal(err)
 		}
@@ -221,10 +218,9 @@ func BenchmarkRequestSizePolicy(b *testing.B) {
 		RequestSizeBytes: 10240, // 10KB
 	}
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if err := policy.PreCheck(ctx, preCtx); err != nil {
 			b.Fatal(err)
 		}
@@ -250,10 +246,9 @@ func BenchmarkFullPolicyChain(b *testing.B) {
 		RequestSizeBytes: 10240,
 	}
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if err := engine.CheckPreRequest(ctx, policies, preCtx); err != nil {
 			b.Fatal(err)
 		}

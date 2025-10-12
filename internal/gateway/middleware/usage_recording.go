@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/WebDeveloperBen/ai-gateway/internal/db"
@@ -17,6 +18,48 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+// responseBodyWrapper wraps the response body to capture the full content before async processing
+type responseBodyWrapper struct {
+	originalBody io.ReadCloser
+	onClose      func([]byte)
+	body         *bytes.Buffer
+	closed       bool
+}
+
+// Read implements io.Reader for the response body
+func (rbw *responseBodyWrapper) Read(p []byte) (n int, err error) {
+	if rbw.closed {
+		return 0, http.ErrBodyReadAfterClose
+	}
+	n, err = rbw.originalBody.Read(p)
+	if n > 0 {
+		rbw.body.Write(p[:n])
+	}
+	if err != nil {
+		rbw.close()
+	}
+	return n, err
+}
+
+// Close implements io.Closer for the response body
+func (rbw *responseBodyWrapper) Close() error {
+	if rbw.closed {
+		return nil
+	}
+	rbw.close()
+	return rbw.originalBody.Close()
+}
+
+// close captures the full body and calls the onClose callback
+func (rbw *responseBodyWrapper) close() {
+	if rbw.closed {
+		return
+	}
+	rbw.closed = true
+	bodyBytes := rbw.body.Bytes()
+	rbw.onClose(bodyBytes)
+}
 
 // UsageRecorder records usage metrics and runs post-check policies
 type UsageRecorder struct {
@@ -63,30 +106,28 @@ func (ur *UsageRecorder) Middleware(next http.RoundTripper) http.RoundTripper {
 		provider := auth.GetProvider(ctx)
 		modelName := auth.GetModelName(ctx)
 
-		// Wrap response body with TeeReader to capture bytes as they stream
-		// This avoids buffering the entire response before returning
-		var capturedBytes bytes.Buffer
-		if resp.Body != nil {
-			resp.Body = io.NopCloser(io.TeeReader(resp.Body, &capturedBytes))
-		}
-
 		// Create detached context for async processing
 		detachedCtx := detachContext(ctx)
 
-		// Launch async goroutine for post-processing
-		// This goroutine will read from capturedBytes AFTER the response is consumed
-		go ur.recordAsync(detachedCtx, &asyncRecordParams{
-			provider:         provider,
-			modelName:        modelName,
-			requestSizeBytes: requestSizeBytes,
-			latencyMs:        latencyMs,
-			request:          r,
-			response:         resp,
-			capturedBytes:    &capturedBytes,
-		})
+		// Wrap the response body to capture the full content before async processing
+		resp.Body = &responseBodyWrapper{
+			originalBody: resp.Body,
+			body:         &bytes.Buffer{},
+			onClose: func(bodyBytes []byte) {
+				// Launch async processing after response is fully consumed
+				go ur.recordAsync(detachedCtx, &asyncRecordParams{
+					provider:         provider,
+					modelName:        modelName,
+					requestSizeBytes: requestSizeBytes,
+					latencyMs:        latencyMs,
+					request:          r,
+					response:         resp,
+					capturedBytes:    bytes.NewBuffer(bodyBytes),
+				})
+			},
+		}
 
-		// Return response immediately - streaming starts now
-		// The goroutine will process bytes as the client reads them
+		// Return the response with wrapped body
 		return resp, nil
 	})
 }
@@ -119,7 +160,7 @@ func (ur *UsageRecorder) recordAsync(ctx context.Context, params *asyncRecordPar
 	responseSizeBytes := len(respBodyBytes)
 
 	// Parse token usage from captured response
-	tokenUsage, err := ur.parser.ParseResponse(params.provider, respBodyBytes)
+	tokenUsage, err := ur.parseTokenUsage(params.provider, respBodyBytes)
 	if err != nil {
 		// If parsing fails, use zeros (some responses may not have usage)
 		tokenUsage = &model.TokenUsage{
@@ -241,6 +282,57 @@ func (ur *UsageRecorder) recordAsync(ctx context.Context, params *asyncRecordPar
 	for _, policy := range policyList {
 		policy.PostCheck(ctx, postCtx)
 	}
+}
+
+// parseTokenUsage handles both regular and streaming responses
+func (ur *UsageRecorder) parseTokenUsage(provider string, respBodyBytes []byte) (*model.TokenUsage, error) {
+	// First try parsing as a regular response
+	usage, err := ur.parser.ParseResponse(provider, respBodyBytes)
+	if err == nil {
+		return usage, nil
+	}
+
+	// If that fails, try parsing as streaming response
+	// Split by SSE event boundaries
+	bodyStr := string(respBodyBytes)
+	lines := strings.Split(bodyStr, "\n")
+
+	var chunks [][]byte
+	var currentChunk []string
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			// Empty line indicates end of chunk
+			if len(currentChunk) > 0 {
+				chunkData := strings.Join(currentChunk, "\n")
+				if strings.HasPrefix(chunkData, "data: ") {
+					// Extract JSON part after "data: "
+					jsonData := strings.TrimPrefix(chunkData, "data: ")
+					if jsonData != "[DONE]" {
+						chunks = append(chunks, []byte(jsonData))
+					}
+				}
+				currentChunk = nil
+			}
+		} else {
+			currentChunk = append(currentChunk, line)
+		}
+	}
+
+	// Handle any remaining chunk
+	if len(currentChunk) > 0 {
+		chunkData := strings.Join(currentChunk, "\n")
+		if strings.HasPrefix(chunkData, "data: ") {
+			jsonData := strings.TrimPrefix(chunkData, "data: ")
+			if jsonData != "[DONE]" {
+				chunks = append(chunks, []byte(jsonData))
+			}
+		}
+	}
+
+	// Try parsing chunks for streaming usage
+	return ur.parser.ParseStreamedResponse(provider, chunks)
 }
 
 type detachedContextKey struct{}

@@ -13,6 +13,7 @@ import (
 type Querier interface {
 	AssignRoleToOrg(ctx context.Context, arg AssignRoleToOrgParams) (OrganisationRole, error)
 	AssignRoleToUser(ctx context.Context, arg AssignRoleToUserParams) error
+	CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (ApiKey, error)
 	CreateApplication(ctx context.Context, arg CreateApplicationParams) (Application, error)
 	CreateApplicationConfig(ctx context.Context, arg CreateApplicationConfigParams) (ApplicationConfig, error)
 	CreateModel(ctx context.Context, arg CreateModelParams) (Model, error)
@@ -35,6 +36,8 @@ type Querier interface {
 	FindRoleByID(ctx context.Context, id uuid.UUID) (Role, error)
 	FindRoleByName(ctx context.Context, name string) (Role, error)
 	FindUserBySubOrEmail(ctx context.Context, arg FindUserBySubOrEmailParams) (User, error)
+	GetAPIKey(ctx context.Context, id uuid.UUID) (ApiKey, error)
+	GetAPIKeyByHash(ctx context.Context, keyHash string) (ApiKey, error)
 	GetApplication(ctx context.Context, id uuid.UUID) (Application, error)
 	GetApplicationByName(ctx context.Context, arg GetApplicationByNameParams) (Application, error)
 	GetApplicationConfig(ctx context.Context, id uuid.UUID) (ApplicationConfig, error)
@@ -56,6 +59,7 @@ type Querier interface {
 	ListRoles(ctx context.Context) ([]Role, error)
 	SumTokensByApp(ctx context.Context, arg SumTokensByAppParams) (SumTokensByAppRow, error)
 	SumTokensByOrg(ctx context.Context, arg SumTokensByOrgParams) (SumTokensByOrgRow, error)
+	UpdateAPIKeyLastUsed(ctx context.Context, id uuid.UUID) error
 	UpdateApplication(ctx context.Context, arg UpdateApplicationParams) (Application, error)
 	UpdateApplicationConfig(ctx context.Context, arg UpdateApplicationConfigParams) (ApplicationConfig, error)
 	UpdateModel(ctx context.Context, arg UpdateModelParams) (Model, error)

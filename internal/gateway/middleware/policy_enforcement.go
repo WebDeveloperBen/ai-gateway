@@ -2,6 +2,7 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,13 +13,18 @@ import (
 	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
 )
 
+// PolicyLoader defines the interface for loading policies
+type PolicyLoader interface {
+	LoadPolicies(ctx context.Context, appID string) ([]policies.Policy, error)
+}
+
 // PolicyEnforcer provides policy enforcement for requests
 type PolicyEnforcer struct {
-	engine *policies.Engine
+	engine PolicyLoader
 }
 
 // NewPolicyEnforcer creates a new policy enforcer
-func NewPolicyEnforcer(engine *policies.Engine) *PolicyEnforcer {
+func NewPolicyEnforcer(engine PolicyLoader) *PolicyEnforcer {
 	return &PolicyEnforcer{
 		engine: engine,
 	}
