@@ -100,6 +100,12 @@ func (e *Engine) LoadPolicies(ctx context.Context, appID string) ([]Policy, erro
 
 	// Tier 3: Load from database (slowest - network + query)
 	observability.FromContext(ctx).RecordPolicyCacheMiss(ctx, "db")
+
+	// Check if database is available (for unit testing)
+	if e.db == nil {
+		return nil, fmt.Errorf("database not available for loading policies")
+	}
+
 	dbPolicies, err := e.db.ListEnabledPolicies(ctx, appUUID)
 	if err != nil {
 		observability.FromContext(ctx).RecordPolicyLoadError(ctx, appID, err)

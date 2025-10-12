@@ -3,6 +3,7 @@ package policies
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/WebDeveloperBen/ai-gateway/internal/drivers/kv"
@@ -27,12 +28,17 @@ func (rl *RateLimiter) CheckAndIncrement(ctx context.Context, key string, limit 
 		return true, nil
 	}
 
+	log.Printf("DEBUG: RateLimiter.CheckAndIncrement - key=%s, limit=%d", key, limit)
+
 	// Atomically increment the counter (handles non-existent keys)
 	newCount, err := rl.cache.Incr(ctx, key)
 	if err != nil {
 		// Redis error - fail open to avoid blocking traffic
+		log.Printf("DEBUG: RateLimiter.CheckAndIncrement - Redis error: %v", err)
 		return true, err
 	}
+
+	log.Printf("DEBUG: RateLimiter.CheckAndIncrement - newCount=%d", newCount)
 
 	// Set TTL on first increment
 	if newCount == 1 {
@@ -41,14 +47,17 @@ func (rl *RateLimiter) CheckAndIncrement(ctx context.Context, key string, limit 
 		if err != nil {
 			// Failed to set TTL, but counter is incremented
 			// Log error but don't fail request
+			log.Printf("DEBUG: RateLimiter.CheckAndIncrement - Failed to set TTL: %v", err)
 		}
 	}
 
 	// Check if limit exceeded (after incrementing)
 	if newCount > int64(limit) {
+		log.Printf("DEBUG: RateLimiter.CheckAndIncrement - Limit exceeded: %d > %d", newCount, limit)
 		return false, nil
 	}
 
+	log.Printf("DEBUG: RateLimiter.CheckAndIncrement - Request allowed")
 	return true, nil
 }
 
