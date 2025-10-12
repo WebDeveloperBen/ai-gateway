@@ -24,3 +24,19 @@ func SetupPublicTestAPI(
 	register(group)
 	return api
 }
+
+// SetupProviderTestAPI creates a test Huma API instance for provider tests with /api/providers prefix.
+func SetupProviderTestAPI(
+	t *testing.T,
+	register func(grp *huma.Group),
+) humatest.TestAPI {
+	_ = godotenv.Load(".env", "../.env", "../../.env", "../../../.env")
+
+	// Load .env from the repo root before constructing deps that read env.
+	LoadDotenvFromRepoRoot(t)
+
+	_, api := humatest.New(t)
+	group := huma.NewGroup(api, "/api/providers")
+	register(group)
+	return api
+}

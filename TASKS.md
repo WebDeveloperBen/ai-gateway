@@ -3,6 +3,7 @@
 ## Completed ✅
 
 ### Phase 1-4: Core Policy System
+
 - [x] Policy enforcement middleware (100% coverage)
 - [x] Request buffer with single-parse optimization
 - [x] Usage recording with async processing
@@ -17,18 +18,21 @@
 ### Phase 5: Repository Layer
 
 #### Applications Repository
-- [ ] Create `internal/repository/applications` package
-- [ ] Implement CRUD operations (Create, Get, List, Update, Delete)
-- [ ] Add validation for application names and org ownership
-- [ ] Add tests for all operations
+
+- [x] Create `internal/repository/applications` package
+- [x] Implement CRUD operations (Create, Get, List, Update, Delete)
+- [x] Add validation for application names and org ownership
+- [x] Add tests for all operations
 
 #### Application Configs Repository
+
 - [ ] Create `internal/repository/application_configs` package
 - [ ] Implement environment-specific config management
 - [ ] Add config validation and type safety
 - [ ] Add tests for config operations
 
 #### Models Repository
+
 - [ ] Create `internal/repository/models` package
 - [ ] Implement model deployment CRUD
 - [ ] Add provider mapping (OpenAI ↔ Azure)
@@ -36,6 +40,7 @@
 - [ ] Add tests for model operations
 
 #### Policies Repository
+
 - [ ] Create `internal/repository/policies` package
 - [ ] Implement policy CRUD with cache invalidation
 - [ ] Add policy validation and type checking
@@ -43,30 +48,22 @@
 - [ ] Add tests for policy operations
 
 #### Usage Repository
+
 - [ ] Create `internal/repository/usage` package
 - [ ] Implement usage metrics storage and retrieval
 - [ ] Add rollup queries for dashboards (by org, app, time range)
 - [ ] Add aggregation functions (sum tokens, avg latency)
 - [ ] Add tests for usage queries
 
-### Phase 6: Admin API Endpoints
+### Phase 6: Clean up the api docs again
 
-- [ ] Create admin/applications endpoints
-- [ ] Create admin/application_configs endpoints
-- [ ] Create admin/models endpoints
-- [ ] Create admin/policies endpoints
-- [ ] Create admin/usage endpoints (dashboard queries)
-
-### Phase 7: UI Integration
-
-- [ ] Update UI for application management
-- [ ] Add model deployment management
-- [ ] Add policy builder with CEL editor
-- [ ] Add usage dashboard with metrics
+- [ ] Fix the Proxy router docs
+- [ ] Fix the /azure/openai router docs
 
 ## Testing & Coverage Expansion 🚧
 
 ### High Priority (0% Coverage Packages)
+
 - [ ] Add tests for `internal/api/auth` (authentication logic)
 - [ ] Add tests for `internal/api/admin/keys` (API key management)
 - [ ] Add tests for `internal/api/health` (health check endpoints)
@@ -76,18 +73,21 @@
 - [ ] Add tests for `internal/gateway/tokens` (token parsing/estimation)
 
 ### Medium Priority (Infrastructure)
+
 - [ ] Add tests for `internal/drivers/db` (database connections)
 - [ ] Add tests for `internal/drivers/kv` (Redis/memory caching)
 - [ ] Add tests for `internal/repository/*` (data access layer)
 - [ ] Add tests for `internal/config` (configuration loading)
 
 ### Low Priority (Supporting)
+
 - [ ] Add tests for `internal/logger` (logging utilities)
 - [ ] Add tests for `internal/observability` (metrics)
 - [ ] Add tests for `internal/exceptions` (error handling)
 - [ ] Add integration tests for end-to-end flows
 
 ## Current Status 📊
+
 - **Business Logic Coverage**: 84.7% ✅ (Exceeds 80% target)
 - **Core Components**: Fully tested and optimized
 - **Architecture**: Interface-based, testable design

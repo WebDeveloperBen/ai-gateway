@@ -21,13 +21,14 @@ import (
 	gwmiddleware "github.com/WebDeveloperBen/ai-gateway/internal/gateway/middleware"
 	"github.com/WebDeveloperBen/ai-gateway/internal/gateway/policies"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
-	"github.com/WebDeveloperBen/ai-gateway/internal/provider"
 
+	adminappconfigs "github.com/WebDeveloperBen/ai-gateway/internal/api/admin/application_configs"
 	"github.com/WebDeveloperBen/ai-gateway/internal/api/admin/applications"
 	"github.com/WebDeveloperBen/ai-gateway/internal/api/admin/catalog"
 	"github.com/WebDeveloperBen/ai-gateway/internal/api/admin/keys"
 	adminpolicies "github.com/WebDeveloperBen/ai-gateway/internal/api/admin/policies"
 	adminusage "github.com/WebDeveloperBen/ai-gateway/internal/api/admin/usage"
+	appconfigrepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/application_configs"
 	apprepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/applications"
 	catalogrepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/catalog"
 	keyrepo "github.com/WebDeveloperBen/ai-gateway/internal/repository/keys"
@@ -67,9 +68,24 @@ func main() {
 	}
 	defer pg.Pool.Close()
 
-	// --------------- Registry ------------- //
+	// --------------- Model Deployment Registry ------------- //
 	reg := gateway.NewRegistry(ctx, kvStore)
-	_ = gateway.EnsureRegistryPopulated(reg, loadAllModelDeploymentsFromDatabase)
+	_ = gateway.EnsureRegistryPopulated(reg, func() []model.ModelDeployment {
+		// TODO: Load from database via models repository
+		// For now, hardcoded deployment
+		return []model.ModelDeployment{
+			{
+				Model:      "gpt-4.1",
+				Deployment: "dev-openai-gpt4-1",
+				Provider:   "azure",
+				Tenant:     "default",
+				Meta: map[string]string{
+					"APIVer":  "2024-07-01-preview",
+					"BaseURL": "https://dev-insurgence-openai.openai.azure.com",
+				},
+			},
+		}
+	})
 
 	// ------------- Repositories ------------ //
 	keyRepo, err := keyrepo.NewKeyRepository(ctx,
@@ -81,6 +97,7 @@ func main() {
 		log.Fatal(err)
 	}
 	appRepo := apprepo.NewPostgresRepo(pg.Queries)
+	appConfigRepo := appconfigrepo.NewPostgresRepo(pg.Queries)
 	catalogRepo := catalogrepo.NewPostgresRepo(pg.Queries)
 	orgRepo := orgrepo.NewPostgresRepo(pg.Queries)
 	policiesRepo := policiesrepo.NewPostgresRepo(pg.Queries)
@@ -119,6 +136,7 @@ func main() {
 	orgSvc := apiauth.NewOrganisationService(orgRepo, userRepo)
 	keysSvc := keys.NewService(keyRepo, hasher)
 	appsSvc := applications.NewService(appRepo)
+	appConfigsSvc := adminappconfigs.NewService(appConfigRepo)
 	catalogSvc := catalog.NewService(catalogRepo)
 	policiesSvc := adminpolicies.NewService(policiesRepo)
 	usageSvc := adminusage.NewService(usageRepo)
@@ -128,13 +146,13 @@ func main() {
 	base := humachi.New(router, humaCfg)
 
 	// ----------- Register Public Routers ---------- //
-	docs.RegisterRoutes(router)
+	docs.RegisterRoutes(router, base)
 	health.RegisterPublicRoutes(base)
 
 	// ------------ Route Groups ----------- //
-	apigrp := huma.NewGroup(base, "/api")
 	admingrp := huma.NewGroup(base, "/api/v1/admin")
 	authgrp := huma.NewGroup(base, "/auth")
+	providersgrp := huma.NewGroup(base, "/api/providers")
 
 	// --- Attach Authentication Middleware to Route Groups --- //
 	authgrp.UseMiddleware(
@@ -149,8 +167,9 @@ func main() {
 
 	// ------------ Register API Routers ----------- //
 	apiauth.NewRouter(oidcService, orgSvc).RegisterRoutes(authgrp)
-	keys.NewRouter(keysSvc).RegisterRoutes(authgrp)
+	keys.NewRouter(keysSvc).RegisterRoutes(admingrp)
 	applications.NewRouter(appsSvc).RegisterRoutes(admingrp)
+	adminappconfigs.NewRouter(appConfigsSvc).RegisterRoutes(admingrp)
 	catalog.NewRouter(catalogSvc).RegisterRoutes(admingrp)
 	adminpolicies.NewRouter(policiesSvc).RegisterRoutes(admingrp)
 	adminusage.NewRouter(usageSvc).RegisterRoutes(admingrp)
@@ -167,16 +186,10 @@ func main() {
 	core := gateway.NewCoreWithRegistry(transport, authn, reg)
 
 	// ------------ AI Providers ----------- //
-	apigw.RegisterProvider(apigrp, provider.AzureOpenAIPrefix, core)
+	// Register all supported providers under /api/providers
+	apigw.RegisterAllProviders(providersgrp, core)
 
 	// ------------ Server Start ----------- //
 	addr := config.Envs.ProxyPort
 	server.Start(addr, router)
-}
-
-// loadAllModelDeploymentsFromDatabase is a stub for demonstration. Replace with real DB logic.
-func loadAllModelDeploymentsFromDatabase() []model.ModelDeployment {
-	return []model.ModelDeployment{
-		{Model: "gpt-4.1", Deployment: "dev-openai-gpt4-1", Provider: "azure", Tenant: "default", Meta: map[string]string{"APIVer": "2024-07-01-preview", "BaseURL": "https://dev-insurgence-openai.openai.azure.com"}},
-	}
 }

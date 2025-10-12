@@ -9,6 +9,7 @@ import (
 
 	apigw "github.com/WebDeveloperBen/ai-gateway/internal/api/admin/gateway"
 	"github.com/WebDeveloperBen/ai-gateway/internal/gateway"
+	"github.com/WebDeveloperBen/ai-gateway/internal/provider"
 	"github.com/WebDeveloperBen/ai-gateway/internal/testkit"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/stretchr/testify/require"
@@ -29,13 +30,20 @@ func TestProxyRoutes(t *testing.T) {
 
 	core := gateway.NewCoreWithAdapters(transport, fx.Authenticator, fx.Adapter)
 
-	api := testkit.SetupPublicTestAPI(t, func(grp *huma.Group) {
-		apigw.RegisterProvider(grp, fx.BasePath, core)
+	providerCfg := &provider.ProviderConfig{
+		Prefix:      fx.BasePath,
+		DisplayName: "Azure OpenAI",
+		Description: "Test Azure OpenAI provider",
+		Enabled:     true,
+	}
+
+	api := testkit.SetupProviderTestAPI(t, func(grp *huma.Group) {
+		apigw.RegisterProvider(grp, providerCfg, core)
 	})
 
 	body := map[string]any{"model": fx.Model, "messages": []string{"hi"}}
 	b, _ := json.Marshal(body)
-	resp := api.Post("/api"+fx.BasePath+"/v1/chat/completions", "Content-Type: application/json", bytes.NewReader(b))
+	resp := api.Post("/api/providers"+fx.BasePath+"/v1/chat/completions", "Content-Type: application/json", bytes.NewReader(b))
 	require.Equal(t, http.StatusOK, resp.Code)
 	require.JSONEq(t, `{"echo":"ok"}`, resp.Body.String())
 }
@@ -63,8 +71,16 @@ func TestUnitProxy_AzureOpenAI(t *testing.T) {
 	})
 
 	core := gateway.NewCoreWithAdapters(transport, fx.Authenticator, fx.Adapter)
-	api := testkit.SetupPublicTestAPI(t, func(grp *huma.Group) {
-		apigw.RegisterProvider(grp, fx.BasePath, core)
+
+	providerCfg := &provider.ProviderConfig{
+		Prefix:      fx.BasePath,
+		DisplayName: "Azure OpenAI",
+		Description: "Test Azure OpenAI provider",
+		Enabled:     true,
+	}
+
+	api := testkit.SetupProviderTestAPI(t, func(grp *huma.Group) {
+		apigw.RegisterProvider(grp, providerCfg, core)
 	})
 
 	body := map[string]any{
@@ -74,7 +90,7 @@ func TestUnitProxy_AzureOpenAI(t *testing.T) {
 	b, _ := json.Marshal(body)
 
 	resp := api.Post(
-		"/api"+fx.BasePath+"/v1/chat/completions",
+		"/api/providers"+fx.BasePath+"/v1/chat/completions",
 		"Content-Type: application/json",
 		"Authorization: Bearer client-token",
 		bytes.NewReader(b),
@@ -103,11 +119,19 @@ func TestUnitProxy_AzureOpenAI_EnvFallback(t *testing.T) {
 	})
 
 	core := gateway.NewCoreWithAdapters(transport, fx.Authenticator, fx.Adapter)
-	api := testkit.SetupPublicTestAPI(t, func(grp *huma.Group) {
-		apigw.RegisterProvider(grp, fx.BasePath, core)
+
+	providerCfg := &provider.ProviderConfig{
+		Prefix:      fx.BasePath,
+		DisplayName: "Azure OpenAI",
+		Description: "Test Azure OpenAI provider",
+		Enabled:     true,
+	}
+
+	api := testkit.SetupProviderTestAPI(t, func(grp *huma.Group) {
+		apigw.RegisterProvider(grp, providerCfg, core)
 	})
 
-	resp := api.Post("/api"+fx.BasePath+"/v1/chat/completions", "Content-Type: application/json",
+	resp := api.Post("/api/providers"+fx.BasePath+"/v1/chat/completions", "Content-Type: application/json",
 		bytes.NewReader([]byte(`{"model":"`+fx.Model+`","messages":[]}`)),
 	)
 	require.True(t, called)
@@ -117,10 +141,21 @@ func TestUnitProxy_AzureOpenAI_EnvFallback(t *testing.T) {
 func TestE2EProxy_AzureOpenAI(t *testing.T) {
 	fx := testkit.NewAOAIE2E(t)
 	core := gateway.NewCoreWithAdapters(http.DefaultTransport, fx.Authenticator, fx.Adapter)
-	api := testkit.SetupPublicTestAPI(t, func(grp *huma.Group) { apigw.RegisterProvider(grp, fx.BasePath, core) })
+
+	providerCfg := &provider.ProviderConfig{
+		Prefix:      fx.BasePath,
+		DisplayName: "Azure OpenAI",
+		Description: "Test Azure OpenAI provider",
+		Enabled:     true,
+	}
+
+	api := testkit.SetupProviderTestAPI(t, func(grp *huma.Group) {
+		apigw.RegisterProvider(grp, providerCfg, core)
+	})
+
 	body := map[string]any{"model": fx.Model, "messages": []map[string]string{{"role": "user", "content": "Say hello test!"}}}
 	b, _ := json.Marshal(body)
-	resp := api.Post("/api"+fx.BasePath+"/v1/chat/completions", "Content-Type: application/json", bytes.NewReader(b))
+	resp := api.Post("/api/providers"+fx.BasePath+"/v1/chat/completions", "Content-Type: application/json", bytes.NewReader(b))
 	require.Equal(t, http.StatusOK, resp.Code, resp.Body.String())
 }
 

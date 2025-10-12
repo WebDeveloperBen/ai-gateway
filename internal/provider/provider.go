@@ -9,6 +9,11 @@ import (
 const (
 	AzureOpenAIPrefix = "/azure/openai"
 	OpenAIPrefix      = "/openai"
+
+	// Note: These prefixes are relative to the route group they're registered under.
+	// In production, providers are registered under /api/providers, so the full paths become:
+	// - Azure OpenAI: /api/providers/azure/openai
+	// - OpenAI: /api/providers/openai
 )
 
 // ReqInfo is what adapters need to decide routing/rewrite.
