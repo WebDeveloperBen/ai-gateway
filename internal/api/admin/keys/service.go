@@ -118,7 +118,12 @@ func (s *keysService) MintKey(ctx context.Context, req MintKeyRequestBody) (Mint
 }
 
 func (s *keysService) RevokeKey(ctx context.Context, keyPrefix string) error {
-	return s.store.UpdateStatus(ctx, keyPrefix, model.KeyRevoked)
+	err := s.store.UpdateStatus(ctx, keyPrefix, model.KeyRevoked)
+	if err != nil && err.Error() == "key not found" {
+		// Revoking a non-existent key is a successful no-op
+		return nil
+	}
+	return err
 }
 
 func (s *keysService) GetByKeyPrefix(ctx context.Context, keyPrefix string) (APIKey, error) {

@@ -59,36 +59,36 @@ tasks:
     cmds:
       - go test -v ./...
 
-   # -------------------
-   # Coverage tasks
-   # -------------------
+    # -------------------
+    # Coverage tasks
+    # -------------------
 
-   coverage:
-     desc: Run tests with coverage on internal packages only and show summary
-     cmds:
-       - go test -coverprofile=coverage.out -coverpkg=./internal/... ./...
-       - go tool cover -func=coverage.out | tail -1
+  coverage:
+    desc: Run tests with coverage excluding SQLC generated code and show summary
+    cmds:
+      - go test -coverprofile=coverage.out $(go list ./... | grep -v internal/db)
+      - go tool cover -func=coverage.out | tail -1
 
-   coverage:html:
-     desc: Generate and open HTML coverage report for internal packages
-     cmds:
-       - go test -coverprofile=coverage.out -coverpkg=./internal/... ./...
-       - go tool cover -html=coverage.out -o coverage.html
-       - |
-         echo "✅ Coverage report: coverage.html"
+  coverage:html:
+    desc: Generate and open HTML coverage report excluding SQLC generated code
+    cmds:
+      - go test -coverprofile=coverage.out $(go list ./... | grep -v internal/db)
+      - go tool cover -html=coverage.out -o coverage.html
+      - |
+        echo "✅ Coverage report: coverage.html"
 
-   coverage:check:
-     desc: Check if internal package coverage meets 80% threshold
-     cmds:
-       - go test -coverprofile=coverage.out -coverpkg=./internal/... ./...
-       - |
-         COVERAGE=$(go tool cover -func=coverage.out | grep "total:" | awk '{print $3}' | sed 's/%//')
-         echo "Internal packages coverage: ${COVERAGE}%"
-         if (( $(echo "$COVERAGE < 80" | bc -l) )); then
-           echo "❌ Coverage below 80%"
-           exit 1
-         fi
-         echo "✅ Coverage meets threshold"
+  coverage:check:
+    desc: Check if coverage meets 80% threshold (excluding SQLC generated code)
+    cmds:
+      - go test -coverprofile=coverage.out $(go list ./... | grep -v internal/db)
+      - |
+        COVERAGE=$(go tool cover -func=coverage.out | grep "total:" | awk '{print $3}' | sed 's/%//')
+        echo "Project coverage (excluding SQLC): ${COVERAGE}%"
+        if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+          echo "❌ Coverage below 80%"
+          exit 1
+        fi
+        echo "✅ Coverage meets threshold"
 
   # -------------------
   # Benchmarking tasks
