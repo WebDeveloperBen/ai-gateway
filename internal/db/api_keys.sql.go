@@ -12,14 +12,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const deleteAPIKey = `-- name: DeleteAPIKey :exec
+const deleteAPIKey = `-- name: DeleteAPIKey :execrows
 DELETE FROM api_keys
 WHERE id = $1
 `
 
-func (q *Queries) DeleteAPIKey(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteAPIKey, id)
-	return err
+func (q *Queries) DeleteAPIKey(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteAPIKey, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const getAPIKeyByID = `-- name: GetAPIKeyByID :one
@@ -220,18 +223,21 @@ func (q *Queries) ListAPIKeysByOrgID(ctx context.Context, orgID uuid.UUID) ([]Ap
 	return items, nil
 }
 
-const updateAPIKeyLastUsed = `-- name: UpdateAPIKeyLastUsed :exec
+const updateAPIKeyLastUsed = `-- name: UpdateAPIKeyLastUsed :execrows
 UPDATE api_keys
 SET last_used_at = now()
 WHERE key_prefix = $1
 `
 
-func (q *Queries) UpdateAPIKeyLastUsed(ctx context.Context, keyPrefix string) error {
-	_, err := q.db.Exec(ctx, updateAPIKeyLastUsed, keyPrefix)
-	return err
+func (q *Queries) UpdateAPIKeyLastUsed(ctx context.Context, keyPrefix string) (int64, error) {
+	result, err := q.db.Exec(ctx, updateAPIKeyLastUsed, keyPrefix)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
-const updateAPIKeyStatus = `-- name: UpdateAPIKeyStatus :exec
+const updateAPIKeyStatus = `-- name: UpdateAPIKeyStatus :execrows
 UPDATE api_keys
 SET status = $2
 WHERE key_prefix = $1
@@ -242,7 +248,10 @@ type UpdateAPIKeyStatusParams struct {
 	Status    string `json:"status"`
 }
 
-func (q *Queries) UpdateAPIKeyStatus(ctx context.Context, arg UpdateAPIKeyStatusParams) error {
-	_, err := q.db.Exec(ctx, updateAPIKeyStatus, arg.KeyPrefix, arg.Status)
-	return err
+func (q *Queries) UpdateAPIKeyStatus(ctx context.Context, arg UpdateAPIKeyStatusParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateAPIKeyStatus, arg.KeyPrefix, arg.Status)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

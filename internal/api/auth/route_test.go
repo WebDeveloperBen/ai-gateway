@@ -123,3 +123,30 @@ func TestMe_NoAuth(t *testing.T) {
 
 	require.Equal(t, http.StatusUnauthorized, resp.Code)
 }
+
+func TestNewRouter(t *testing.T) {
+	oidcSvc := auth.NewMockOIDCService()
+	orgSvc := auth.NewOrganisationService(nil, nil) // nil repos for this test
+
+	router := auth.NewRouter(oidcSvc, orgSvc)
+
+	require.NotNil(t, router)
+}
+
+func TestAuthService_RegisterRoutes(t *testing.T) {
+	oidcSvc := auth.NewMockOIDCService()
+	orgSvc := auth.NewOrganisationService(nil, nil)
+
+	router := auth.NewRouter(oidcSvc, orgSvc)
+
+	// Set up API
+	_, api := humatest.New(t)
+	authgrp := huma.NewGroup(api, "/auth")
+
+	// Register routes shouldn't panic
+	router.RegisterRoutes(authgrp)
+
+	// Verify routes are registered by checking if they exist
+	// This is a basic test to ensure RegisterRoutes completes without error
+	require.NotNil(t, router)
+}

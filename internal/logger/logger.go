@@ -74,14 +74,3 @@ func GetLogger(ctx context.Context) *zerolog.Logger {
 	}
 	return &Logger
 }
-
-// responseWriter wraps http.ResponseWriter to capture status code
-type responseWriter struct {
-	http.ResponseWriter
-	status int
-}
-
-func (rw *responseWriter) WriteHeader(code int) {
-	rw.status = code
-	rw.ResponseWriter.WriteHeader(code)
-}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/WebDeveloperBen/ai-gateway/internal/gateway"
 	"github.com/WebDeveloperBen/ai-gateway/internal/gateway/auth"
+	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 	"github.com/WebDeveloperBen/ai-gateway/internal/provider"
 	"github.com/stretchr/testify/require"
 )
@@ -61,6 +62,65 @@ func TestNewCoreWithAdapters_NoAdapters(t *testing.T) {
 	require.NotNil(t, core)
 	require.Empty(t, core.Adapters)
 	require.Equal(t, authenticator, core.Authenticator)
+}
+
+func TestNewCoreWithRegistry(t *testing.T) {
+	// Set up a registry with some test deployments
+	reg, cleanup := setupRegistry(t)
+	defer cleanup()
+
+	// Add some test deployments
+	deployments := []model.ModelDeployment{
+		{
+			Tenant:     "default",
+			Model:      "gpt-4",
+			Deployment: "test-deployment",
+			Provider:   "azure",
+			Meta: map[string]string{
+				"APIVer":  "2024-07-01-preview",
+				"BaseURL": "https://test.openai.azure.com",
+			},
+		},
+		{
+			Tenant:     "default",
+			Model:      "gpt-3.5-turbo",
+			Deployment: "test-openai",
+			Provider:   "openai",
+			Meta: map[string]string{
+				"BaseURL": "https://api.openai.com",
+			},
+		},
+	}
+
+	for _, md := range deployments {
+		err := reg.Add(md, 0)
+		require.NoError(t, err)
+	}
+
+	var authenticator auth.KeyAuthenticator
+	customTransport := &mockRoundTripper{}
+
+	core := gateway.NewCoreWithRegistry(customTransport, authenticator, reg)
+
+	require.NotNil(t, core)
+	require.Equal(t, customTransport, core.Transport)
+	require.Equal(t, authenticator, core.Authenticator)
+	require.NotEmpty(t, core.Adapters) // Should have adapters for azure and openai
+}
+
+func TestNewCoreWithRegistry_EmptyRegistry(t *testing.T) {
+	// Test with empty registry
+	reg, cleanup := setupRegistry(t)
+	defer cleanup()
+
+	var authenticator auth.KeyAuthenticator
+
+	core := gateway.NewCoreWithRegistry(nil, authenticator, reg)
+
+	require.NotNil(t, core)
+	require.NotNil(t, core.Transport) // Should use default transport
+	require.Equal(t, authenticator, core.Authenticator)
+	require.Empty(t, core.Adapters) // No deployments, so no adapters
 }
 
 // Mock round tripper for testing

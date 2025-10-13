@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const assignRoleToOrg = `-- name: AssignRoleToOrg :one
+const assignRoleToOrg = `-- name: AssignRoleToOrg :exec
 INSERT INTO organisation_roles (org_id, role_id)
 VALUES ($1, $2)
 ON CONFLICT DO NOTHING
@@ -23,9 +23,7 @@ type AssignRoleToOrgParams struct {
 	RoleID uuid.UUID `json:"role_id"`
 }
 
-func (q *Queries) AssignRoleToOrg(ctx context.Context, arg AssignRoleToOrgParams) (OrganisationRole, error) {
-	row := q.db.QueryRow(ctx, assignRoleToOrg, arg.OrgID, arg.RoleID)
-	var i OrganisationRole
-	err := row.Scan(&i.OrgID, &i.RoleID, &i.CreatedAt)
-	return i, err
+func (q *Queries) AssignRoleToOrg(ctx context.Context, arg AssignRoleToOrgParams) error {
+	_, err := q.db.Exec(ctx, assignRoleToOrg, arg.OrgID, arg.RoleID)
+	return err
 }

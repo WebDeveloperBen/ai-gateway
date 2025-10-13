@@ -121,6 +121,24 @@ func TestHandle(t *testing.T) {
 		require.Equal(t, http.StatusNotFound, humaErr.GetStatus())
 	})
 
+	t.Run("APIError with details conversion", func(t *testing.T) {
+		fields := []huma.ErrorDetail{
+			{Message: "invalid format", Location: "body.email"},
+		}
+		handler := exceptions.Handle(func(ctx context.Context, input *string) (*string, error) {
+			return nil, exceptions.Validation("validation failed", fields)
+		})
+
+		result, err := handler(context.Background(), stringPtr("input"))
+		require.Nil(t, result)
+		require.Error(t, err)
+
+		// The error should be a huma.StatusError
+		var humaErr huma.StatusError
+		require.ErrorAs(t, err, &humaErr)
+		require.Equal(t, http.StatusUnprocessableEntity, humaErr.GetStatus())
+	})
+
 	t.Run("non-APIError conversion", func(t *testing.T) {
 		handler := exceptions.Handle(func(ctx context.Context, input *string) (*string, error) {
 			return nil, errors.New("unexpected error")
@@ -134,6 +152,20 @@ func TestHandle(t *testing.T) {
 		var humaErr huma.StatusError
 		require.ErrorAs(t, err, &humaErr)
 		require.Equal(t, http.StatusInternalServerError, humaErr.GetStatus())
+	})
+
+	t.Run("huma StatusError passthrough", func(t *testing.T) {
+		humaErr := huma.Error404NotFound("custom not found")
+		handler := exceptions.Handle(func(ctx context.Context, input *string) (*string, error) {
+			return nil, humaErr
+		})
+
+		result, err := handler(context.Background(), stringPtr("input"))
+		require.Nil(t, result)
+		require.Error(t, err)
+
+		// Should pass through the huma error unchanged
+		require.Equal(t, humaErr, err)
 	})
 }
 

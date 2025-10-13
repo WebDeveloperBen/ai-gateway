@@ -72,7 +72,7 @@
 - [x] Simplify TaskFile.yml tasks (coverage: 7→3, benchmarks: 5→3)
 - [x] Add `schema:update` workflow command
 
-### Phase 8: Test Coverage Expansion
+### Phase 8: Test Coverage Expansion (Session 1)
 
 - [x] Add tests for `internal/gateway/auth` - **100% coverage** ✅
   - Created `context_test.go` (100% coverage of context helpers)
@@ -89,31 +89,56 @@
 - [x] Add tests for `internal/api/public/health` - **100% coverage** ✅
   - Created `routes_test.go` (health check endpoints)
 
-**Coverage Improvement**: 23.5% → 28.4% (+4.9%)
-**Total New Tests**: 160+ test cases across 9 new test files
+**Coverage Improvement (Session 1)**: 23.5% → 28.4% (+4.9%)
+**Total New Tests (Session 1)**: 160+ test cases across 9 new test files
+
+### Phase 9: Admin API Test Coverage Expansion (Session 2)
+
+- [x] Add tests for `internal/api/admin/applications` - **Comprehensive integration tests** ✅
+  - Created `route_test.go` with 14 test cases
+  - Tests: Create, List, Get, Update, Delete operations
+  - Error handling: Invalid IDs, validation errors, not found scenarios
+  - Context validation: OrgID authentication checks
+- [x] Add tests for `internal/api/admin/application_configs` - **Comprehensive integration tests** ✅
+  - Created `route_test.go` with 18 test cases
+  - Tests: Create, List, Get (by ID and environment), Update, Delete operations
+  - Validation: Invalid app IDs, missing environment, missing config
+  - Edge cases: Config not found, invalid UUIDs
+- [x] Add tests for `internal/provider` - **93.6% coverage** ✅
+  - Created `common_test.go` with 70+ test cases
+  - Tests: URL construction, query params, header manipulation, JSON rewriting
+  - Key utilities: EnsureAbsoluteBase, JoinURL, SetUpstreamURL, CopyQuery
+  - Complex scenarios: Model resolution, key sources, content length forcing
+- [x] Add tests for `internal/model` - **100% coverage** ✅
+  - Created `auth_type_test.go` with comprehensive AuthType tests
+  - Tests: String() method, IsValid() validation, all constants
+  - Edge cases: Invalid types, empty strings, custom auth types
+
+**Coverage Improvement (Session 2)**: 28.4% → 43.3% (+14.9%)
+**Total Coverage Improvement**: 23.5% → 43.3% (+19.8%)
+**Total New Tests**: 275+ test cases across 13 new test files
 
 ## Testing & Coverage Expansion 🚧
 
 ### High Priority (0% Coverage Packages)
 
 - [ ] Add tests for `internal/api/auth` (authentication logic)
-- [ ] Add tests for `internal/api/admin/keys` (API key management)
-- [ ] Add tests for `internal/api/admin/policies` (policy management)
-- [ ] Add tests for `internal/api/admin/applications` (application management)
+- [ ] Add tests for `internal/api/admin/usage` (usage metrics API)
 - [ ] Add tests for `internal/api/middleware` (HTTP middleware)
-- [ ] Add tests for `internal/gateway` (core proxy logic)
 
-### Medium Priority (Infrastructure)
+### Medium Priority (Good Existing Coverage)
 
-- [ ] Add tests for `internal/drivers/db` (database connections)
-- [ ] Add tests for `internal/drivers/kv` (Redis/memory caching)
-- [ ] Add tests for `internal/repository/applications` (application data access)
-- [ ] Add tests for `internal/repository/application_configs` (config data access)
-- [ ] Add tests for `internal/repository/catalog` (model catalog data access)
-- [ ] Add tests for `internal/repository/usage` (usage metrics data access)
+- Repository layer already has good test coverage:
+  - `internal/repository/applications`: 87.2% ✅
+  - `internal/repository/application_configs`: 81.7% ✅
+  - `internal/repository/catalog`: 76.2% ✅
+  - `internal/repository/policies`: 66.3%
+  - `internal/repository/usage`: 51.9%
 
 ### Low Priority (Supporting)
 
+- [ ] Add tests for `internal/drivers/db` (database connections)
+- [ ] Add tests for `internal/drivers/kv` (Redis/memory caching)
 - [ ] Add tests for `internal/logger` (logging utilities)
 - [ ] Add tests for `internal/observability` (metrics)
 - [ ] Add tests for `internal/exceptions` (error handling)
@@ -121,11 +146,26 @@
 
 ## Current Status 📊
 
-- **Overall Test Coverage**: 28.4% (up from 23.5%)
-- **Business Logic Coverage**: 84.7% ✅ (Exceeds 80% target)
-- **Gateway Auth Package**: 100% ✅
-- **Token Management**: 96.3% ✅
-- **Configuration**: 100% ✅
+- **Overall Test Coverage**: **43.3%** ✅ (up from 23.5%, +19.8%)
+- **Business Logic Coverage**: 87.6% ✅ (Exceeds 80% target)
+- **Package-Level Coverage Highlights**:
+  - `internal/model`: 100% ✅ (NEW!)
+  - `internal/gateway/auth`: 100% ✅
+  - `internal/gateway/loadbalancing`: 100% ✅
+  - `internal/api/public/health`: 100% ✅
+  - `internal/exceptions/pg`: 100% ✅
+  - `internal/gateway/tokens`: 96.3% ✅
+  - `internal/provider`: 93.6% ✅
+  - `internal/exceptions`: 93.9% ✅
+  - `internal/config`: 91.3% ✅
+  - `internal/gateway/middleware`: 90.9% ✅
+  - `internal/migrate`: 84.4% ✅
+  - `internal/repository/application_configs`: 81.7% ✅
+  - `internal/repository/catalog`: 76.2% ✅
+  - `internal/logger`: 72.7%
+- **Admin API**: Comprehensive integration tests ✅
+  - Applications API: Full CRUD testing
+  - Application Configs API: Full CRUD testing
 - **Core Components**: Fully tested and optimized
 - **Architecture**: Interface-based, testable design
 - **Performance**: <1ms overhead, atomic operations, efficient caching

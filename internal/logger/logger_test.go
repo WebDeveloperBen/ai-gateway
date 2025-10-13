@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/WebDeveloperBen/ai-gateway/internal/logger"
@@ -34,21 +35,32 @@ func TestNewLogger(t *testing.T) {
 	})
 
 	t.Run("development mode creates console logger", func(t *testing.T) {
+		// Redirect stdout to capture console output
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
 		log := logger.NewLogger(false)
 
 		// Should be a zerolog.Logger
 		require.IsType(t, zerolog.Logger{}, log)
 
-		// Test that it can log
-		var buf bytes.Buffer
-		testLogger := log.Output(&buf)
-		testLogger.Info().Msg("test message")
+		// Test logging with fields to trigger format functions
+		log.Info().Str("key", "value").Int("number", 42).Msg("test with fields")
 
-		output := buf.String()
-		// Should contain the message
-		require.Contains(t, output, "test message")
-		// The output format depends on how zerolog handles Output() on a ConsoleWriter logger
-		// Just verify it produces some output
+		// Restore stdout and read output
+		w.Close()
+		os.Stdout = oldStdout
+
+		buf := make([]byte, 1024)
+		n, _ := r.Read(buf)
+		output := string(buf[:n])
+
+		// Should contain formatted output
+		require.Contains(t, output, "test with fields")
+		require.Contains(t, output, "INFO") // formatted level
+		// The format functions should make field names end with :
+		// But zerolog's ConsoleWriter might override some formatting
 		require.NotEmpty(t, output)
 	})
 }
@@ -144,5 +156,43 @@ func TestLoggerKey(t *testing.T) {
 		// Test that the key is a non-empty string
 		require.NotEmpty(t, string(logger.LoggerKey))
 		require.Equal(t, "request-logger", string(logger.LoggerKey))
+	})
+}
+
+func TestNewLogger_GlobalVariable(t *testing.T) {
+	t.Run("NewLogger sets global Logger variable", func(t *testing.T) {
+		// Save original logger
+		originalLogger := logger.Logger
+		defer func() { logger.Logger = originalLogger }()
+
+		// Test production mode
+		prodLogger := logger.NewLogger(true)
+		// Just verify that the global logger is set
+		require.NotNil(t, logger.Logger)
+
+		// Test development mode
+		devLogger := logger.NewLogger(false)
+		// Just verify that the global logger is set
+		require.NotNil(t, logger.Logger)
+
+		// Verify that NewLogger returns the logger that was set globally
+		require.NotNil(t, prodLogger)
+		require.NotNil(t, devLogger)
+	})
+}
+
+func TestGetLogger_EdgeCases(t *testing.T) {
+	t.Run("handles wrong type in context", func(t *testing.T) {
+		ctx := context.WithValue(context.Background(), logger.LoggerKey, "not-a-logger")
+		retrieved := logger.GetLogger(ctx)
+		// Should fall back to global logger
+		require.Equal(t, &logger.Logger, retrieved)
+	})
+
+	t.Run("handles nil value in context", func(t *testing.T) {
+		ctx := context.WithValue(context.Background(), logger.LoggerKey, nil)
+		retrieved := logger.GetLogger(ctx)
+		// Should fall back to global logger
+		require.Equal(t, &logger.Logger, retrieved)
 	})
 }

@@ -25,12 +25,12 @@ WHERE key_prefix = $1;
 SELECT secret_phc FROM api_keys
 WHERE key_prefix = $1;
 
--- name: UpdateAPIKeyStatus :exec
+-- name: UpdateAPIKeyStatus :execrows
 UPDATE api_keys
 SET status = $2
 WHERE key_prefix = $1;
 
--- name: UpdateAPIKeyLastUsed :exec
+-- name: UpdateAPIKeyLastUsed :execrows
 UPDATE api_keys
 SET last_used_at = now()
 WHERE key_prefix = $1;
@@ -45,6 +45,6 @@ SELECT * FROM api_keys
 WHERE app_id = $1
 ORDER BY created_at DESC;
 
--- name: DeleteAPIKey :exec
+-- name: DeleteAPIKey :execrows
 DELETE FROM api_keys
 WHERE id = $1;

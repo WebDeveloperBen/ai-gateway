@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/WebDeveloperBen/ai-gateway/internal/db"
+	"github.com/WebDeveloperBen/ai-gateway/internal/exceptions"
 	"github.com/WebDeveloperBen/ai-gateway/internal/model"
 	"github.com/WebDeveloperBen/ai-gateway/internal/repository"
 	"github.com/WebDeveloperBen/ai-gateway/internal/repository/organisations"
@@ -89,7 +90,14 @@ func (s *OrganisationService) EnsureRole(ctx context.Context, orgID, roleName, d
 	role, err := s.orgRepo.FindRoleByName(ctx, roleName)
 	fmt.Printf("[EnsureRole] FindRoleByName(%s): role=%+v err=%v\n", roleName, role, err)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		// Check if it's a "not found" error (either sql.ErrNoRows or APIError with 404)
+		if apiErr, ok := err.(exceptions.APIError); ok && apiErr.Status() == 404 {
+			role, err = s.orgRepo.CreateRole(ctx, roleName, desc)
+			fmt.Printf("[EnsureRole] CreateRole(%s): role=%+v err=%v\n", roleName, role, err)
+			if err != nil {
+				return nil, err
+			}
+		} else if errors.Is(err, sql.ErrNoRows) {
 			role, err = s.orgRepo.CreateRole(ctx, roleName, desc)
 			fmt.Printf("[EnsureRole] CreateRole(%s): role=%+v err=%v\n", roleName, role, err)
 			if err != nil {
@@ -103,8 +111,13 @@ func (s *OrganisationService) EnsureRole(ctx context.Context, orgID, roleName, d
 	// Assign the role to the org via org_roles
 	err = s.orgRepo.AssignRole(ctx, orgID, role.ID)
 	fmt.Printf("[EnsureRole] AssignRoleToOrg(orgID=%v, roleID=%v): err=%v\n", orgUUID, role.ID, err)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, err
+	if err != nil {
+		// Check if it's a "not found" error (either sql.ErrNoRows or APIError with 404)
+		if apiErr, ok := err.(exceptions.APIError); ok && apiErr.Status() == 404 {
+			// Ignore "not found" errors for assignment (role might already be assigned)
+		} else if !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
 	}
 
 	return &model.Role{

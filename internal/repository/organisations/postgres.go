@@ -22,6 +22,7 @@ func NewPostgresRepo(q *db.Queries) Repository {
 }
 
 var handleDBError = pg.MakeErrorHandler("organisation")
+var handleRoleDBError = pg.MakeErrorHandler("role")
 
 func (r *postgresRepo) Create(ctx context.Context, name string) (*model.Organisation, error) {
 	org, err := r.Q.CreateOrg(ctx, name)
@@ -34,7 +35,7 @@ func (r *postgresRepo) Create(ctx context.Context, name string) (*model.Organisa
 		if err != nil {
 			return nil, handleDBError(fmt.Errorf("missing global role %q: %w", name, err))
 		}
-		_, err = r.Q.AssignRoleToOrg(ctx, db.AssignRoleToOrgParams{RoleID: role.ID, OrgID: org.ID})
+		err = r.Q.AssignRoleToOrg(ctx, db.AssignRoleToOrgParams{RoleID: role.ID, OrgID: org.ID})
 		if err != nil {
 			return nil, handleDBError(fmt.Errorf("error assigning role to org: %w", err))
 		}
@@ -72,7 +73,7 @@ func (r *postgresRepo) EnsureMembership(ctx context.Context, orgID, userID uuid.
 func (r *postgresRepo) FindRoleByName(ctx context.Context, name string) (*model.Role, error) {
 	role, err := r.Q.FindRoleByName(ctx, name)
 	if err != nil {
-		return nil, handleDBError(err)
+		return nil, handleRoleDBError(err)
 	}
 	return &model.Role{
 		ID:          role.ID.String(),
@@ -88,7 +89,7 @@ func (r *postgresRepo) CreateRole(ctx context.Context, name, desc string) (*mode
 		Description: &desc,
 	})
 	if err != nil {
-		return nil, handleDBError(err)
+		return nil, handleRoleDBError(err)
 	}
 
 	return &model.Role{
@@ -106,11 +107,11 @@ func (r *postgresRepo) AssignRole(ctx context.Context, orgID, roleID string) err
 	}
 
 	roleUUID := repository.ParseUUID(roleID)
-	if orgUUID == (uuid.UUID{}) {
+	if roleUUID == (uuid.UUID{}) {
 		return handleDBError(errors.New("invalid uuid"))
 	}
 
-	_, err := r.Q.AssignRoleToOrg(ctx, db.AssignRoleToOrgParams{
+	err := r.Q.AssignRoleToOrg(ctx, db.AssignRoleToOrgParams{
 		OrgID:  orgUUID,
 		RoleID: roleUUID,
 	})

@@ -54,9 +54,7 @@ func (r *postgresRepo) Create(ctx context.Context, arg db.CreateUserParams) (*mo
 	}, nil
 }
 
-func (r *postgresRepo) AssignRole(ctx context.
-	Context, userID, roleID string, orgID uuid.UUID,
-) error {
+func (r *postgresRepo) AssignRole(ctx context.Context, userID, roleID string, orgID uuid.UUID) error {
 	uid := repository.ParseUUID(userID)
 	rid := repository.ParseUUID(roleID)
 	if uid == uuid.Nil || rid == uuid.Nil || orgID == uuid.Nil {

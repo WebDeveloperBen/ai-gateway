@@ -11,7 +11,7 @@ import (
 )
 
 type Querier interface {
-	AssignRoleToOrg(ctx context.Context, arg AssignRoleToOrgParams) (OrganisationRole, error)
+	AssignRoleToOrg(ctx context.Context, arg AssignRoleToOrgParams) error
 	AssignRoleToUser(ctx context.Context, arg AssignRoleToUserParams) error
 	AttachPolicyToApp(ctx context.Context, arg AttachPolicyToAppParams) error
 	CreateApplication(ctx context.Context, arg CreateApplicationParams) (Application, error)
@@ -22,7 +22,7 @@ type Querier interface {
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 	CreateUsageMetric(ctx context.Context, arg CreateUsageMetricParams) (UsageMetric, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
-	DeleteAPIKey(ctx context.Context, id uuid.UUID) error
+	DeleteAPIKey(ctx context.Context, id uuid.UUID) (int64, error)
 	DeleteApplication(ctx context.Context, id uuid.UUID) error
 	DeleteApplicationConfig(ctx context.Context, id uuid.UUID) error
 	DeleteModel(ctx context.Context, id uuid.UUID) error
@@ -67,8 +67,8 @@ type Querier interface {
 	ListRoles(ctx context.Context) ([]Role, error)
 	SumTokensByApp(ctx context.Context, arg SumTokensByAppParams) (SumTokensByAppRow, error)
 	SumTokensByOrg(ctx context.Context, arg SumTokensByOrgParams) (SumTokensByOrgRow, error)
-	UpdateAPIKeyLastUsed(ctx context.Context, keyPrefix string) error
-	UpdateAPIKeyStatus(ctx context.Context, arg UpdateAPIKeyStatusParams) error
+	UpdateAPIKeyLastUsed(ctx context.Context, keyPrefix string) (int64, error)
+	UpdateAPIKeyStatus(ctx context.Context, arg UpdateAPIKeyStatusParams) (int64, error)
 	UpdateApplication(ctx context.Context, arg UpdateApplicationParams) (Application, error)
 	UpdateApplicationConfig(ctx context.Context, arg UpdateApplicationConfigParams) (ApplicationConfig, error)
 	UpdateModel(ctx context.Context, arg UpdateModelParams) (Model, error)

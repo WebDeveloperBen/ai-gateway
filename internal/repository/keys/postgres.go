@@ -29,15 +29,15 @@ func (s *store) Insert(ctx context.Context, k model.Key, phc string) error {
 	}
 
 	_, err := s.queries.InsertAPIKey(ctx, db.InsertAPIKeyParams{
-		OrgID:      k.OrgID,
-		AppID:      k.AppID,
-		UserID:     k.UserID,
-		KeyPrefix:  k.KeyPrefix,
-		SecretPhc:  phc,
-		Status:     string(k.Status),
-		LastFour:   k.LastFour,
-		ExpiresAt:  expiresAt,
-		Metadata:   k.Metadata,
+		OrgID:     k.OrgID,
+		AppID:     k.AppID,
+		UserID:    k.UserID,
+		KeyPrefix: k.KeyPrefix,
+		SecretPhc: phc,
+		Status:    string(k.Status),
+		LastFour:  k.LastFour,
+		ExpiresAt: expiresAt,
+		Metadata:  k.Metadata,
 	})
 	return err
 }
@@ -88,7 +88,14 @@ func (s *store) GetSecretPHCByPrefix(ctx context.Context, keyPrefix string) (str
 }
 
 func (s *store) TouchLastUsed(ctx context.Context, keyPrefix string) error {
-	return s.queries.UpdateAPIKeyLastUsed(ctx, keyPrefix)
+	affected, err := s.queries.UpdateAPIKeyLastUsed(ctx, keyPrefix)
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return errors.New("key not found")
+	}
+	return nil
 }
 
 func (s *store) UpdateStatus(ctx context.Context, keyPrefix string, status model.KeyStatus) error {
@@ -97,12 +104,26 @@ func (s *store) UpdateStatus(ctx context.Context, keyPrefix string, status model
 	default:
 		return errors.New("invalid status")
 	}
-	return s.queries.UpdateAPIKeyStatus(ctx, db.UpdateAPIKeyStatusParams{
+	affected, err := s.queries.UpdateAPIKeyStatus(ctx, db.UpdateAPIKeyStatusParams{
 		KeyPrefix: keyPrefix,
 		Status:    string(status),
 	})
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return errors.New("key not found")
+	}
+	return nil
 }
 
 func (s *store) Delete(ctx context.Context, id uuid.UUID) error {
-	return s.queries.DeleteAPIKey(ctx, id)
+	affected, err := s.queries.DeleteAPIKey(ctx, id)
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return errors.New("key not found")
+	}
+	return nil
 }

@@ -48,6 +48,46 @@ func TestConvertAuthConfig_OAuth(t *testing.T) {
 	assert.Equal(t, "https://example.com/token", *apiConfig2.TokenURL)
 }
 
+func TestAPIAuthTypeToModel(t *testing.T) {
+	tests := []struct {
+		name     string
+		apiType  AuthType
+		expected model.AuthType
+	}{
+		{"APIKey", AuthTypeAPIKey, model.AuthTypeAPIKey},
+		{"OAuth2", AuthTypeOAuth2, model.AuthTypeOAuth2},
+		{"AzureAD", AuthTypeAzureAD, model.AuthTypeAzureAD},
+		{"Unknown", AuthType("unknown"), model.AuthType("unknown")}, // fallback
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := APIAuthTypeToModel(tt.apiType)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestModelAuthTypeToAPI(t *testing.T) {
+	tests := []struct {
+		name      string
+		modelType model.AuthType
+		expected  AuthType
+	}{
+		{"APIKey", model.AuthTypeAPIKey, AuthTypeAPIKey},
+		{"OAuth2", model.AuthTypeOAuth2, AuthTypeOAuth2},
+		{"AzureAD", model.AuthTypeAzureAD, AuthTypeAzureAD},
+		{"Unknown", model.AuthType("unknown"), AuthType("unknown")}, // fallback
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ModelAuthTypeToAPI(tt.modelType)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func stringPtr(s string) *string {
 	return &s
 }
